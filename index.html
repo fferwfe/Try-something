@@ -2,25 +2,24 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>人生履歷 - 指揮中心</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人生履歷 - 系統入口</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; width: 90%; max-width: 1000px; }
-        .card { background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; text-align: center; cursor: pointer; transition: 0.3s; text-decoration: none; color: white; }
-        .card:hover { transform: translateY(-5px); border-color: #60a5fa; background: #2d3748; }
-        .card h3 { color: #60a5fa; margin-top: 0; }
-        .admin-tag { background: #e53e3e; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
+        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .menu { text-align: center; width: 90%; max-width: 400px; }
+        .btn { display: block; padding: 20px; margin: 15px 0; border-radius: 12px; text-decoration: none; color: white; font-size: 1.2em; font-weight: bold; transition: 0.3s; }
+        .admin-btn { background: #e74c3c; }
+        .display-btn { background: #2980b9; }
+        .player-btn { background: #27ae60; }
+        .btn:hover { opacity: 0.8; transform: translateY(-3px); }
     </style>
 </head>
 <body>
-    <h1>🌐 人生履歷：指揮中心</h1>
-    <div class="grid">
-        <a href="admin.html" target="_blank" class="card"><h3>資源主控台 <span class="admin-tag">ADMIN</span></h3><p>控制 10 人資源與即時排行</p></a>
-        <a href="shop-admin.html" target="_blank" class="card"><h3>商店管理 <span class="admin-tag">ADMIN</span></h3><p>設定商品價格與開關大門</p></a>
-        <a href="board.html" target="_blank" class="card"><h3>願景白板 <span class="admin-tag">ADMIN</span></h3><p>紀錄大事件與自由備註</p></a>
-        <a href="leaderboard.html" target="_blank" class="card"><h3>全場公告欄</h3><p>投影大螢幕顯示全體狀態</p></a>
-        <a href="player.html" target="_blank" class="card"><h3>玩家個人看板</h3><p>玩家監控自己數據的頁面</p></a>
-        <a href="shop-client.html" target="_blank" class="card"><h3>人生商店</h3><p>玩家購買人生機會的入口</p></a>
+    <div class="menu">
+        <h1>人生履歷 遊戲系統</h1>
+        <a href="admin.html" class="btn admin-btn">管理端 (密碼 1111)</a>
+        <a href="display.html" class="btn display-btn">顯示端 (大螢幕投影)</a>
+        <a href="player.html" class="btn player-btn">玩家端 (個人手機)</a>
     </div>
 </body>
 </html>
