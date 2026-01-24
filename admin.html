@@ -3,63 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全功能管理後台</title>
+    <title>全功能管理後台 (已加密)</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: white; padding: 10px; }
+        /* 密碼登入層 */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .auth-box { background: #2a2a2a; padding: 30px; border-radius: 15px; text-align: center; }
+        input[type="password"] { padding: 12px; border-radius: 8px; border: none; width: 200px; margin-bottom: 15px; font-size: 16px; }
+        
+        /* 原有樣式 */
+        .admin-content { display: none; } /* 預設隱藏 */
         .player-card { background: #1e1e1e; margin-bottom: 10px; padding: 15px; border-radius: 10px; border: 1px solid #333; }
         .res-row { display: grid; grid-template-columns: 1fr 2fr; align-items: center; margin: 5px 0; }
         .controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
         .val { font-family: monospace; font-size: 1.2em; color: #00d4ff; min-width: 30px; text-align: center; }
-        button { width: 35px; height: 35px; border-radius: 5px; border: none; background: #444; color: white; font-weight: bold; cursor: pointer; }
-        button:active { background: #666; }
+        button { padding: 8px 12px; border-radius: 5px; border: none; background: #444; color: white; cursor: pointer; }
+        .login-btn { background: #e74c3c; width: 100%; padding: 10px; font-weight: bold; }
         h3 { margin-top: 0; color: #ffd700; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .reset-btn { background: #c0392b; width: 100%; margin-top: 20px; font-size: 1em; }
     </style>
 </head>
 <body>
-    <h2>玩家資源管理 (1-10)</h2>
-    <div id="admin-list"></div>
+
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h2>管理員驗證</h2>
+            <input type="password" id="admin-pass" placeholder="請輸入管理密碼">
+            <button class="login-btn" onclick="checkPass()">登入控制台</button>
+        </div>
+    </div>
+
+    <div class="admin-content" id="admin-main">
+        <h2>玩家資源管理 (1-10)</h2>
+        <div id="admin-list"></div>
+        <button class="reset-btn" onclick="resetAll()">⚠️ 一鍵重置所有玩家資源</button>
+    </div>
 
     <script>
+        // 設定你的密碼
+        const MASTER_PASSWORD = "你的密碼123"; 
+
+        function checkPass() {
+            const input = document.getElementById('admin-pass').value;
+            if (input === MASTER_PASSWORD) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('admin-main').style.display = 'block';
+                initAdmin(); // 密碼正確才開始初始化 Firebase 連線
+            } else {
+                alert('密碼錯誤！');
+            }
+        }
+
         const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const resTypes = { gold: '金', wood: '木', water: '水', fire: '火', earth: '土' };
 
-        const listDiv = document.getElementById('admin-list');
-        for (let i = 1; i <= 10; i++) {
-            let resHtml = '';
-            Object.keys(resTypes).forEach(key => {
-                resHtml += `
-                    <div class="res-row">
-                        <span>${resTypes[key]}</span>
-                        <div class="controls">
-                            <button onclick="updatePRes(${i}, '${key}', -1)">-</button>
-                            <span class="val" id="p${i}-${key}">0</span>
-                            <button onclick="updatePRes(${i}, '${key}', 1)">+</button>
-                        </div>
-                    </div>`;
-            });
-
-            listDiv.innerHTML += `
-                <div class="player-card">
-                    <h3 id="p${i}-name">玩家 ${i}</h3>
-                    ${resHtml}
-                </div>`;
-            
-            // 監聽數據
-            db.ref(`players/p${i}`).on('value', s => {
-                const data = s.val() || {};
-                document.getElementById(`p${i}-name`).innerText = (data.name || '未加入') + ` (${i})`;
+        function initAdmin() {
+            const listDiv = document.getElementById('admin-list');
+            listDiv.innerHTML = ''; // 清空預防重刷
+            for (let i = 1; i <= 10; i++) {
+                let resHtml = '';
                 Object.keys(resTypes).forEach(key => {
-                    document.getElementById(`p${i}-${key}`).innerText = (data.res && data.res[key]) || 0;
+                    resHtml += `
+                        <div class="res-row">
+                            <span>${resTypes[key]}</span>
+                            <div class="controls">
+                                <button onclick="updatePRes(${i}, '${key}', -1)">-</button>
+                                <span class="val" id="p${i}-${key}">0</span>
+                                <button onclick="updatePRes(${i}, '${key}', 1)">+</button>
+                            </div>
+                        </div>`;
                 });
-            });
+
+                listDiv.innerHTML += `
+                    <div class="player-card">
+                        <h3 id="p${i}-name">玩家 ${i}</h3>
+                        ${resHtml}
+                    </div>`;
+                
+                db.ref(`players/p${i}`).on('value', s => {
+                    const data = s.val() || {};
+                    document.getElementById(`p${i}-name`).innerText = (data.name || '未加入') + ` (${i})`;
+                    Object.keys(resTypes).forEach(key => {
+                        document.getElementById(`p${i}-${key}`).innerText = (data.res && data.res[key]) || 0;
+                    });
+                });
+            }
         }
 
         function updatePRes(id, resKey, amt) {
             db.ref(`players/p${id}/res/${resKey}`).transaction(c => (c || 0) + amt);
+        }
+
+        // 新增：一鍵重置功能
+        function resetAll() {
+            if(confirm("確定要將所有玩家的資源歸零嗎？這無法撤銷！")) {
+                for(let i=1; i<=10; i++) {
+                    db.ref(`players/p${i}/res`).set({ gold: 0, wood: 0, water: 0, fire: 0, earth: 0 });
+                }
+                alert("已重置所有數據");
+            }
         }
     </script>
 </body>
