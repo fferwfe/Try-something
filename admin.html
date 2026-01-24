@@ -20,6 +20,7 @@
     </style>
 </head>
 <body>
+
     <div id="auth-overlay">
         <div class="auth-box">
             <h2>管理員驗證 (1111)</h2>
@@ -35,19 +36,24 @@
     </div>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        // 2. 初始化 Firebase
+        const firebaseConfig = { 
+            databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        // 更新資源名稱
         const resTypes = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
 
+        // 3. 定義 checkPass 函式 (必須確保這段代碼沒有語法錯誤)
         function checkPass() {
             const pass = document.getElementById('admin-pass').value.trim();
             if (pass === "1111") {
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('admin-main').style.display = 'block';
                 initAdmin();
-            } else { alert("密碼錯誤！"); }
+            } else { 
+                alert("密碼錯誤！"); 
+            }
         }
 
         function initAdmin() {
@@ -77,8 +83,15 @@
             }
         }
 
-        function updateP(id, k, v) { db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); }
-        function resetAll() { if(confirm("確定歸零所有玩家？")) { for(let i=1;i<=10;i++) db.ref(`players/p${i}/res`).set({time:0,money:0,health:0,knowledge:0,social:0}); } }
+        function updateP(id, k, v) { 
+            db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); 
+        }
+
+        function resetAll() { 
+            if(confirm("確定歸零所有玩家？")) { 
+                for(let i=1;i<=10;i++) db.ref(`players/p${i}/res`).set({time:0,money:0,health:0,knowledge:0,social:0}); 
+            } 
+        }
     </script>
 </body>
 </html>
