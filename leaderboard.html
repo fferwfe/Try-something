@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>人生履歷 - 全場即時公告欄</title>
+    <style>
+        :root {
+            --time: #60a5fa; --money: #fde047; --health: #4ade80; --knowledge: #c084fc; --social: #fb7185;
+        }
+        body { font-family: 'PingFang TC', sans-serif; background: #0f172a; color: white; padding: 20px; overflow-x: hidden; }
+        h1 { text-align: center; color: #60a5fa; font-size: 2.5rem; text-shadow: 0 0 15px rgba(96,165,250,0.5); margin-bottom: 30px; }
+        
+        .leaderboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 1200px; margin: auto; }
+        .player-row { background: #1e293b; padding: 15px; border-radius: 15px; border: 1px solid #334155; display: flex; align-items: center; transition: all 0.5s ease; }
+        
+        .rank-badge { width: 40px; height: 40px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; font-size: 20px; }
+        .p1 { background: #fde047; color: #000; box-shadow: 0 0 15px #fde047; }
+        
+        .info { flex: 1; }
+        .name-score { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
+        .total-score { font-size: 24px; font-weight: bold; color: #4ade80; }
+        
+        /* 迷你維度條 */
+        .bars-container { display: flex; gap: 4px; height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+        .bar { height: 100%; transition: width 0.5s ease; }
+        
+        .legend { display: flex; justify-content: center; gap: 20px; margin-top: 30px; font-size: 14px; color: #94a3b8; }
+        .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>🏆 人生履歷：即時狀態公告欄</h1>
+
+    <div class="leaderboard-grid" id="main-board">
+        </div>
+
+    <div class="legend">
+        <span><span class="dot" style="background:var(--time)"></span>時間</span>
+        <span><span class="dot" style="background:var(--money)"></span>金錢</span>
+        <span><span class="dot" style="background:var(--health)"></span>健康</span>
+        <span><span class="dot" style="background:var(--knowledge)"></span>知識</span>
+        <span><span class="dot" style="background:var(--social)"></span>人際</span>
+    </div>
+
+<script>
+    function updateBoard() {
+        const allData = JSON.parse(localStorage.getItem('lifeGameData') || '{}');
+        let players = [];
+
+        for(let i=1; i<=10; i++) {
+            const d = allData[i] || { time:50, money:50, health:50, knowledge:50, social:50 };
+            const total = parseInt(d.time) + parseInt(d.money) + parseInt(d.health) + parseInt(d.knowledge) + parseInt(d.social);
+            players.push({ id: i, data: d, total: total });
+        }
+
+        // 排序
+        players.sort((a, b) => b.total - a.total);
+
+        const container = document.getElementById('main-board');
+        container.innerHTML = players.map((p, index) => {
+            const rankClass = index === 0 ? 'p1' : '';
+            return `
+                <div class="player-row">
+                    <div class="rank-badge ${rankClass}">${index + 1}</div>
+                    <div class="info">
+                        <div class="name-score">
+                            <span style="font-size: 18px; font-weight: bold;">玩家 ${p.id}</span>
+                            <span class="total-score">${p.total}</span>
+                        </div>
+                        <div class="bars-container">
+                            <div class="bar" style="background:var(--time); width:${p.data.time/5}%"></div>
+                            <div class="bar" style="background:var(--money); width:${p.data.money/5}%"></div>
+                            <div class="bar" style="background:var(--health); width:${p.data.health/5}%"></div>
+                            <div class="bar" style="background:var(--knowledge); width:${p.data.knowledge/5}%"></div>
+                            <div class="bar" style="background:var(--social); width:${p.data.social/5}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    setInterval(updateBoard, 1000);
+    updateBoard();
+</script>
+</body>
+</html>
