@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>人生商店 - 玩家端</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .lock-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; transition: 0.5s; }
+        .lock-overlay.hide { opacity: 0; pointer-events: none; }
+        .container { width: 100%; max-width: 500px; }
+        .item-card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .btn-buy { background: #60a5fa; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .cost-label { font-size: 12px; background: #0f172a; padding: 2px 6px; border-radius: 4px; margin-right: 4px; color: #94a3b8; }
+        select { width: 100%; padding: 12px; background: #1e293b; color: white; border: 1px solid #60a5fa; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="lock" class="lock-overlay">
+    <div style="font-size: 60px;">🔒</div>
+    <h2>商店尚未開啟</h2>
+    <p>請等待主控者開啟最後階段...</p>
+</div>
+
+<div class="container">
+    <h1>🏪 人生機會商店</h1>
+    <label>我是哪位玩家？</label>
+    <select id="pid" onchange="localStorage.setItem('myShopId', this.value)">
+        <script>for(let i=1;i<=10;i++) document.write(`<option value="${i}">玩家 ${i}</option>`)</script>
+    </select>
+
+    <div id="shop-list"></div>
+</div>
+
+<script>
+    const savedId = localStorage.getItem('myShopId') || "1";
+    document.getElementById('pid').value = savedId;
+
+    function refresh() {
+        // 檢查門禁
+        const isOpen = localStorage.getItem('shopDoor') === 'open';
+        document.getElementById('lock').className = isOpen ? "lock-overlay hide" : "lock-overlay";
+
+        // 渲染商品
+        const items = JSON.parse(localStorage.getItem('shopInventory') || '[]');
+        const list = document.getElementById('shop-list');
+        if(items.length === 0) {
+            list.innerHTML = "<p style='text-align:center; color:#64748b;'>目前店內空空如也...</p>";
+            return;
+        }
+        list.innerHTML = items.map(item => {
+            const costHtml = item.costStr.split(',').map(c => `<span class="cost-label">${c.trim()}</span>`).join('');
+            return `
+                <div class="item-card">
+                    <div><b>${item.name}</b><br><div style="margin-top:5px;">${costHtml}</div></div>
+                    <button class="btn-buy" onclick="buy('${item.name}', '${item.costStr}')">購買</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function buy(name, costStr) {
+        const id = document.getElementById('pid').value;
+        let allData = JSON.parse(localStorage.getItem('lifeGameData') || '{}');
+        let pData = allData[id] || {time:50, money:50, health:50, knowledge:50, social:50};
+
+        const costs = costStr.split(',');
+        let canAfford = true;
+        let changes = {};
+
+        costs.forEach(c => {
+            const [dim, val] = c.split(':').map(s => s.trim());
+            const num = parseInt(val);
+            changes[dim] = num;
+            if(num < 0 && pData[dim] < Math.abs(num)) canAfford = false;
+        });
+
+        if(!canAfford) return alert("❌ 資源不足，無法購買！");
+
+        for(let dim in changes) {
+            pData[dim] = Math.max(0, Math.min(100, pData[dim] + changes[dim]));
+        }
+
+        allData[id] = pData;
+        localStorage.setItem('lifeGameData', JSON.stringify(allData));
+        alert(`✅ 購買成功：${name}`);
+    }
+
+    setInterval(refresh, 1000);
+    refresh();
+</script>
+</body>
+</html>
