@@ -4,44 +4,23 @@
     <meta charset="UTF-8">
     <title>人生履歷 - 指揮中心</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 800px; }
-        .card { background: #1e293b; padding: 30px; border-radius: 15px; border: 1px solid #334155; text-align: center; cursor: pointer; transition: 0.3s; text-decoration: none; color: white; }
-        .card:hover { transform: translateY(-5px); background: #2d3748; border-color: #60a5fa; }
-        .card h3 { margin-top: 0; color: #60a5fa; }
-        .card p { font-size: 14px; color: #94a3b8; }
-        .admin-tag { background: #e53e3e; font-size: 10px; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
+        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; width: 90%; max-width: 1000px; }
+        .card { background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; text-align: center; cursor: pointer; transition: 0.3s; text-decoration: none; color: white; }
+        .card:hover { transform: translateY(-5px); border-color: #60a5fa; background: #2d3748; }
+        .card h3 { color: #60a5fa; margin-top: 0; }
+        .admin-tag { background: #e53e3e; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
     </style>
 </head>
 <body>
-
-    <h1 style="margin-bottom: 40px;">🌐 人生履歷：系統指揮中心</h1>
-
+    <h1>🌐 人生履歷：指揮中心</h1>
     <div class="grid">
-        <a href="admin.html" target="_blank" class="card">
-            <h3>資源主控台 <span class="admin-tag">ADMIN</span></h3>
-            <p>控制 10 位玩家的五大維度數值與排行榜</p>
-        </a>
-
-        <a href="shop-admin.html" target="_blank" class="card">
-            <h3>商店後台管理 <span class="admin-tag">ADMIN</span></h3>
-            <p>設定商品、調整價格、控制商店大門開關</p>
-        </a>
-
-        <a href="player.html" target="_blank" class="card">
-            <h3>玩家個人看板</h3>
-            <p>顯示個人即時資源數據（適合給玩家看）</p>
-        </a>
-
-        <a href="shop-client.html" target="_blank" class="card">
-            <h3>人生機會商店</h3>
-            <p>最後階段開啟。玩家可用點數購買人生機會</p>
-        </a>
+        <a href="admin.html" target="_blank" class="card"><h3>資源主控台 <span class="admin-tag">ADMIN</span></h3><p>控制 10 人資源與即時排行</p></a>
+        <a href="shop-admin.html" target="_blank" class="card"><h3>商店管理 <span class="admin-tag">ADMIN</span></h3><p>設定商品價格與開關大門</p></a>
+        <a href="board.html" target="_blank" class="card"><h3>願景白板 <span class="admin-tag">ADMIN</span></h3><p>紀錄大事件與自由備註</p></a>
+        <a href="leaderboard.html" target="_blank" class="card"><h3>全場公告欄</h3><p>投影大螢幕顯示全體狀態</p></a>
+        <a href="player.html" target="_blank" class="card"><h3>玩家個人看板</h3><p>玩家監控自己數據的頁面</p></a>
+        <a href="shop-client.html" target="_blank" class="card"><h3>人生商店</h3><p>玩家購買人生機會的入口</p></a>
     </div>
-
-    <div style="margin-top: 40px; color: #64748b; font-size: 12px;">
-        提示：建議使用 Chrome 瀏覽器，並在同一台電腦上開啟以上頁面以確保數據同步。
-    </div>
-
 </body>
 </html>
