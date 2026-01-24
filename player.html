@@ -12,14 +12,14 @@
         select, input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         button { background: #27ae60; color: white; font-weight: bold; cursor: pointer; }
         .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .res-item { background: #333; padding: 15px; border-radius: 10px; border-top: 4px solid #444; }
-        .num { font-size: 2.2em; font-weight: bold; display: block; margin-top: 5px; }
+        .res-item { background: #333; padding: 15px; border-radius: 10px; border-top: 4px solid #00d4ff; }
+        .num { font-size: 2.2em; font-weight: bold; display: block; margin-top: 5px; color: #ffd700; }
         .hide { display: none; }
     </style>
 </head>
 <body>
     <div class="box" id="login">
-        <h2>登入號碼與名字</h2>
+        <h2>登入遊戲角色</h2>
         <select id="pid">
             <option value="1">1號玩家</option><option value="2">2號玩家</option>
             <option value="3">3號玩家</option><option value="4">4號玩家</option>
@@ -32,14 +32,13 @@
     </div>
 
     <div class="box hide" id="game">
-        <h1 id="me" style="color:#ffd700; margin:0;">---</h1>
-        <p style="font-size: 14px; color:#888;">我的五行資源盤</p>
+        <h1 id="me" style="color:#00d4ff; margin:0;">---</h1>
         <div class="res-grid">
-            <div class="res-item" style="border-color:#f1c40f; color:#f1c40f;">金 <span class="num" id="gold">0</span></div>
-            <div class="res-item" style="border-color:#2ecc71; color:#2ecc71;">木 <span class="num" id="wood">0</span></div>
-            <div class="res-item" style="border-color:#3498db; color:#3498db;">水 <span class="num" id="water">0</span></div>
-            <div class="res-item" style="border-color:#e74c3c; color:#e74c3c;">火 <span class="num" id="fire">0</span></div>
-            <div class="res-item" style="border-color:#deb887; color:#deb887;">土 <span class="num" id="earth">0</span></div>
+            <div class="res-item">時間 <span class="num" id="time">0</span></div>
+            <div class="res-item">金錢 <span class="num" id="money">0</span></div>
+            <div class="res-item">健康 <span class="num" id="health">0</span></div>
+            <div class="res-item">知識 <span class="num" id="knowledge">0</span></div>
+            <div class="res-item" style="grid-column: span 2;">人際 <span class="num" id="social">0</span></div>
         </div>
     </div>
 
@@ -56,7 +55,7 @@
             document.getElementById('login').classList.add('hide');
             document.getElementById('game').classList.remove('hide');
             document.getElementById('me').innerText = name;
-            ['gold','wood','water','fire','earth'].forEach(k => {
+            ['time','money','health','knowledge','social'].forEach(k => {
                 db.ref(`players/p${id}/res/${k}`).on('value', s => {
                     document.getElementById(k).innerText = s.val() || 0;
                 });
