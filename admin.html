@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理端 - 人生履歷</title>
+    <title>人生履歷-管理端</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: white; padding: 10px; text-align: center; margin: 0; }
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 1px solid #444; }
+        .auth-box { background: #222; padding: 35px; border-radius: 15px; border: 1px solid #444; }
         input { padding: 15px; font-size: 20px; width: 220px; margin-bottom: 20px; border-radius: 8px; border: none; text-align: center; }
         .login-btn { background: #e74c3c; color: white; padding: 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
         .admin-content { display: none; padding-bottom: 50px; }
@@ -22,8 +22,8 @@
 <body>
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2>管理員驗證</h2>
-            <input type="password" id="admin-pass" placeholder="輸入 1111">
+            <h2>管理員驗證 (1111)</h2>
+            <input type="password" id="admin-pass" placeholder="輸入密碼">
             <button class="login-btn" onclick="checkPass()">進入控制台</button>
         </div>
     </div>
@@ -31,11 +31,14 @@
     <div class="admin-content" id="admin-main">
         <h1>資源主控台</h1>
         <div id="admin-list"></div>
-        <button style="background:#c0392b; color:white; padding:15px; width:95%; max-width:500px; border:none; border-radius:8px; margin-top:20px; cursor:pointer;" onclick="resetAll()">⚠️ 一鍵歸零所有玩家</button>
+        <button style="background:#c0392b; color:white; padding:15px; width:95%; max-width:500px; border:none; border-radius:8px; margin-top:20px; cursor:pointer;" onclick="resetAll()">⚠️ 重置所有玩家</button>
     </div>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        // 關鍵修正：使用了 asia-southeast1 網址
+        const firebaseConfig = { 
+            databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const resTypes = { gold: '金', wood: '木', water: '水', fire: '火', earth: '土' };
@@ -62,22 +65,3 @@
                     </div></div>`;
                 });
                 html += `</div>`;
-                listDiv.innerHTML += html;
-                
-                db.ref(`players/p${i}`).on('value', s => {
-                    const d = s.val() || {};
-                    const nameTag = document.getElementById(`p${i}-name`);
-                    if(nameTag) nameTag.innerText = (d.name || '待加入') + ` (${i})`;
-                    Object.keys(resTypes).forEach(k => {
-                        const valTag = document.getElementById(`p${i}-${k}`);
-                        if(valTag) valTag.innerText = (d.res && d.res[k]) ? d.res[k] : 0;
-                    });
-                });
-            }
-        }
-
-        function updateP(id, k, v) { db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); }
-        function resetAll() { if(confirm("確定重置所有玩家？")) { for(let i=1;i<=10;i++) db.ref(`players/p${i}/res`).set({gold:0,wood:0,water:0,fire:0,earth:0}); } }
-    </script>
-</body>
-</html>
