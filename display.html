@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>全體資源戰報</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; padding: 20px; }
+        .board { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .p-row { background: #111; border: 1px solid #333; padding: 15px; border-radius: 12px; display: flex; align-items: center; }
+        .name-tag { width: 100px; font-size: 1.2em; color: #ffd700; font-weight: bold; overflow: hidden; }
+        .res-display { flex: 1; display: flex; justify-content: space-around; }
+        .res-v { text-align: center; }
+        .res-v span { display: block; font-size: 0.8em; color: #888; }
+        .res-v b { font-size: 1.5em; }
+        /* 顏色標記 */
+        .c-gold { color: #f1c40f; } .c-wood { color: #2ecc71; } 
+        .c-water { color: #3498db; } .c-fire { color: #e74c3c; } .c-earth { color: #deb887; }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center">《人生履歷》資源即時統計</h1>
+    <div class="board" id="board"></div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const resTypes = { gold: '金', wood: '木', water: '水', fire: '火', earth: '土' };
+
+        const board = document.getElementById('board');
+        for (let i = 1; i <= 10; i++) {
+            board.innerHTML += `
+                <div class="p-row">
+                    <div class="name-tag" id="d${i}-name">待加入</div>
+                    <div class="res-display">
+                        ${Object.keys(resTypes).map(k => `
+                            <div class="res-v c-${k}"><span>${resTypes[k]}</span><b id="d${i}-${k}">0</b></div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            
+            db.ref(`players/p${i}`).on('value', s => {
+                const data = s.val() || {};
+                document.getElementById(`d${i}-name`).innerText = data.name || '---';
+                Object.keys(resTypes).forEach(k => {
+                    document.getElementById(`d${i}-${k}`).innerText = (data.res && data.res[k]) || 0;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
