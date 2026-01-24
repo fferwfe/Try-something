@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人生履歷-管理端</title>
+    <title>人生履歷-管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
@@ -30,32 +30,35 @@
     </div>
 
     <div class="admin-content" id="admin-main">
-        <h1>人生履歷資源主控台</h1>
+        <h1>資源主控台</h1>
         <div id="admin-list"></div>
         <button style="background:#c0392b; color:white; padding:15px; width:95%; max-width:500px; border:none; border-radius:8px; margin-top:20px; cursor:pointer;" onclick="resetAll()">⚠️ 一鍵歸零所有玩家</button>
     </div>
 
     <script>
-        // 2. 初始化 Firebase
+        // 設定亞洲伺服器
         const firebaseConfig = { 
             databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" 
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
+        // 更新資源類別
         const resTypes = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
 
-        // 3. 定義 checkPass 函式 (必須確保這段代碼沒有語法錯誤)
+        // 登入驗證函式
         function checkPass() {
-            const pass = document.getElementById('admin-pass').value.trim();
-            if (pass === "1111") {
+            const passInput = document.getElementById('admin-pass');
+            if (passInput && passInput.value.trim() === "1111") {
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('admin-main').style.display = 'block';
                 initAdmin();
             } else { 
-                alert("密碼錯誤！"); 
+                alert("密碼錯誤！請輸入 1111"); 
             }
         }
 
+        // 初始化玩家列表
         function initAdmin() {
             const listDiv = document.getElementById('admin-list');
             listDiv.innerHTML = "";
@@ -71,10 +74,12 @@
                 html += `</div>`;
                 listDiv.innerHTML += html;
                 
-                db.ref(`players/p${i}`).on('value', s => {
+                // 監聽數據變化
+                db.ref(`players/p${i}`).on('value', (s) => {
                     const d = s.val() || {};
                     const nameTag = document.getElementById(`p${i}-name`);
                     if(nameTag) nameTag.innerText = (d.name || '待加入') + ` (${i})`;
+                    
                     Object.keys(resTypes).forEach(k => {
                         const valTag = document.getElementById(`p${i}-${k}`);
                         if(valTag) valTag.innerText = (d.res && d.res[k]) ? d.res[k] : 0;
@@ -83,13 +88,17 @@
             }
         }
 
+        // 更新數據函式
         function updateP(id, k, v) { 
             db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); 
         }
 
+        // 一鍵重置
         function resetAll() { 
-            if(confirm("確定歸零所有玩家？")) { 
-                for(let i=1;i<=10;i++) db.ref(`players/p${i}/res`).set({time:0,money:0,health:0,knowledge:0,social:0}); 
+            if(confirm("確定歸零所有玩家嗎？")) { 
+                for(let i=1; i<=10; i++) {
+                    db.ref(`players/p${i}/res`).set({time:0, money:0, health:0, knowledge:0, social:0}); 
+                }
             } 
         }
     </script>
