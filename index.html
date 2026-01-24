@@ -2,26 +2,46 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人生履歷 - 系統入口</title>
+    <title>人生履歷 - 指揮中心</title>
     <style>
-        body { font-family: 'PingFang TC', sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .menu { text-align: center; width: 90%; max-width: 400px; }
-        .btn { display: block; padding: 20px; margin: 15px 0; border-radius: 12px; text-decoration: none; color: white; font-size: 1.2em; font-weight: bold; transition: 0.3s; }
-        .admin-btn { background: #e74c3c; }
-        .display-btn { background: #2980b9; }
-        .player-btn { background: #27ae60; }
-        .btn:hover { opacity: 0.8; transform: translateY(-3px); }
-        p { color: #888; font-size: 0.9em; }
+        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 800px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 15px; border: 1px solid #334155; text-align: center; cursor: pointer; transition: 0.3s; text-decoration: none; color: white; }
+        .card:hover { transform: translateY(-5px); background: #2d3748; border-color: #60a5fa; }
+        .card h3 { margin-top: 0; color: #60a5fa; }
+        .card p { font-size: 14px; color: #94a3b8; }
+        .admin-tag { background: #e53e3e; font-size: 10px; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <h1>人生履歷 遊戲系統</h1>
-        <a href="admin.html" class="btn admin-btn">管理端 (工作人員使用)</a>
-        <a href="display.html" class="btn display-btn">顯示端 (投影大螢幕)</a>
-        <a href="player.html" class="btn player-btn">玩家端 (個人手機使用)</a>
-        <p>請確保已在 Firebase 開啟讀寫權限</p>
+
+    <h1 style="margin-bottom: 40px;">🌐 人生履歷：系統指揮中心</h1>
+
+    <div class="grid">
+        <a href="admin.html" target="_blank" class="card">
+            <h3>資源主控台 <span class="admin-tag">ADMIN</span></h3>
+            <p>控制 10 位玩家的五大維度數值與排行榜</p>
+        </a>
+
+        <a href="shop-admin.html" target="_blank" class="card">
+            <h3>商店後台管理 <span class="admin-tag">ADMIN</span></h3>
+            <p>設定商品、調整價格、控制商店大門開關</p>
+        </a>
+
+        <a href="player.html" target="_blank" class="card">
+            <h3>玩家個人看板</h3>
+            <p>顯示個人即時資源數據（適合給玩家看）</p>
+        </a>
+
+        <a href="shop-client.html" target="_blank" class="card">
+            <h3>人生機會商店</h3>
+            <p>最後階段開啟。玩家可用點數購買人生機會</p>
+        </a>
     </div>
+
+    <div style="margin-top: 40px; color: #64748b; font-size: 12px;">
+        提示：建議使用 Chrome 瀏覽器，並在同一台電腦上開啟以上頁面以確保數據同步。
+    </div>
+
 </body>
 </html>
