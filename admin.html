@@ -3,106 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理後台 - 修正版</title>
+    <title>管理端 - 人生履歷</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 10px; margin: 0; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-box { background: #2a2a2a; padding: 30px; border-radius: 15px; text-align: center; }
-        input[type="password"] { padding: 12px; border-radius: 8px; border: 1px solid #444; width: 200px; margin-bottom: 15px; font-size: 20px; text-align: center; }
-        .admin-content { display: none; padding: 10px; }
-        .player-card { background: #1e1e1e; margin-bottom: 15px; padding: 15px; border-radius: 10px; border-left: 5px solid #ffd700; }
-        .res-row { display: grid; grid-template-columns: 1fr 2fr; align-items: center; margin: 8px 0; }
-        .controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-        .val { font-family: monospace; font-size: 1.4em; color: #00d4ff; min-width: 40px; text-align: center; }
-        button { padding: 10px 15px; border-radius: 5px; border: none; background: #444; color: white; cursor: pointer; font-weight: bold; }
-        .login-btn { background: #e74c3c; width: 100%; height: 50px; font-size: 18px; }
-        .reset-btn { background: #c0392b; width: 100%; margin: 30px 0; padding: 15px; }
+        body { font-family: sans-serif; background: #121212; color: white; padding: 10px; text-align: center; margin: 0; }
+        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .auth-box { background: #222; padding: 40px; border-radius: 15px; border: 1px solid #444; }
+        input { padding: 15px; font-size: 20px; width: 220px; margin-bottom: 20px; border-radius: 8px; border: none; text-align: center; }
+        .login-btn { background: #e74c3c; color: white; padding: 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
+        .admin-content { display: none; padding-bottom: 50px; }
+        .player-card { background: #1e1e1e; margin: 15px auto; padding: 15px; border-radius: 10px; max-width: 500px; border-left: 5px solid #ffd700; text-align: left; }
+        .res-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+        .val { color: #00d4ff; font-weight: bold; font-size: 1.4em; min-width: 40px; text-align: center; }
+        .ctrl-btn { background: #444; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2>管理員驗證 (1111)</h2>
-            <input type="password" id="admin-pass" placeholder="請輸入密碼" autocomplete="off">
-            <button class="login-btn" onclick="checkPass()">登入控制台</button>
+            <h2>管理員驗證</h2>
+            <input type="password" id="admin-pass" placeholder="輸入 1111">
+            <button class="login-btn" onclick="checkPass()">進入控制台</button>
         </div>
     </div>
 
     <div class="admin-content" id="admin-main">
-        <h2 style="text-align:center">資源主控台</h2>
+        <h1>資源主控台</h1>
         <div id="admin-list"></div>
-        <button class="reset-btn" onclick="resetAll()">⚠️ 一鍵重置所有玩家數據</button>
+        <button style="background:#c0392b; color:white; padding:15px; width:95%; max-width:500px; border:none; border-radius:8px; margin-top:20px; cursor:pointer;" onclick="resetAll()">⚠️ 一鍵歸零所有玩家</button>
     </div>
 
     <script>
-        // 核心設定
-        const MASTER_PASSWORD = "1111"; 
-        const firebaseConfig = { 
-            databaseURL: "https://try-something-ddd1e-default-rtdb.firebaseio.com" 
-        };
-        
+        const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const resTypes = { gold: '金', wood: '木', water: '水', fire: '火', earth: '土' };
 
-        // 密碼驗證邏輯
         function checkPass() {
-            const inputField = document.getElementById('admin-pass');
-            const inputVal = inputField.value.trim(); // 去除前後空白
-            
-            if (inputVal === MASTER_PASSWORD) {
+            const pass = document.getElementById('admin-pass').value.trim();
+            if (pass === "1111") {
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('admin-main').style.display = 'block';
                 initAdmin();
-            } else {
-                alert("密碼錯誤！\n您輸入的是: [" + inputVal + "]\n預期的是: [1111]");
-                inputField.value = ""; // 清空輸入框
-            }
+            } else { alert("密碼錯誤！"); }
         }
 
         function initAdmin() {
             const listDiv = document.getElementById('admin-list');
-            listDiv.innerHTML = ""; 
+            listDiv.innerHTML = "";
             for (let i = 1; i <= 10; i++) {
-                let resHtml = '';
-                Object.keys(resTypes).forEach(key => {
-                    resHtml += `
-                        <div class="res-row">
-                            <span>${resTypes[key]}</span>
-                            <div class="controls">
-                                <button onclick="updatePRes(${i}, '${key}', -1)">-</button>
-                                <span class="val" id="p${i}-${key}">0</span>
-                                <button onclick="updatePRes(${i}, '${key}', 1)">+</button>
-                            </div>
-                        </div>`;
+                let html = `<div class="player-card"><h3 id="p${i}-name">玩家 ${i}</h3>`;
+                Object.keys(resTypes).forEach(k => {
+                    html += `<div class="res-row"><span>${resTypes[k]}</span><div>
+                        <button class="ctrl-btn" onclick="updateP(${i},'${k}',-1)">-</button>
+                        <span class="val" id="p${i}-${k}">0</span>
+                        <button class="ctrl-btn" onclick="updateP(${i},'${k}',1)">+</button>
+                    </div></div>`;
                 });
-                listDiv.innerHTML += `<div class="player-card"><h3 id="p${i}-name">玩家 ${i}</h3>${resHtml}</div>`;
+                html += `</div>`;
+                listDiv.innerHTML += html;
                 
                 db.ref(`players/p${i}`).on('value', s => {
                     const d = s.val() || {};
-                    document.getElementById(`p${i}-name`).innerText = (d.name || '未加入') + ` (${i})`;
+                    const nameTag = document.getElementById(`p${i}-name`);
+                    if(nameTag) nameTag.innerText = (d.name || '待加入') + ` (${i})`;
                     Object.keys(resTypes).forEach(k => {
-                        const val = (d.res && d.res[k]) ? d.res[k] : 0;
-                        document.getElementById(`p${i}-${k}`).innerText = val;
+                        const valTag = document.getElementById(`p${i}-${k}`);
+                        if(valTag) valTag.innerText = (d.res && d.res[k]) ? d.res[k] : 0;
                     });
                 });
             }
         }
 
-        function updatePRes(id, k, v) { 
-            db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); 
-        }
-
-        function resetAll() {
-            if(confirm("確定歸零所有玩家資源？")) {
-                for(let i=1; i<=10; i++) {
-                    db.ref(`players/p${i}/res`).set({gold:0, wood:0, water:0, fire:0, earth:0});
-                }
-            }
-        }
+        function updateP(id, k, v) { db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); }
+        function resetAll() { if(confirm("確定重置所有玩家？")) { for(let i=1;i<=10;i++) db.ref(`players/p${i}/res`).set({gold:0,wood:0,water:0,fire:0,earth:0}); } }
     </script>
 </body>
 </html>
