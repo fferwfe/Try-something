@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人資源盤 - 活潑更新版</title>
+    <title>個人資源盤 - 終極整合版</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* 活潑風全域設定 */
+        /* 活潑風配色 */
         body { 
             font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; 
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); 
@@ -22,155 +22,239 @@
         }
         h2 { color: #ff6b6b; font-weight: 800; margin-top: 0; }
         
-        /* 資源網格 */
-        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-        .res-item { 
-            background: #fff; padding: 15px; border-radius: 20px; 
-            border: 2px solid #f1f2f6; transition: transform 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        /* 跑馬燈公告欄位 */
+        #notice-bar {
+            background: #6c5ce7; color: white; border-radius: 20px;
+            margin-bottom: 15px; display: none; overflow: hidden; position: relative;
         }
-        .res-item:active { transform: scale(0.95); }
+        .marquee-container { padding: 12px; white-space: nowrap; overflow: hidden; }
+        #notice-text { display: inline-block; padding-left: 100%; animation: marquee-play 10s linear infinite; font-weight: bold; }
+        @keyframes marquee-play { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* 獨立計時器 */
+        #timer-display { 
+            background: #e74c3c; color: white; padding: 8px 20px; 
+            border-radius: 15px; display: inline-block; margin-bottom: 15px; 
+            font-weight: 900; font-size: 1.8em; letter-spacing: 2px;
+        }
+
+        /* 資源顯示區 */
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .res-item { background: #fff; padding: 15px; border-radius: 20px; border: 2px solid #f1f2f6; }
         .res-item i { font-size: 1.4em; margin-bottom: 8px; display: block; }
         .num { font-size: 2.2em; font-weight: 900; display: block; }
 
-        /* 活潑五色 */
+        /* 中文資源配色與新增「分數」格 */
         .c-time { border-color: #a29bfe; color: #6c5ce7; }
         .c-money { border-color: #ffeaa7; color: #f39c12; }
         .c-health { border-color: #ff7675; color: #d63031; }
         .c-knowledge { border-color: #74b9ff; color: #0984e3; }
         .c-social { border-color: #55efc4; color: #00b894; }
+        .c-score { border-color: #ffd700; color: #f39c12; } /* 分數配色 */
 
-        .chart-container { 
-            background: #fff; border-radius: 25px; padding: 15px; 
-            margin: 20px 0; border: 2px solid #f1f2f6;
+        /* 人生背包清單 */
+        .inv-item { 
+            background: #e1f5fe; padding: 8px 15px; border-radius: 15px; 
+            border: 2px solid #3498db; font-weight: bold; color: #0277bd; 
+            margin: 5px; display: inline-block; font-size: 0.9em;
         }
 
-        /* 商店設計 */
-        .shop-card { 
-            background: #f8f9fa; padding: 18px; border-radius: 20px; 
-            margin-top: 15px; text-align: left; border-left: 6px solid #6c5ce7; 
-            position: relative;
-        }
-        .btn-buy { 
-            background: linear-gradient(135deg, #6c5ce7, #a29bfe); 
-            color: white; padding: 10px 15px; border-radius: 12px; 
-            border: none; cursor: pointer; font-weight: bold; width: 100%;
-            margin-top: 10px; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
-        }
-        
-        .hide { display: none; }
-        select, input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; }
-        #me { color: #6c5ce7; font-size: 1.8em; font-weight: 900; margin-bottom: 10px; }
+        /* 商店樣式 */
+        .shop-card { background: #f8f9fa; padding: 18px; border-radius: 20px; margin-top: 15px; text-align: left; border-left: 6px solid #6c5ce7; }
+        .shop-btn { background: #6c5ce7; color: white; width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        .hide { display: none !important; }
+        select, input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; }
+        #join-btn { background: #00b894; color: white; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
+    <div id="event-overlay" class="hide">
+        <div class="box" style="border: 5px solid #ff7675;">
+            <h1 style="color:#ff7675;"><i class="fas fa-bolt"></i> 突發事件！</h1>
+            <p id="event-text" style="font-size:1.2em; font-weight:bold; margin: 20px 0;"></p>
+            <button onclick="document.getElementById('event-overlay').classList.add('hide')" style="background:#ff7675;">收到了！</button>
+        </div>
+    </div>
+
     <div class="box" id="login">
-        <h2><i class="fas fa-smile-beam"></i> 準備好了嗎？</h2>
+        <h2>角色登入</h2>
         <select id="pid">
-            <option value="1">1 號</option><option value="2">2 號</option>
-            <option value="3">3 號</option><option value="4">4 號</option>
-            <option value="5">5 號</option><option value="6">6 號</option>
-            <option value="7">7 號</option><option value="8">8 號</option>
-            <option value="9">9 號</option><option value="10">10 號</option>
+            <option value="1">1號玩家</option><option value="2">2號玩家</option><option value="3">3號玩家</option><option value="4">4號玩家</option><option value="5">5號玩家</option><option value="6">6號玩家</option><option value="7">7號玩家</option><option value="8">8號玩家</option><option value="9">9號玩家</option><option value="10">10號玩家</option>
         </select>
-        <input type="text" id="pname" placeholder="請輸入你的超酷暱稱">
-        <button onclick="join()" style="width:100%; background:#00b894; color:white; padding:15px; border-radius:15px; border:none; font-weight:bold; font-size:1.1em; cursor:pointer;">開始遊戲之旅</button>
+        <input type="text" id="pname" placeholder="輸入你的暱稱">
+        <button id="join-btn" onclick="join()">開始遊戲</button>
     </div>
 
     <div class="box hide" id="game">
-        <h2 id="me">---</h2>
-        <div id="msg" style="min-height:24px; font-weight:bold; margin-bottom:10px;"></div>
-        
-        <div class="chart-container">
-            <canvas id="radarChart"></canvas>
-        </div>
+        <div id="notice-bar"><div class="marquee-container"><span id="notice-text"></span></div></div>
+        <div id="timer-display">00:00</div>
+        <h2 id="me" style="color:#6c5ce7; margin-bottom:10px;">---</h2>
+        <canvas id="radarChart" style="margin-bottom:15px;"></canvas>
 
         <div class="res-grid">
-            <div class="res-item c-time"><i class="fas fa-clock"></i> 時間 <span id="time" class="num">0</span></div>
-            <div class="res-item c-money"><i class="fas fa-wallet"></i> 金錢 <span id="money" class="num">0</span></div>
-            <div class="res-item c-health"><i class="fas fa-heartbeat"></i> 健康 <span id="health" class="num">0</span></div>
-            <div class="res-item c-knowledge"><i class="fas fa-book"></i> 知識 <span id="knowledge" class="num">0</span></div>
-            <div class="res-item c-social" style="grid-column: span 2;"><i class="fas fa-users"></i> 人際 <span id="social" class="num">0</span></div>
+            <div class="res-item c-time"><i class="fas fa-clock"></i> 時間 <span class="num" id="time">0</span></div>
+            <div class="res-item c-money"><i class="fas fa-wallet"></i> 金錢 <span class="num" id="money">0</span></div>
+            <div class="res-item c-health"><i class="fas fa-heartbeat"></i> 健康 <span class="num" id="health">0</span></div>
+            <div class="res-item c-knowledge"><i class="fas fa-book"></i> 知識 <span class="num" id="knowledge">0</span></div>
+            <div class="res-item c-social"><i class="fas fa-users"></i> 人際 <span id="social" class="num">0</span></div>
+            <div class="res-item c-score"><i class="fas fa-star"></i> 分數 <span id="score" class="num">0</span></div>
+        </div>
+
+        <div class="box" style="margin-top: 20px; border-top: 5px solid #3498db; background:#fafafa; padding: 15px;">
+            <h3><i class="fas fa-briefcase"></i> 已獲得的人生清單</h3>
+            <div id="inventory-list" style="min-height: 40px;"></div>
         </div>
 
         <h3 style="margin-top:30px; color:#636e72;"><i class="fas fa-shopping-cart"></i> 驚喜商店</h3>
-        <div id="shop-display"></div>
+        <div id="shop-msg"></div> <div id="shop-display"></div>
     </div>
 
     <script>
         const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const resNames = { time:'時間', money:'金錢', health:'健康', knowledge:'知識', social:'人際' };
-        let myRes = { time:0, money:0, health:0, knowledge:0, social:0 };
-        let myId = "";
-        let radarChart;
+        const resNames = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際', score: '分數' };
+        let myId, myRes = {}, radarChart;
 
-        function initChart() {
+        function join() {
+            myId = document.getElementById('pid').value;
+            const name = document.getElementById('pname').value;
+            if(!name) return alert("請輸入暱稱");
+            db.ref(`players/p${myId}`).update({ name: name });
+            document.getElementById('login').classList.add('hide');
+            document.getElementById('game').classList.remove('hide');
+            document.getElementById('me').innerText = name;
+            initRadar();
+            syncData();
+        }
+
+        function initRadar() {
             const ctx = document.getElementById('radarChart').getContext('2d');
             radarChart = new Chart(ctx, {
                 type: 'radar',
                 data: {
                     labels: ['時間', '金錢', '健康', '知識', '人際'],
                     datasets: [{
-                        label: '能力分佈',
                         data: [0, 0, 0, 0, 0],
                         backgroundColor: 'rgba(108, 92, 231, 0.2)',
                         borderColor: '#6c5ce7',
-                        pointBackgroundColor: '#ff7675',
-                        pointRadius: 4
+                        pointBackgroundColor: '#ff7675'
                     }]
                 },
                 options: {
-                    scales: { r: { beginAtZero: true, grid: { color: '#eee' }, ticks: { display: false } } },
+                    scales: { r: { beginAtZero: true, ticks: { display: false } } },
                     plugins: { legend: { display: false } }
                 }
             });
         }
 
-        function join() {
-            myId = document.getElementById('pid').value;
-            const name = document.getElementById('pname').value;
-            if(!name) return alert("要取名字才能出發喔！");
-            db.ref(`players/p${myId}`).update({ name: name });
-            document.getElementById('login').classList.add('hide');
-            document.getElementById('game').classList.remove('hide');
-            document.getElementById('me').innerText = name;
-            initChart();
-
-            Object.keys(resNames).forEach(k => {
+        function syncData() {
+            // 同步六大資源 (含分數與管理端修改)
+            const keys = ['time','money','health','knowledge','social','score'];
+            keys.forEach(k => {
                 db.ref(`players/p${myId}/res/${k}`).on('value', s => {
                     myRes[k] = s.val() || 0;
-                    document.getElementById(k).innerText = myRes[k];
+                    const el = document.getElementById(k);
+                    if(el) el.innerText = myRes[k];
+                    // 雷達圖僅維持顯示五大基礎資源
                     radarChart.data.datasets[0].data = [myRes.time, myRes.money, myRes.health, myRes.knowledge, myRes.social];
                     radarChart.update();
                 });
             });
 
-            db.ref('shopSettings/isOpen').on('value', s => {
-                const isOpen = s.val();
-                document.getElementById('shop-display').style.opacity = isOpen ? "1" : "0.3";
-                document.getElementById('shop-display').style.pointerEvents = isOpen ? "auto" : "none";
-                document.getElementById('msg').innerText = isOpen ? "" : "🏪 商店午休中...";
+            // 監聽人生背包 (Inventory)
+            db.ref(`players/p${myId}/inventory`).on('value', s => {
+                const list = document.getElementById('inventory-list');
+                list.innerHTML = "";
+                const data = s.val();
+                if(!data) { list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>"; return; }
+                for(let key in data) { list.innerHTML += `<div class="inv-item">✨ ${data[key].name}</div>`; }
             });
 
+            // 廣播公告與跑馬燈
+            db.ref('broadcast').on('value', s => {
+                const d = s.val();
+                const bar = document.getElementById('notice-bar');
+                const text = document.getElementById('notice-text');
+                if (d && d.message && d.message.trim() !== "") {
+                    bar.style.display = "block";
+                    text.innerText = "📢 " + d.message;
+                    text.style.animation = 'none'; text.offsetHeight; text.style.animation = null;
+                } else { bar.style.display = "none"; }
+            });
+
+            // 計時器同步
+            db.ref('timerSync').on('value', s => {
+                const d = s.val();
+                if (d) {
+                    const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
+                    const sc = (d.timeLeft % 60).toString().padStart(2, '0');
+                    const timerDisp = document.getElementById('timer-display');
+                    timerDisp.innerText = `${m}:${sc}`;
+                    timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
+                }
+            });
+
+            // 商店開關監聽
+            db.ref('shopSettings/isOpen').on('value', s => {
+                const isOpen = s.val() || false;
+                const display = document.getElementById('shop-display');
+                const msg = document.getElementById('shop-msg');
+                if(!isOpen) {
+                    display.style.opacity = "0.3"; display.style.pointerEvents = "none";
+                    msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
+                } else {
+                    display.style.opacity = "1"; display.style.pointerEvents = "auto";
+                    msg.innerText = "";
+                }
+            });
+
+            // 商店清單與分數獎勵顯示
             db.ref('shop/items').on('value', s => {
                 const list = document.getElementById('shop-display');
                 list.innerHTML = "";
                 const data = s.val();
                 for(let key in data) {
                     const item = data[key];
-                    let costs = Object.keys(resNames).map(k => item.cost[k] > 0 ? `${resNames[k]}:${item.cost[k]}` : '').filter(v => v !== '').join(' ');
-                    list.innerHTML += `<div class="shop-card"><strong>${item.name}</strong><br><small>代價: ${costs || '免費'}</small><br>
-                        <button class="btn-buy" onclick='buy("${item.name}", ${JSON.stringify(item.cost)})'>手刀購買</button></div>`;
+                    let costText = Object.keys(resNames).map(k => (item.cost && item.cost[k]>0)?`${resNames[k]}:${item.cost[k]}`:'').filter(t=>t!=='').join(' ');
+                    list.innerHTML += `
+                        <div class="shop-card">
+                            <strong>${item.name}</strong> 
+                            ${item.bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${item.bonus}</span>` : ''}
+                            <br><small>代價: ${costText||'免費'}</small>
+                            <button class="shop-btn" onclick='processBuy("${item.name}", ${JSON.stringify(item.cost)}, ${item.bonus || 0})'>確認購買</button>
+                        </div>`;
+                }
+            });
+
+            // 突發事件監聽
+            db.ref('currentEvent').on('value', s => {
+                const d = s.val();
+                if(d && d.target == myId) {
+                    document.getElementById('event-text').innerText = d.message;
+                    document.getElementById('event-overlay').classList.remove('hide');
                 }
             });
         }
 
-        function buy(name, cost) {
-            for(let k in cost) { if((myRes[k]||0) < cost[k]) return alert(`哎呀！你的「${resNames[k]}」不夠喔！`); }
-            if(confirm(`準備好帶走「${name}」了嗎？`)) {
-                for(let k in cost) db.ref(`players/p${myId}/res/${k}`).set(myRes[k] - cost[k]);
+        // 修改購買邏輯：整合物品入庫與自動加分
+        function processBuy(name, cost, bonus) {
+            for(let k in cost) { if((myRes[k]||0) < cost[k]) return alert(`❌ 你的「${resNames[k]}」不足！`); }
+            
+            if(confirm(`準備好購買「${name}」了嗎？`)) {
+                // 1. 扣除資源成本
+                for(let k in cost) { db.ref(`players/p${myId}/res/${k}`).set(myRes[k] - cost[k]); }
+                
+                // 2. 物品寫入人生背包 (Inventory)
+                db.ref(`players/p${myId}/inventory`).push({ name: name, time: Date.now() });
+                
+                // 3. 自動增加獎勵分數
+                if(bonus > 0) {
+                    db.ref(`players/p${myId}/res/score`).transaction(current => (current || 0) + bonus);
+                }
+                
+                alert(`🎉 成功獲得「${name}」！${bonus > 0 ? `並額外獲得 ${bonus} 分！` : ''}`);
             }
         }
     </script>
