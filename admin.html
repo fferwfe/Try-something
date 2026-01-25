@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人生履歷-管理系統</title>
+    <title>人生履歷-進階管理端</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
@@ -13,14 +13,23 @@
         input { padding: 15px; font-size: 20px; width: 220px; margin-bottom: 20px; border-radius: 8px; border: none; text-align: center; }
         .login-btn { background: #e74c3c; color: white; padding: 15px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; width: 100%; }
         .admin-content { display: none; padding-bottom: 50px; }
-        .player-card { background: #1e1e1e; margin: 15px auto; padding: 15px; border-radius: 10px; max-width: 500px; border-left: 5px solid #00d4ff; text-align: left; }
-        .res-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
-        .val { color: #ffd700; font-weight: bold; font-size: 1.4em; min-width: 40px; text-align: center; }
-        .ctrl-btn { background: #444; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 20px; cursor: pointer; }
+        
+        .player-card { background: #1e1e1e; margin: 15px auto; padding: 15px; border-radius: 10px; max-width: 600px; border-left: 5px solid #00d4ff; text-align: left; position: relative; }
+        .res-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .val { color: #ffd700; font-weight: bold; font-size: 1.4em; min-width: 45px; text-align: center; }
+        
+        /* 按鈕樣式 */
+        .btn-group { display: flex; gap: 5px; }
+        .ctrl-btn { background: #444; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 14px; cursor: pointer; }
+        .plus { background: #27ae60; }
+        .minus { background: #c0392b; }
+        .clear-p-btn { position: absolute; right: 15px; top: 15px; background: #8e44ad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        
+        .global-controls { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .reset-btn { width: 95%; max-width: 500px; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
     </style>
 </head>
 <body>
-
     <div id="auth-overlay">
         <div class="auth-box">
             <h2>管理員驗證 (1111)</h2>
@@ -30,56 +39,61 @@
     </div>
 
     <div class="admin-content" id="admin-main">
-        <h1>資源主控台</h1>
+        <h1>人生履歷資源主控台</h1>
+        
         <div id="admin-list"></div>
-        <button style="background:#c0392b; color:white; padding:15px; width:95%; max-width:500px; border:none; border-radius:8px; margin-top:20px; cursor:pointer;" onclick="resetAll()">⚠️ 一鍵歸零所有玩家</button>
+
+        <div class="global-controls">
+            <button class="reset-btn" style="background: #f39c12;" onclick="resetAllResOnly()">清空「所有玩家」資源（保留名字）</button>
+            <button class="reset-btn" style="background: #c0392b;" onclick="resetEverything()">徹底重置「整個系統」（含名字與資源）</button>
+        </div>
     </div>
 
     <script>
-        // 設定亞洲伺服器
-        const firebaseConfig = { 
-            databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" 
-        };
+        const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        // 更新資源類別
         const resTypes = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
 
-        // 登入驗證函式
         function checkPass() {
-            const passInput = document.getElementById('admin-pass');
-            if (passInput && passInput.value.trim() === "1111") {
+            const pass = document.getElementById('admin-pass').value.trim();
+            if (pass === "1111") {
                 document.getElementById('auth-overlay').style.display = 'none';
                 document.getElementById('admin-main').style.display = 'block';
                 initAdmin();
-            } else { 
-                alert("密碼錯誤！請輸入 1111"); 
-            }
+            } else { alert("密碼錯誤！"); }
         }
 
-        // 初始化玩家列表
         function initAdmin() {
             const listDiv = document.getElementById('admin-list');
             listDiv.innerHTML = "";
             for (let i = 1; i <= 10; i++) {
-                let html = `<div class="player-card"><h3 id="p${i}-name">玩家 ${i}</h3>`;
+                let html = `
+                <div class="player-card">
+                    <button class="clear-p-btn" onclick="clearSinglePlayer(${i})">徹底清除此玩家</button>
+                    <h3 id="p${i}-name">玩家 ${i}</h3>`;
+                
                 Object.keys(resTypes).forEach(k => {
-                    html += `<div class="res-row"><span>${resTypes[k]}</span><div>
-                        <button class="ctrl-btn" onclick="updateP(${i},'${k}',-1)">-</button>
-                        <span class="val" id="p${i}-${k}">0</span>
-                        <button class="ctrl-btn" onclick="updateP(${i},'${k}',1)">+</button>
-                    </div></div>`;
+                    html += `
+                    <div class="res-row">
+                        <span>${resTypes[k]}</span>
+                        <div class="btn-group">
+                            <button class="ctrl-btn minus" onclick="updateP(${i},'${k}',-10)">-10</button>
+                            <button class="ctrl-btn" onclick="updateP(${i},'${k}',-1)">-1</button>
+                            <span class="val" id="p${i}-${k}">0</span>
+                            <button class="ctrl-btn" onclick="updateP(${i},'${k}',1)">+1</button>
+                            <button class="ctrl-btn plus" onclick="updateP(${i},'${k}',10)">+10</button>
+                        </div>
+                    </div>`;
                 });
                 html += `</div>`;
                 listDiv.innerHTML += html;
                 
-                // 監聽數據變化
-                db.ref(`players/p${i}`).on('value', (s) => {
+                // 監聽數據
+                db.ref(`players/p${i}`).on('value', s => {
                     const d = s.val() || {};
                     const nameTag = document.getElementById(`p${i}-name`);
                     if(nameTag) nameTag.innerText = (d.name || '待加入') + ` (${i})`;
-                    
                     Object.keys(resTypes).forEach(k => {
                         const valTag = document.getElementById(`p${i}-${k}`);
                         if(valTag) valTag.innerText = (d.res && d.res[k]) ? d.res[k] : 0;
@@ -88,18 +102,40 @@
             }
         }
 
-        // 更新數據函式
+        // 更新數值
         function updateP(id, k, v) { 
-            db.ref(`players/p${id}/res/${k}`).transaction(c => (c || 0) + v); 
+            db.ref(`players/p${id}/res/${k}`).transaction(c => Math.max(0, (c || 0) + v)); 
         }
 
-        // 一鍵重置
-        function resetAll() { 
-            if(confirm("確定歸零所有玩家嗎？")) { 
+        // 單一玩家徹底清除
+        function clearSinglePlayer(id) {
+            if(confirm(`確定要完全清除玩家 ${id} 的暱稱與資源嗎？`)) {
+                db.ref(`players/p${id}`).set({
+                    name: "",
+                    res: { time: 0, money: 0, health: 0, knowledge: 0, social: 0 }
+                });
+            }
+        }
+
+        // 只清空所有玩家資源（保留名字）
+        function resetAllResOnly() {
+            if(confirm("確定要清空『所有玩家』的資源嗎？（玩家暱稱會保留）")) {
                 for(let i=1; i<=10; i++) {
-                    db.ref(`players/p${i}/res`).set({time:0, money:0, health:0, knowledge:0, social:0}); 
+                    db.ref(`players/p${i}/res`).set({ time: 0, money: 0, health: 0, knowledge: 0, social: 0 });
                 }
-            } 
+            }
+        }
+
+        // 徹底重置整個系統（含名字與資源）
+        function resetEverything() {
+            if(confirm("⚠️ 警告：這將徹底刪除所有玩家的名字與資源，確定嗎？")) {
+                for(let i=1; i<=10; i++) {
+                    db.ref(`players/p${i}`).set({
+                        name: "",
+                        res: { time: 0, money: 0, health: 0, knowledge: 0, social: 0 }
+                    });
+                }
+            }
         }
     </script>
 </body>

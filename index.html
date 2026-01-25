@@ -5,21 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>人生履歷 - 系統入口</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: 'PingFang TC', sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .menu { text-align: center; width: 90%; max-width: 400px; }
         .btn { display: block; padding: 20px; margin: 15px 0; border-radius: 12px; text-decoration: none; color: white; font-size: 1.2em; font-weight: bold; transition: 0.3s; }
         .admin-btn { background: #e74c3c; }
         .display-btn { background: #2980b9; }
         .player-btn { background: #27ae60; }
         .btn:hover { opacity: 0.8; transform: translateY(-3px); }
+        p { color: #888; font-size: 0.9em; }
     </style>
 </head>
 <body>
     <div class="menu">
         <h1>人生履歷 遊戲系統</h1>
-        <a href="admin.html" class="btn admin-btn">管理端 (密碼 1111)</a>
-        <a href="display.html" class="btn display-btn">顯示端 (大螢幕投影)</a>
-        <a href="player.html" class="btn player-btn">玩家端 (個人手機)</a>
+        <a href="admin.html" class="btn admin-btn">管理端 (工作人員使用)</a>
+        <a href="display.html" class="btn display-btn">顯示端 (投影大螢幕)</a>
+        <a href="player.html" class="btn player-btn">玩家端 (個人手機使用)</a>
+         <a href="shop.html" class="btn player-btn">商品端 (個人手機使用)</a>
+        <p>請確保已在 Firebase 開啟讀寫權限</p>
     </div>
 </body>
 </html>

@@ -1,65 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的資源盤</title>
+    <title>個人資源盤 - 商店版</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; padding: 20px; text-align: center; margin: 0; }
-        .box { background: #2a2a2a; padding: 20px; border-radius: 15px; max-width: 400px; margin: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        select, input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
-        button { background: #27ae60; color: white; font-weight: bold; cursor: pointer; }
-        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .res-item { background: #333; padding: 15px; border-radius: 10px; border-top: 4px solid #00d4ff; }
-        .num { font-size: 2.2em; font-weight: bold; display: block; margin-top: 5px; color: #ffd700; }
+        body { font-family: sans-serif; background: #c7c694; color: white; padding: 15px; text-align: center; margin: 0; }
+        .box { background: #c2baba; padding: 20px; border-radius: 20px; max-width: 450px; margin: auto; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .res-item { background: #cd1414; padding: 10px; border-radius: 12px; border-top: 3px solid #1119a8; }
+        .res-item i { display: block; margin-bottom: 5px; }
+        .num { font-size: 1.5em; font-weight: bold; display: block; }
+        .chart-container { background: #992c2c; border-radius: 20px; padding: 10px; margin: 15px 0; }
+        .shop-card { background: #262626; padding: 15px; border-radius: 12px; margin-top: 10px; text-align: left; border-right: 5px solid #3498db; }
+        .btn-buy { background: #3498db; color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
+        #msg { color: #e74c3c; font-weight: bold; min-height: 25px; margin-bottom: 10px; }
         .hide { display: none; }
+        /* 資源顏色 */
+        .c-time { border-color: #9b59b6; color: #af7ac5; }
+        .c-money { border-color: #f1c40f; color: #f4d03f; }
+        .c-health { border-color: #e74c3c; color: #ec7063; }
+        .c-knowledge { border-color: #3498db; color: #5dade2; }
+        .c-social { border-color: #2ecc71; color: #58d68d; }
     </style>
 </head>
 <body>
     <div class="box" id="login">
-        <h2>登入遊戲角色</h2>
+        <h2><i class="fas fa-user-circle"></i> 角色登入</h2>
         <select id="pid">
-            <option value="1">1號玩家</option><option value="2">2號玩家</option>
-            <option value="3">3號玩家</option><option value="4">4號玩家</option>
-            <option value="5">5號玩家</option><option value="6">6號玩家</option>
-            <option value="7">7號玩家</option><option value="8">8號玩家</option>
-            <option value="9">9號玩家</option><option value="10">10號玩家</option>
+            <option value="1">1號</option><option value="2">2號</option>
+            <option value="3">3號</option><option value="4">4號</option>
+            <option value="5">5號</option><option value="6">6號</option>
+            <option value="7">7號</option><option value="8">8號</option>
+            <option value="9">9號</option><option value="10">10號</option>
         </select>
-        <input type="text" id="pname" placeholder="輸入暱稱">
-        <button onclick="join()">開始遊戲</button>
+        <input type="text" id="pname" style="width:90%; padding: 12px; margin:12px 0; border-radius:6px;" placeholder="輸入暱稱">
+        <button onclick="join()" style="width:100%; background:#27ae60; padding:15px; color:rgb(230, 220, 220); border-radius:6px; border:none; font-weight:bold;">開始遊戲</button>
     </div>
 
     <div class="box hide" id="game">
-        <h1 id="me" style="color:#00d4ff; margin:0;">---</h1>
-        <div class="res-grid">
-            <div class="res-item">時間 <span class="num" id="time">0</span></div>
-            <div class="res-item">金錢 <span class="num" id="money">0</span></div>
-            <div class="res-item">健康 <span class="num" id="health">0</span></div>
-            <div class="res-item">知識 <span class="num" id="knowledge">0</span></div>
-            <div class="res-item" style="grid-column: span 2;">人際 <span class="num" id="social">0</span></div>
+        <h2 id="me" style="color:#e3c646;">---</h2>
+        <div id="msg"></div>
+        
+        <div class="chart-container">
+            <canvas id="radarChart"></canvas>
         </div>
+
+        <div class="res-grid">
+            <div class="res-item c-time"><i class="fas fa-clock"></i> 時間 <span id="time" class="num">0</span></div>
+            <div class="res-item c-money"><i class="fas fa-wallet"></i> 金錢 <span id="money" class="num">0</span></div>
+            <div class="res-item c-health"><i class="fas fa-heartbeat"></i> 健康 <span id="health" class="num">0</span></div>
+            <div class="res-item c-knowledge"><i class="fas fa-book"></i> 知識 <span id="knowledge" class="num">0</span></div>
+            <div class="res-item c-social" style="grid-column: span 2;"><i class="fas fa-users"></i> 人際 <span id="social" class="num">0</span></div>
+        </div>
+
+        <h3 style="margin-top:25px; border-bottom:1px solid #444; padding-bottom:10px;"><i class="fas fa-store"></i> 遊戲商店</h3>
+        <div id="shop-display"></div>
     </div>
 
     <script>
         const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const resNames = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
+        let myRes = { time: 0, money: 0, health: 0, knowledge: 0, social: 0 };
+        let myId = "";
+        let radarChart;
+
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['時間', '金錢', '健康', '知識', '人際'],
+                    datasets: [{
+                        label: '個人素質',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                        borderColor: '#00d4ff',
+                        pointBackgroundColor: '#00d4ff'
+                    }]
+                },
+                options: {
+                    scales: { r: { beginAtZero: true, grid: { color: '#444' }, angleLines: { color: '#444' }, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
 
         function join() {
-            const id = document.getElementById('pid').value;
+            myId = document.getElementById('pid').value;
             const name = document.getElementById('pname').value;
-            if(!name) return alert("請輸入名字");
-            db.ref(`players/p${id}`).update({ name: name });
+            if(!name) return alert("請輸入暱稱");
+            db.ref(`players/p${myId}`).update({ name: name });
             document.getElementById('login').classList.add('hide');
             document.getElementById('game').classList.remove('hide');
             document.getElementById('me').innerText = name;
-            ['time','money','health','knowledge','social'].forEach(k => {
-                db.ref(`players/p${id}/res/${k}`).on('value', s => {
-                    document.getElementById(k).innerText = s.val() || 0;
+            initChart();
+
+            // 資源同步
+            Object.keys(resNames).forEach(k => {
+                db.ref(`players/p${myId}/res/${k}`).on('value', s => {
+                    myRes[k] = s.val() || 0;
+                    document.getElementById(k).innerText = myRes[k];
+                    radarChart.data.datasets[0].data = [myRes.time, myRes.money, myRes.health, myRes.knowledge, myRes.social];
+                    radarChart.update();
                 });
             });
+
+            // 商店開關判定
+            db.ref('shopSettings/isOpen').on('value', s => {
+                const isOpen = s.val() || false;
+                const list = document.getElementById('shop-display');
+                const msg = document.getElementById('msg');
+                if(!isOpen) {
+                    list.style.opacity = "0.2"; list.style.pointerEvents = "none";
+                    msg.style.color = "#ffd700"; msg.innerText = "🏪 商店盤點中...";
+                } else {
+                    list.style.opacity = "1"; list.style.pointerEvents = "auto";
+                    msg.innerText = "";
+                }
+            });
+
+            // 商店清單
+            db.ref('shop/items').on('value', s => {
+                const list = document.getElementById('shop-display');
+                list.innerHTML = "";
+                const data = s.val();
+                for(let key in data) {
+                    const item = data[key];
+                    let costText = Object.keys(resNames).map(k => item.cost[k] > 0 ? `${resNames[k]}:${item.cost[k]}` : '').filter(v => v !== '').join(' ');
+                    list.innerHTML += `
+                        <div class="shop-card">
+                            <strong>${item.name}</strong><br>
+                            <small style="color:#aaa">需求：${costText || '免費'}</small><br>
+                            <button class="btn-buy" onclick='buy("${item.name}", ${JSON.stringify(item.cost)})'>確認購買</button>
+                        </div>`;
+                }
+            });
+        }
+
+        function buy(name, cost) {
+            const msg = document.getElementById('msg');
+            for(let k in cost) {
+                if((myRes[k] || 0) < cost[k]) {
+                    msg.style.color = "#e74c3c";
+                    msg.innerText = `❌ 資源不足：缺少${resNames[k]}`;
+                    return;
+                }
+            }
+            if(confirm(`確定購買「${name}」？`)) {
+                for(let k in cost) db.ref(`players/p${myId}/res/${k}`).set(myRes[k] - cost[k]);
+                msg.style.color = "#2ecc71";
+                msg.innerText = `✅ 成功購買 ${name}！`;
+                setTimeout(() => msg.innerText = "", 3000);
+            }
         }
     </script>
 </body>
