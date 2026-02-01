@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>兌換成就紀錄台（含彈幕重發）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220; --card:#0f1a2e; --text:#e6edf7; --muted:#9bb0d3;
+      --blue:#3b82f6; --violet:#8b5cf6; --danger:#ef4444; --ok:#22c55e;
+      --line:rgba(255,255,255,0.10); --radius:18px;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; padding:14px;
+      background: radial-gradient(900px 420px at 20% 0%, rgba(59,130,246,0.18), transparent 55%),
+                  radial-gradient(900px 420px at 80% 0%, rgba(139,92,246,0.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+    }
+    .wrap{max-width:1180px;margin:0 auto;}
+    h1{margin:6px 0 10px;font-size:1.35rem;}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media(min-width: 1050px){ .grid{grid-template-columns: 420px 1fr;} }
+
+    .card{
+      background:rgba(15,26,46,0.92);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 14px 30px rgba(0,0,0,0.35);
+      padding:14px;
+    }
+    .row{margin:10px 0;}
+    label{display:block;font-weight:900;margin:0 0 6px;}
+    input,textarea,select,button{
+      width:100%;
+      box-sizing:border-box;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      padding:12px;
+      font-size:15px;
+      outline:none;
+    }
+    textarea{min-height:90px;resize:vertical;}
+    .hint{color:var(--muted);font-size:0.92em;line-height:1.35;margin-top:6px;}
+    .btn{
+      border:none; cursor:pointer; font-weight:1000;
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px; user-select:none;
+    }
+    .btn.blue{background:var(--blue);}
+    .btn.violet{background:var(--violet);}
+    .btn.danger{background:var(--danger);}
+    .btn.ok{background:var(--ok); color:#06120a;}
+    .btn:active{transform:scale(0.99);}
+    .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+    .btnrow > button{flex:1; min-width: 120px;}
+
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      margin:10px 0;
+    }
+    .toolbar > *{flex:1; min-width: 160px;}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      background:rgba(255,255,255,0.07);
+      border:1px solid var(--line);
+      color:var(--muted);
+      font-weight:900;
+      width:auto;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+
+    .list{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(255,255,255,0.03);
+    }
+    .item{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    .item:last-child{border-bottom:none;}
+    .topline{
+      display:flex; gap:10px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap;
+    }
+    .msg{font-weight:1000;}
+    .meta{color:var(--muted);font-size:0.88em;margin-top:4px;line-height:1.35;}
+    .kvs{margin-top:8px;display:grid;grid-template-columns:1fr;gap:8px;}
+    @media(min-width: 720px){ .kvs{grid-template-columns:1fr 1fr;} }
+    .kv{
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:14px;
+      padding:8px 10px;
+      background:rgba(255,255,255,0.04);
+    }
+    .kv b{color:#fff;}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px;}
+    .mini{
+      width:auto;
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:13px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.08);
+      color:var(--text);
+      cursor:pointer;
+    }
+    .mini.blue{background:rgba(59,130,246,0.18);}
+    .mini.violet{background:rgba(139,92,246,0.18);}
+    .mini.danger{background:rgba(239,68,68,0.18);}
+    .status{margin-top:10px;color:var(--muted);font-size:0.92em;}
+    .code{white-space:pre-wrap;word-break:break-word;}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>🏆 兌換成就紀錄台（含彈幕重發）</h1>
+
+    <div class="grid">
+      <!-- LEFT: Quick Send -->
+      <div class="card">
+        <div class="pill">紀錄來源：<span class="mono">/redeemLogs</span>（push）</div>
+
+        <div class="row">
+          <label>手動發射彈幕（可選）</label>
+          <textarea id="dmText" placeholder="例如：阿明兌換了（神秘寶箱）"></textarea>
+          <div class="hint">這裡只會 push 到 <span class="mono">/danmaku</span>，不會寫入兌換紀錄。</div>
+        </div>
+
+        <div class="row">
+          <label>來源標記</label>
+          <input id="dmSource" value="manual">
+        </div>
+
+        <div class="btnrow">
+          <button class="btn blue" id="btnSendDanmaku">🚀 發射彈幕</button>
+          <button class="btn violet" id="btnSendRedeemFormat">🎯 兌換格式</button>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:14px 0;">
+
+        <div class="row">
+          <label>彈幕設定（可選）</label>
+          <div class="hint">若你的 display 有吃 <span class="mono">/danmakuSettings</span>，可在這頁調整。</div>
+        </div>
+
+        <div class="row">
+          <label><input type="checkbox" id="dmEnabled" checked style="width:auto;vertical-align:middle;margin-right:8px;">啟用彈幕</label>
+        </div>
+
+        <div class="row">
+          <label>速度（px/s）</label>
+          <input id="dmSpeed" type="range" min="60" max="360" step="10" value="140">
+          <div class="hint">目前：<b id="dmSpeedVal">140</b> px/s</div>
+        </div>
+
+        <div class="row">
+          <label>字體大小（px）</label>
+          <input id="dmFont" type="range" min="12" max="64" step="1" value="22">
+          <div class="hint">目前：<b id="dmFontVal">22</b> px</div>
+        </div>
+
+        <div class="row">
+          <label>同時最大行數</label>
+          <input id="dmLines" type="range" min="3" max="20" step="1" value="8">
+          <div class="hint">目前：<b id="dmLinesVal">8</b> 行</div>
+        </div>
+
+        <div class="row">
+          <label>文字顏色</label>
+          <input id="dmColor" type="text" value="#ffffff" placeholder="#ffffff">
+        </div>
+
+        
+        <div class="row">
+          <label>透明度（0.2 ~ 1）</label>
+          <input id="dmOpacity" type="range" min="0.2" max="1" step="0.05" value="0.9">
+          <div class="hint">目前：<b id="dmOpacityVal">0.9</b></div>
+        </div>
+<div class="btnrow">
+          <button class="btn ok" id="btnSaveSettings">💾 儲存彈幕設定</button>
+          <button class="btn danger" id="btnResetSettings">↩️ 還原預設</button>
+        </div>
+
+        <div class="status" id="status">狀態：尚未連線</div>
+      </div>
+
+      <!-- RIGHT: Log -->
+      <div class="card">
+        <div class="toolbar">
+          <div class="pill">筆數：<b id="count">0</b></div>
+          <input id="q" placeholder="搜尋（玩家/成就）…">
+          <select id="limit">
+            <option value="50">最近 50</option>
+            <option value="100" selected>最近 100</option>
+            <option value="200">最近 200</option>
+            <option value="400">最近 400</option>
+          </select>
+        </div>
+
+        <div class="btnrow">
+          <button class="btn blue" id="btnReload">🔄 重新載入</button>
+          <button class="btn violet" id="btnExportJson">⬇️ 匯出 JSON</button>
+          <button class="btn violet" id="btnExportCsv">⬇️ 匯出 CSV</button>
+          <button class="btn danger" id="btnClearLogs">🧨 清空 /redeemLogs（危險）</button>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          這裡顯示的是「兌換成就」完整紀錄（時間/資源/分數）。若只想清畫面，不建議刪資料。
+        </div>
+
+        <div class="list" id="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Firebase config =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+      authDomain: "try-something-ddd1e.firebaseapp.com",
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "try-something-ddd1e",
+      storageBucket: "try-something-ddd1e.firebasestorage.app",
+      messagingSenderId: "245905464126",
+      appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const redeemRef = db.ref("redeemLogs");
+    const danmakuRef = db.ref("danmaku");
+    const settingsRef = db.ref("danmakuSettings");
+
+    const $ = (id) => document.getElementById(id);
+
+    const listEl = $("list");
+    const countEl = $("count");
+    const statusEl = $("status");
+
+    const qEl = $("q");
+    const limitEl = $("limit");
+
+    const dmTextEl = $("dmText");
+    const dmSourceEl = $("dmSource");
+
+    const dmEnabledEl = $("dmEnabled");
+    const dmSpeedEl = $("dmSpeed");
+    const dmFontEl = $("dmFont");
+    const dmLinesEl = $("dmLines");
+    const dmColorEl = $("dmColor");
+    const dmOpacityEl = $("dmOpacity");
+
+    const dmSpeedValEl = $("dmSpeedVal");
+    const dmFontValEl = $("dmFontVal");
+    const dmLinesValEl = $("dmLinesVal");
+    const dmOpacityValEl = $("dmOpacityVal");
+
+    const DEFAULT_SETTINGS = {
+      enabled: true,
+      speedPxPerSec: 140,
+      fontSize: 22,
+      maxLines: 8,
+      color: "#ffffff",
+      opacity: 0.9
+    };
+
+    function nowTs(){ return Date.now(); }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function fmtTime(ts){
+      const d = new Date(ts || 0);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mi = String(d.getMinutes()).padStart(2,"0");
+      const ss = String(d.getSeconds()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function renderCost(cost){
+      const c = cost || {};
+      const keys = ["time","money","health","knowledge","social","score"];
+      const map = {time:"時間",money:"金錢",health:"健康",knowledge:"知識",social:"人際",score:"分數"};
+      const parts = [];
+      keys.forEach(k=>{
+        const v = Number(c[k] || 0);
+        if (v) parts.push(`${map[k]}-${v}`);
+      });
+      return parts.join("、") || "（無）";
+    }
+
+    function renderDiff(before, after){
+      const b = before || {};
+      const a = after || {};
+      const keys = ["time","money","health","knowledge","social","score"];
+      const map = {time:"時間",money:"金錢",health:"健康",knowledge:"知識",social:"人際",score:"分數"};
+      const parts = keys.map(k=>{
+        const bv = Number(b[k] || 0);
+        const av = Number(a[k] || 0);
+        const delta = av - bv;
+        const sign = delta > 0 ? "+" : "";
+        return `${map[k]} ${bv}→${av} (${sign}${delta})`;
+      });
+      return parts.join("\n");
+    }
+
+    // ===== Danmaku settings sync =====
+    function syncSettingsUI(v){
+      const s = v || {};
+      dmEnabledEl.checked = !!(s.enabled ?? DEFAULT_SETTINGS.enabled);
+      dmSpeedEl.value = String(Number(s.speedPxPerSec ?? DEFAULT_SETTINGS.speedPxPerSec));
+      dmFontEl.value  = String(Number(s.fontSize ?? DEFAULT_SETTINGS.fontSize));
+      dmLinesEl.value = String(Number(s.maxLines ?? DEFAULT_SETTINGS.maxLines));
+      dmColorEl.value = String(s.color ?? DEFAULT_SETTINGS.color);
+      dmOpacityEl.value = String(Number(s.opacity ?? DEFAULT_SETTINGS.opacity));
+
+      dmSpeedValEl.textContent = dmSpeedEl.value;
+      dmFontValEl.textContent = dmFontEl.value;
+      dmLinesValEl.textContent = dmLinesEl.value;
+        dmOpacityValEl.textContent = dmOpacityEl.value;
+    }
+
+    [dmSpeedEl, dmFontEl, dmLinesEl, dmOpacityEl].forEach(el=>{
+      el.addEventListener("input", ()=>{
+        dmSpeedValEl.textContent = dmSpeedEl.value;
+        dmFontValEl.textContent = dmFontEl.value;
+        dmLinesValEl.textContent = dmLinesEl.value;
+        dmOpacityValEl.textContent = dmOpacityEl.value;
+      });
+    });
+
+    settingsRef.on("value", (snap)=> syncSettingsUI(snap.val()));
+
+    $("btnSaveSettings").addEventListener("click", async ()=>{
+      const payload = {
+        enabled: !!dmEnabledEl.checked,
+        speedPxPerSec: Math.max(60, Number(dmSpeedEl.value)),
+        fontSize: Math.max(12, Number(dmFontEl.value)),
+        maxLines: Math.max(3, Number(dmLinesEl.value)),
+        color: String(dmColorEl.value || "#ffffff"),
+        opacity: Math.min(1, Math.max(0.2, Number(dmOpacityEl.value))),
+        updatedAt: nowTs()
+      };
+      try{
+        await settingsRef.update(payload);
+        statusEl.textContent = "狀態：已儲存彈幕設定";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "狀態：儲存失敗（rules 可能擋寫入）";
+      }
+    });
+
+    $("btnResetSettings").addEventListener("click", async ()=>{
+      try{
+        await settingsRef.update({ ...DEFAULT_SETTINGS, updatedAt: nowTs() });
+        statusEl.textContent = "狀態：已還原預設";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "狀態：還原失敗（rules 可能擋寫入）";
+      }
+    });
+
+    // ===== Send danmaku =====
+    async function sendDanmaku(text, source){
+      const t = String(text || "").trim();
+      if (!t) return;
+      try{
+        await danmakuRef.push({ text: t, time: nowTs(), source: String(source||"manual").trim() || "manual" });
+        statusEl.textContent = "狀態：已發射彈幕";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "狀態：發射失敗（rules 可能擋寫入）";
+      }
+    }
+
+    $("btnSendDanmaku").addEventListener("click", ()=>{
+      sendDanmaku(dmTextEl.value, dmSourceEl.value);
+    });
+
+    $("btnSendRedeemFormat").addEventListener("click", ()=>{
+      const raw = String(dmTextEl.value || "").trim();
+      if(!raw) return;
+
+      // 支援：阿明|神秘寶箱 或 阿明 神秘寶箱
+      let name = "", item = "";
+      if (raw.includes("|")) {
+        const parts = raw.split("|").map(s=>s.trim()).filter(Boolean);
+        name = parts[0] || "";
+        item = parts.slice(1).join("|") || "";
+      } else {
+        const parts = raw.split(/\s+/).map(s=>s.trim()).filter(Boolean);
+        name = parts[0] || "";
+        item = parts.slice(1).join(" ") || "";
+      }
+      const text = (name && item) ? `${name}兌換了（${item}）` : raw;
+      sendDanmaku(text, dmSourceEl.value || "manual");
+    });
+
+    // ===== Logs =====
+    let cache = []; // newest first
+    let detach = null;
+
+    function applyFilter(){
+      const q = String(qEl.value || "").trim().toLowerCase();
+      let items = cache.slice();
+      if(q){
+        items = items.filter(it => (String(it.playerName||"").toLowerCase().includes(q)) || (String(it.itemName||"").toLowerCase().includes(q)));
+      }
+      countEl.textContent = String(items.length);
+
+      listEl.innerHTML = items.map(it=>{
+        const pn = escapeHtml(it.playerName || `玩家${it.playerId || ""}`);
+        const pid = escapeHtml(String(it.playerId || ""));
+        const item = escapeHtml(it.itemName || "");
+        const ts = it.ts || it.time || 0;
+
+        const costText = escapeHtml(renderCost(it.cost));
+        const bonus = Number(it.bonusScore || 0);
+        const diffText = escapeHtml(renderDiff(it.before, it.after));
+
+        const dmText = `${it.playerName || `玩家${it.playerId||""}`}兌換了（${it.itemName || ""}）`;
+
+        return `
+          <div class="item" data-key="${escapeHtml(it.key)}">
+            <div class="topline">
+              <div>
+                <div class="msg">🧍 ${pn} <span class="mono">#${pid}</span>　→　🏆 ${item}</div>
+                <div class="meta">🕒 ${escapeHtml(fmtTime(ts))}　·　成本：${costText}　·　加分：${bonus ? ("+"+bonus) : "0"}</div>
+              </div>
+              <div class="actions">
+                <button class="mini blue" data-act="resenddm" data-dm="${escapeHtml(dmText)}">重發彈幕</button>
+                <button class="mini violet" data-act="copydm" data-dm="${escapeHtml(dmText)}">複製彈幕</button>
+                <button class="mini danger" data-act="del">刪除紀錄</button>
+              </div>
+            </div>
+
+            <div class="kvs">
+              <div class="kv"><b>資源變化</b><div class="meta code">${diffText}</div></div>
+              <div class="kv"><b>原始 cost</b><div class="meta code">${escapeHtml(JSON.stringify(it.cost || {}, null, 2))}</div></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function attach(){
+      if (detach) { detach(); detach = null; }
+
+      const limit = Number(limitEl.value || 100);
+      statusEl.textContent = "狀態：載入中…";
+
+      const query = redeemRef.limitToLast(limit);
+      const handler = (snap)=>{
+        const obj = snap.val() || {};
+        const arr = Object.keys(obj).map(k => ({ key: k, ...(obj[k]||{}) }))
+          .sort((a,b) => (b.ts||b.time||0) - (a.ts||a.time||0));
+        cache = arr;
+        applyFilter();
+        statusEl.textContent = "狀態：已連線（即時更新）";
+      };
+
+      query.on("value", handler);
+      detach = ()=> query.off("value", handler);
+    }
+
+    attach();
+    qEl.addEventListener("input", applyFilter);
+    limitEl.addEventListener("change", attach);
+    $("btnReload").addEventListener("click", attach);
+
+    // List actions
+    listEl.addEventListener("click", async (e)=>{
+      const btn = e.target?.closest?.("button");
+      if(!btn) return;
+
+      const act = btn.getAttribute("data-act");
+      const itemEl = e.target?.closest?.(".item");
+      const key = itemEl?.getAttribute("data-key");
+      if(!key) return;
+
+      if (act === "resenddm" || act === "copydm") {
+        const dm = btn.getAttribute("data-dm") || "";
+        if (act === "resenddm") {
+          await sendDanmaku(dm, "replay");
+        } else {
+          try{
+            await navigator.clipboard.writeText(dm);
+            statusEl.textContent = "狀態：已複製彈幕";
+          }catch(_){
+            statusEl.textContent = "狀態：複製失敗（瀏覽器權限）";
+          }
+        }
+        return;
+      }
+
+      if (act === "del") {
+        if(!confirm("確定刪除這筆兌換紀錄？")) return;
+        try{
+          await redeemRef.child(key).remove();
+          statusEl.textContent = "狀態：已刪除紀錄";
+        }catch(e2){
+          console.error(e2);
+          statusEl.textContent = "狀態：刪除失敗（rules 可能擋寫入）";
+        }
+      }
+    });
+
+    // Export JSON / CSV
+    function downloadFile(filename, content, mime){
+      const blob = new Blob([content], {type: mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    $("btnExportJson").addEventListener("click", ()=>{
+      const data = cache.map(({key, ...rest}) => rest);
+      downloadFile(`redeemLogs_export_${Date.now()}.json`, JSON.stringify(data, null, 2), "application/json;charset=utf-8");
+    });
+
+    $("btnExportCsv").addEventListener("click", ()=>{
+      const headers = ["ts","playerId","playerName","itemName","cost","bonusScore","before","after"];
+      const rows = cache.map(it=>{
+        const ts = it.ts || it.time || 0;
+        const cols = [
+          ts,
+          it.playerId || "",
+          it.playerName || "",
+          it.itemName || "",
+          JSON.stringify(it.cost || {}),
+          it.bonusScore || 0,
+          JSON.stringify(it.before || {}),
+          JSON.stringify(it.after || {})
+        ].map(v => `"${String(v).replaceAll('"','""')}"`);
+        return cols.join(",");
+      });
+      const csv = [headers.join(","), ...rows].join("\n");
+      downloadFile(`redeemLogs_export_${Date.now()}.csv`, csv, "text/csv;charset=utf-8");
+    });
+
+    $("btnClearLogs").addEventListener("click", async ()=>{
+      if(!confirm("⚠️ 這會刪除 /redeemLogs 全部歷史。確定？")) return;
+      try{
+        await redeemRef.remove();
+        statusEl.textContent = "狀態：已清空 /redeemLogs";
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "狀態：清空失敗（rules 可能擋寫入）";
+      }
+    });
+  </script>
+</body>
+</html>
