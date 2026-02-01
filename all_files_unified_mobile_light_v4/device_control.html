@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>device-control（全整合版 v3 / SUPER）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#121a24; --card:#1b2a3a; --shadow:rgba(0,0,0,0.40); --row:rgba(255,255,255,0.06);
+      --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --blue:#3b82f6; --muted:#94a3b8; --yellow:#f1c40f; --violet:#a78bfa;
+    }
+    body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:#fff;margin:0;padding:18px;text-align:center;}
+    .wrap{max-width:1080px;margin:0 auto;}
+    .card{background:var(--card);padding:16px 18px;border-radius:18px;margin:14px auto;text-align:left;box-shadow:0 8px 22px var(--shadow);border-left:6px solid rgba(255,255,255,0.12);}
+    h1{margin:8px 0 0;} h2{margin:0 0 10px;} h3{margin:0 0 8px;}
+    .hint{color:rgba(255,255,255,0.78);font-size:0.95em;line-height:1.4;}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.25);font-weight:950;margin:6px 8px 0 0;}
+    .pill b{color:var(--yellow);}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;margin:8px 0;border-radius:12px;background:var(--row);}
+    .row .left{min-width:0;flex:1;}
+    .row .title{font-weight:950;}
+    .row .sub{font-size:0.92em;color:rgba(255,255,255,0.72);margin-top:4px;word-break:break-all;line-height:1.35;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+    @media (max-width:980px){.grid3{grid-template-columns:1fr;}}
+    @media (max-width:860px){.grid2{grid-template-columns:1fr;}}
+
+    .btn{border:none;border-radius:12px;padding:10px 12px;font-weight:950;cursor:pointer;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s, filter .12s;user-select:none;white-space:nowrap;}
+    .btn:hover{filter:brightness(1.08);} .btn:active{transform:scale(0.98);}
+    .btn.blue{background:var(--blue);} .btn.ok{background:var(--ok);} .btn.warn{background:var(--warn);color:#1b1203;} .btn.danger{background:var(--danger);} .btn.violet{background:var(--violet);color:#1b102e;}
+
+    input,select{width:100%;padding:12px;border-radius:12px;border:none;box-sizing:border-box;background:#e8eef5;color:#111827;font-size:16px;margin:8px 0;}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:950;font-size:0.86em;margin-left:8px;}
+    .badge.ok{background:rgba(34,197,94,0.18);color:#b7f7c7;} .badge.danger{background:rgba(239,68,68,0.18);color:#ffc2c2;} .badge.warn{background:rgba(245,158,11,0.18);color:#ffe2b6;}
+    .muted{color:var(--muted);} .hide{display:none !important;}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;background:rgba(0,0,0,0.25);padding:3px 8px;border-radius:8px;display:inline-block;}
+    .disabled{opacity:.55;pointer-events:none;filter:grayscale(0.35);}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+  </style>
+
+
+<!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --row:rgba(2,6,23,0.05);
+    --text:#0f172a;
+    --muted:rgba(15,23,42,0.72);
+    --shadow:rgba(2,6,23,0.12);
+
+    --blue:#3b82f6;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --violet:#8b5cf6;
+    --yellow:#fbbf24;
+
+    --radius:18px;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+      radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+      radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+      var(--bg) !important;
+    color:var(--text) !important;
+    margin:0 !important;
+    padding:14px !important;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* mobile-first container */
+  .wrap,.menu,.container,.main,.app{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+  }
+
+  /* common card look */
+  .card,.box,.config-card,#auth-overlay>div{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-radius:var(--radius) !important;
+    box-shadow:0 10px 26px var(--shadow) !important;
+    border:1px solid rgba(2,6,23,0.08) !important;
+  }
+
+  /* tighten text */
+  p,.hint,.sub,.small{color:var(--muted) !important;}
+
+  h1{font-size:1.6rem;margin:10px 0 12px;}
+  h2{font-size:1.25rem;}
+  h3{font-size:1.1rem;}
+
+  /* buttons */
+  .btn,.global-btn,.menu .btn,a.btn{
+    border-radius:14px !important;
+    font-weight:900 !important;
+    letter-spacing:0.2px;
+    box-shadow:0 6px 14px rgba(2,6,23,0.10);
+  }
+  .btn.plus{background:var(--ok) !important;}
+  .btn.plus10{background:rgba(34,197,94,0.92) !important;}
+  .btn.minus{background:rgba(239,68,68,0.75) !important;}
+  .btn.minus10{background:var(--danger) !important;}
+  .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
+  .btn.danger{background:var(--danger) !important;}
+  .btn.blue{background:var(--blue) !important;}
+  .btn.purple{background:var(--violet) !important;}
+
+  /* inputs */
+  input,select,textarea{
+    border-radius:12px !important;
+    font-size:16px !important;
+    background:#ffffff !important;
+    color:var(--text) !important;
+    border:1px solid rgba(2,6,23,0.14) !important;
+    box-shadow:0 6px 16px rgba(2,6,23,0.06);
+  }
+
+  /* rows */
+  .res-row,.row{flex-wrap:wrap;}
+  .res-row{background:var(--row) !important;}
+
+  /* values */
+  .val{color:var(--blue) !important;}
+
+  /* bottom actions */
+  .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+
+  /* overlay */
+  #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+</style>
+
+</head>
+
+<body>
+<div class="wrap">
+  <h1>🛡️ device-control（全整合版 v3）</h1>
+  <div class="hint">
+    你要的規格（v3）：<br/>
+    1) <b>admin 要限制進入</b>（走 adminDevices 申請/核准）<br/>
+    2) <b>player 永遠可隨便進</b>（player 上鎖不做白名單 gate）<br/>
+    3) 你可分別鎖 <b>admin</b>/<b>player</b>，<b>鎖定後只有你能解</b>；且你永遠能剔除所有裝置。<br/>
+    4) ✅ <b>你要看到「全部裝置 + 登錄名字」</b>：新增 <span class="kbd">devicesSeen</span>（所有頁面回報 deviceId+label+lastSeen+page）。
+  </div>
+
+  <!-- Login -->
+  <div id="loginCard" class="card">
+    <h2><i class="fa-solid fa-key"></i> SUPER 登入</h2>
+    <div class="hint">此頁用 Firebase Authentication（Email/Password）。</div>
+    <input id="email" type="email" placeholder="Email（SUPER）" />
+    <input id="pass" type="password" placeholder="Password" />
+    <button class="btn blue" id="btnLogin"><i class="fa-solid fa-right-to-bracket"></i> 登入</button>
+  </div>
+
+  <!-- Main -->
+  <div id="main" class="hide">
+
+    <!-- Status -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div class="pill"><i class="fa-solid fa-user"></i> <span id="whoEmail">-</span></div>
+          <div class="pill"><i class="fa-solid fa-id-badge"></i> uid：<b id="whoUid">-</b></div>
+          <div class="pill"><i class="fa-solid fa-crown"></i> super：<b id="whoSuper">YES</b></div>
+        </div>
+        <button class="btn danger" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i> 登出</button>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        裝置相關路徑：
+        <span class="kbd">devicesSeen</span>（全部裝置回報） /
+        <span class="kbd">deviceLocks</span>（鎖定） /
+        <span class="kbd">joinRequests</span>（admin 申請） /
+        <span class="kbd">adminDevices</span>、<span class="kbd">playerDevices</span>（授權/記錄/剔除）。
+      </div>
+    </div>
+
+    <!-- All devices seen -->
+    <div class="card" style="border-left-color:rgba(241,196,15,0.9);">
+      <h2><i class="fa-solid fa-satellite-dish"></i> 全部裝置（devicesSeen）</h2>
+      <div class="hint">
+        這是「所有頁面」定期回報的裝置清單：<b>deviceId + 登錄名字(label) + 最後上線(lastSeen) + 目前頁面(page)</b>。<br/>
+        你要讓它有資料，只要在 <b>player/admin/shop/display/board/index</b> 等頁面加一段「裝置回報」腳本（我下面給你貼上版）。
+      </div>
+      <div class="row">
+        <div class="left">
+          <div class="title">總數：<b id="seenCount">0</b></div>
+          <div class="sub">建議：lastSeen 超過 10 分鐘可視為離線（此頁僅顯示時間，不硬判斷）。</div>
+        </div>
+        <button class="btn blue" id="btnSeenRefresh"><i class="fa-solid fa-rotate"></i> 重新抓取</button>
+      </div>
+      <div id="seenList"></div>
+    </div>
+
+    <!-- Locks -->
+    <div class="card" style="border-left-color:rgba(245,158,11,0.9);">
+      <h2><i class="fa-solid fa-lock"></i> 分別鎖定（鎖後只有你能解）</h2>
+
+      <div class="row">
+        <div class="left">
+          <div class="title">Admin 鎖定：<span id="adminLockBadge" class="badge">-</span></div>
+          <div class="sub">adminLockedAt：<span id="adminLockedAt" class="muted">-</span></div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn danger" id="btnAdminLock"><i class="fa-solid fa-lock"></i> 上鎖</button>
+          <button class="btn ok" id="btnAdminUnlock"><i class="fa-solid fa-lock-open"></i> 解鎖</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="left">
+          <div class="title">Player 鎖定：<span id="playerLockBadge" class="badge">-</span></div>
+          <div class="sub">playerLockedAt：<span id="playerLockedAt" class="muted">-</span></div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn danger" id="btnPlayerLock"><i class="fa-solid fa-lock"></i> 上鎖</button>
+          <button class="btn ok" id="btnPlayerUnlock"><i class="fa-solid fa-lock-open"></i> 解鎖</button>
+        </div>
+      </div>
+
+      <div class="hint">
+        ✅ player 上鎖不做白名單 gate（玩家仍可隨便進）<br/>
+        🔒 player 上鎖：凍結 playerDevices 的新增/修改（只允許剔除）<br/>
+        🔒 admin 上鎖：禁止核准/新增/改 role（仍允許剔除）
+      </div>
+    </div>
+
+    <!-- Quota + revoke all -->
+    <div class="card" style="border-left-color:rgba(59,130,246,0.9);">
+      <h2><i class="fa-solid fa-gauge-high"></i> 名額與一鍵清場</h2>
+
+      <div class="row">
+        <div class="left">
+          <div class="title">名額狀態</div>
+          <div class="sub">admin：<b id="adminCount">0</b>/10　player（記錄）：<b id="playerCount">0</b>/10</div>
+        </div>
+        <button class="btn blue" id="btnRefresh"><i class="fa-solid fa-rotate"></i> 重新整理</button>
+      </div>
+
+      <div class="row">
+        <div class="left">
+          <div class="title">一鍵剔除全部 admin 裝置</div>
+          <div class="sub">把所有 adminDevices 設 revoked=true（即使 adminLocked=true 也可以）。</div>
+        </div>
+        <button class="btn danger" id="btnRevokeAllAdmin"><i class="fa-solid fa-broom"></i> 全部剔除</button>
+      </div>
+
+      <div class="row">
+        <div class="left">
+          <div class="title">一鍵剔除全部 player 記錄</div>
+          <div class="sub">把所有 playerDevices 設 revoked=true（即使 playerLocked=true 也可以）。</div>
+        </div>
+        <button class="btn danger" id="btnRevokeAllPlayer"><i class="fa-solid fa-broom"></i> 全部剔除</button>
+      </div>
+    </div>
+
+    <!-- Admin join requests -->
+    <div class="card" style="border-left-color:rgba(167,139,250,0.9);">
+      <h2><i class="fa-solid fa-inbox"></i> 管理員申請（只管 admin）</h2>
+      <div class="hint">
+        joinRequests 只用於 admin 申請（admin1/admin2）。
+      </div>
+      <div id="reqList"></div>
+    </div>
+
+    <!-- Player record (optional) -->
+    <div class="card" style="border-left-color:rgba(34,197,94,0.9);">
+      <h2><i class="fa-solid fa-clipboard-list"></i> Player 裝置記錄（可選）</h2>
+      <div class="hint">
+        player 永遠不用白名單，這區只做「記錄/剔除」。<br/>
+        🔒 若 playerLocked=true：禁止新增/修改（只剩剔除）。
+      </div>
+      <div class="grid2">
+        <div><label class="hint">deviceId</label><input id="manualPlayerDeviceId" placeholder="例如：dev_abc123..." /></div>
+        <div><label class="hint">label（可選）</label><input id="manualPlayerLabel" placeholder="例如：玩家手機3" /></div>
+      </div>
+      <button class="btn ok" id="btnAddPlayerDevice"><i class="fa-solid fa-circle-plus"></i> 加入 playerDevices（記錄用）</button>
+    </div>
+
+    <!-- Devices list -->
+    <div class="card" style="border-left-color:rgba(34,197,94,0.9);">
+      <h2><i class="fa-solid fa-list"></i> 裝置清單（可剔除 / 可改 admin1/admin2）</h2>
+      <div class="grid2">
+        <div>
+          <h3><i class="fa-solid fa-user-shield"></i> adminDevices</h3>
+          <div id="adminList"></div>
+        </div>
+        <div>
+          <h3><i class="fa-solid fa-gamepad"></i> playerDevices</h3>
+          <div id="playerList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+  const SUPER_UID = "AT3xEkjygoZEcCbrG8VdZVklEfj1";
+
+  const $ = (id) => document.getElementById(id);
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  async function isSuper(uid) {
+    if (!uid) return false;
+    if (uid === SUPER_UID) return true;
+    const s = await db.ref("superAdmins/" + uid).get();
+    return s.exists() && s.val() === true;
+  }
+  async function requireSuper() {
+    const u = auth.currentUser;
+    if (!u) throw new Error("尚未登入");
+    if (!(await isSuper(u.uid))) throw new Error("你不是 SUPER，禁止操作");
+    return true;
+  }
+  async function getLockValue(key){
+    const s = await db.ref("deviceLocks/" + key).get();
+    return s.val() === true;
+  }
+
+  // Locks
+  async function setAdminLocked(locked) {
+    await requireSuper();
+    await db.ref("deviceLocks").update({
+      adminLocked: !!locked,
+      adminLockedAt: locked ? Date.now() : null,
+      updatedAt: Date.now()
+    });
+  }
+  async function setPlayerLocked(locked) {
+    await requireSuper();
+    await db.ref("deviceLocks").update({
+      playerLocked: !!locked,
+      playerLockedAt: locked ? Date.now() : null,
+      updatedAt: Date.now()
+    });
+  }
+  function renderLockBadge(el, locked){
+    el.className = "badge " + (locked ? "danger" : "ok");
+    el.textContent = locked ? "LOCKED（已上鎖）" : "UNLOCKED（未上鎖）";
+  }
+  function renderLocks(d){
+    renderLockBadge($("adminLockBadge"), d?.adminLocked === true);
+    renderLockBadge($("playerLockBadge"), d?.playerLocked === true);
+    $("adminLockedAt").textContent = d?.adminLockedAt ? new Date(d.adminLockedAt).toLocaleString() : "-";
+    $("playerLockedAt").textContent = d?.playerLockedAt ? new Date(d.playerLockedAt).toLocaleString() : "-";
+
+    const pl = d?.playerLocked === true;
+    $("btnAddPlayerDevice").classList.toggle("disabled", pl);
+  }
+
+  // Counts
+  async function activeCount(path) {
+    const snap = await db.ref(path).get();
+    const all = snap.val() || {};
+    return Object.values(all).filter(d => d && d.revoked !== true).length;
+  }
+
+  // Admin requests
+  let reqCache = {};
+  async function approveAdminReq(reqKey, r) {
+    await requireSuper();
+    if (await getLockValue("adminLocked")) throw new Error("admin 已上鎖：禁止核准/新增 admin 裝置");
+    const c = await activeCount("adminDevices");
+    if (c >= 10) throw new Error("管理員設備已滿 10 台");
+    const role = (r.want === "admin2") ? "admin2" : "admin1";
+
+    await db.ref(`adminDevices/${r.deviceId}`).set({
+      label: r.label || (role + "-" + String(r.deviceId).slice(0,6)),
+      role,
+      revoked:false,
+      createdAt: Date.now(),
+      addedBy: auth.currentUser.uid
+    });
+    await db.ref(`joinRequests/${reqKey}`).remove();
+  }
+  async function rejectReq(reqKey){
+    await requireSuper();
+    await db.ref(`joinRequests/${reqKey}`).remove();
+  }
+  function renderRequests(reqs) {
+    const entries = Object.entries(reqs || {}).sort((a,b) => (b[1]?.createdAt||0) - (a[1]?.createdAt||0));
+    if (entries.length === 0) {
+      $("reqList").innerHTML = `<div class="hint">（目前沒有申請）</div>`;
+      return;
+    }
+    $("reqList").innerHTML = entries.map(([key, r]) => {
+      const want = (r.want === "admin2") ? "admin2" : "admin1";
+      return `
+        <div class="row">
+          <div class="left">
+            <div class="title"><i class="fa-solid fa-user-shield"></i> ${esc(r.label || "-")} <span class="badge warn">${want}</span></div>
+            <div class="sub">
+              deviceId：${esc(r.deviceId || "")}<br/>
+              by：${esc(r.byEmail || "-")}<br/>
+              at：${new Date(r.createdAt || Date.now()).toLocaleString()}
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn ok" data-approve="${esc(key)}"><i class="fa-solid fa-check"></i> 核准</button>
+            <button class="btn danger" data-reject="${esc(key)}"><i class="fa-solid fa-xmark"></i> 拒絕</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // Devices operations
+  async function revokeDevice(listPath, deviceId) {
+    await requireSuper();
+    await db.ref(`${listPath}/${deviceId}`).update({
+      revoked:true,
+      revokedAt: Date.now(),
+      revokedBy: auth.currentUser.uid
+    });
+  }
+  async function setAdminRole(deviceId, role) {
+    await requireSuper();
+    if (await getLockValue("adminLocked")) throw new Error("admin 已上鎖：禁止更改 role");
+    if (role !== "admin1" && role !== "admin2") throw new Error("role 不合法");
+    await db.ref(`adminDevices/${deviceId}/role`).set(role);
+  }
+  async function addPlayerDeviceManual() {
+    await requireSuper();
+    if (await getLockValue("playerLocked")) throw new Error("player 已上鎖：禁止新增/修改 playerDevices（只允許剔除）");
+    const deviceId = ($("manualPlayerDeviceId").value || "").trim();
+    const label = ($("manualPlayerLabel").value || "").trim();
+    if (!deviceId) throw new Error("請輸入 deviceId");
+    const c = await activeCount("playerDevices");
+    if (c >= 10) throw new Error("玩家裝置記錄已滿 10 筆");
+    await db.ref(`playerDevices/${deviceId}`).set({
+      label: label || ("player-" + deviceId.slice(0,6)),
+      revoked:false,
+      createdAt: Date.now(),
+      addedBy: auth.currentUser.uid
+    });
+    $("manualPlayerDeviceId").value = "";
+    $("manualPlayerLabel").value = "";
+  }
+  async function revokeAll(listPath){
+    await requireSuper();
+    const snap = await db.ref(listPath).get();
+    const all = snap.val() || {};
+    const updates = {};
+    const now = Date.now();
+    const uid = auth.currentUser.uid;
+    for (const [deviceId, v] of Object.entries(all)) {
+      if (v && v.revoked !== true) {
+        updates[`${listPath}/${deviceId}/revoked`] = true;
+        updates[`${listPath}/${deviceId}/revokedAt`] = now;
+        updates[`${listPath}/${deviceId}/revokedBy`] = uid;
+      }
+    }
+    if (Object.keys(updates).length === 0) return;
+    await db.ref().update(updates);
+  }
+
+  function renderDevices(admins, players) {
+    const adminEntries = Object.entries(admins || {}).filter(([_,v]) => v && v.revoked !== true);
+    const playerEntries = Object.entries(players || {}).filter(([_,v]) => v && v.revoked !== true);
+    $("adminCount").textContent = String(adminEntries.length);
+    $("playerCount").textContent = String(playerEntries.length);
+
+    $("adminList").innerHTML = adminEntries.length ? adminEntries.map(([id, v]) => `
+      <div class="row">
+        <div class="left">
+          <div class="title">${esc(v.label || ("admin-" + id.slice(0,6)))}</div>
+          <div class="sub mono">deviceId：${esc(id)}</div>
+          <div class="sub">
+            role：
+            <select data-role="${esc(id)}" style="width:auto; padding:6px 10px; border-radius:10px;">
+              <option value="admin1" ${v.role==="admin1" ? "selected":""}>admin1</option>
+              <option value="admin2" ${v.role==="admin2" ? "selected":""}>admin2</option>
+            </select>
+            <button class="btn violet" data-save-role="${esc(id)}"><i class="fa-solid fa-floppy-disk"></i> 套用</button>
+          </div>
+        </div>
+        <button class="btn danger" data-revoke="adminDevices|${esc(id)}"><i class="fa-solid fa-user-slash"></i> 剔除</button>
+      </div>
+    `).join("") : `<div class="hint">（目前沒有已授權 admin 裝置）</div>`;
+
+    $("playerList").innerHTML = playerEntries.length ? playerEntries.map(([id, v]) => `
+      <div class="row">
+        <div class="left">
+          <div class="title">${esc(v.label || ("player-" + id.slice(0,6)))}</div>
+          <div class="sub mono">deviceId：${esc(id)}</div>
+        </div>
+        <button class="btn danger" data-revoke="playerDevices|${esc(id)}"><i class="fa-solid fa-user-slash"></i> 剔除</button>
+      </div>
+    `).join("") : `<div class="hint">（目前沒有 playerDevices 記錄）</div>`;
+  }
+
+  // devicesSeen
+  let seenCache = {};
+  function renderSeen(all){
+    const entries = Object.entries(all || {}).sort((a,b) => (b[1]?.lastSeen||0) - (a[1]?.lastSeen||0));
+    $("seenCount").textContent = String(entries.length);
+    if (entries.length === 0) {
+      $("seenList").innerHTML = `<div class="hint">（devicesSeen 目前沒有資料。請把「裝置回報腳本」貼到各頁面後再看。）</div>`;
+      return;
+    }
+    $("seenList").innerHTML = entries.map(([id, v]) => {
+      const t = v?.lastSeen ? new Date(v.lastSeen).toLocaleString() : "-";
+      const label = v?.label || "-";
+      const page = v?.page || "-";
+      return `
+        <div class="row">
+          <div class="left">
+            <div class="title">${esc(label)}</div>
+            <div class="sub mono">deviceId：${esc(id)}</div>
+            <div class="sub">lastSeen：${esc(t)}　｜　page：${esc(page)}</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn danger" data-revoke="adminDevices|${esc(id)}"><i class="fa-solid fa-user-slash"></i> 剔除 admin</button>
+            <button class="btn danger" data-revoke="playerDevices|${esc(id)}"><i class="fa-solid fa-user-slash"></i> 剔除 player</button>
+            <button class="btn warn" data-kick-player="${esc(id)}"><i class="fa-solid fa-ban"></i> 踢除玩家（移出允許名單）</button>
+            <button class="btn blue" data-del-seen="${esc(id)}"><i class="fa-solid fa-trash"></i> 移除 devicesSeen</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function bindRealtime(){
+    db.ref("deviceLocks").on("value", s => renderLocks(s.val() || {}));
+    db.ref("joinRequests").on("value", s => { reqCache = s.val() || {}; renderRequests(reqCache); });
+
+    let admins = {}, players = {};
+    db.ref("adminDevices").on("value", s => { admins = s.val() || {}; renderDevices(admins, players); });
+    db.ref("playerDevices").on("value", s => { players = s.val() || {}; renderDevices(admins, players); });
+
+    db.ref("devicesSeen").on("value", s => { seenCache = s.val() || {}; renderSeen(seenCache); });
+  }
+
+  // UI: login/logout
+  $("btnLogin").addEventListener("click", async () => {
+    const email = $("email").value.trim();
+    const pass = $("pass").value;
+    if (!email || !pass) return alert("請輸入 Email 與密碼");
+    try { await auth.signInWithEmailAndPassword(email, pass); }
+    catch (e) { alert(e?.message || "登入失敗"); }
+  });
+  $("btnLogout").addEventListener("click", async () => { await auth.signOut(); location.reload(); });
+
+  // Locks UI
+  $("btnAdminLock").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定要上鎖 admin？（禁止核准/新增/改 role，但仍可剔除）")) return; await setAdminLocked(true); alert("admin 已上鎖"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnAdminUnlock").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定要解鎖 admin？")) return; await setAdminLocked(false); alert("admin 已解鎖"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnPlayerLock").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定要上鎖 player？（不做白名單 gate，只凍結 playerDevices 新增/修改）")) return; await setPlayerLocked(true); alert("player 已上鎖"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnPlayerUnlock").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定要解鎖 player？")) return; await setPlayerLocked(false); alert("player 已解鎖"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+
+  // Other UI
+  $("btnRefresh").addEventListener("click", async () => {
+    try { await requireSuper(); await activeCount("adminDevices"); await activeCount("playerDevices"); alert("已刷新（此頁本來就即時同步）"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnSeenRefresh").addEventListener("click", async () => {
+    try { await requireSuper(); const s = await db.ref("devicesSeen").get(); seenCache = s.val() || {}; renderSeen(seenCache); alert("devicesSeen 已刷新"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+
+  $("btnRevokeAllAdmin").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定剔除所有 admin 裝置？")) return; await revokeAll("adminDevices"); alert("已剔除所有 admin 裝置"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnRevokeAllPlayer").addEventListener("click", async () => {
+    try { await requireSuper(); if (!confirm("確定剔除所有 player 記錄？")) return; await revokeAll("playerDevices"); alert("已剔除所有 player 記錄"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+  $("btnAddPlayerDevice").addEventListener("click", async () => {
+    try { await addPlayerDeviceManual(); alert("已加入 playerDevices（記錄用）"); }
+    catch (e) { alert(e?.message || "失敗"); }
+  });
+
+  // Delegation
+  document.body.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("button");
+    if (!btn) return;
+
+    const approveKey = btn.getAttribute("data-approve");
+    const rejectKey  = btn.getAttribute("data-reject");
+    const revokeInfo = btn.getAttribute("data-revoke");
+    const saveRoleId = btn.getAttribute("data-save-role");
+    const kickPlayerId = btn.getAttribute("data-kick-player");
+    const delSeenId = btn.getAttribute("data-del-seen");
+
+    try {
+      if (approveKey) {
+        await requireSuper();
+        const r = reqCache?.[approveKey];
+        if (!r) return alert("申請不存在或已處理");
+        if (!confirm(`核准此 admin 申請？\n\n${r.want} / ${r.label}\n${r.deviceId}`)) return;
+        await approveAdminReq(approveKey, r);
+        return alert("已核准");
+      }
+      if (rejectKey) {
+        await requireSuper();
+        const r = reqCache?.[rejectKey];
+        if (!confirm(`拒絕此申請？\n\n${r?.want} / ${r?.label}\n${r?.deviceId}`)) return;
+        await rejectReq(rejectKey);
+        return alert("已拒絕");
+      }
+      if (revokeInfo) {
+        await requireSuper();
+        const [listPath, deviceId] = revokeInfo.split("|");
+        if (!confirm(`確定剔除此設備？\n\n${deviceId}`)) return;
+        await revokeDevice(listPath, deviceId);
+        return alert("已剔除");
+      }
+      if (kickPlayerId) {
+        await requireSuper();
+        if (!confirm(`確定踢除此玩家裝置？\n\n${kickPlayerId}\n\n（效果：移除 playerAllowed，若已鎖定玩家，該裝置將無法再進 player.html）`)) return;
+        await db.ref(`playerAllowed/${kickPlayerId}`).remove();
+        return alert('已踢除（playerAllowed 已移除）');
+      }
+      if (delSeenId) {
+        await requireSuper();
+        if (!confirm(`確定從 devicesSeen 移除此裝置紀錄？\n\n${delSeenId}`)) return;
+        await db.ref(`devicesSeen/${delSeenId}`).remove();
+        return alert('devicesSeen 已移除');
+      }
+
+      if (saveRoleId) {
+        await requireSuper();
+        const sel = document.querySelector(`select[data-role="${CSS.escape(saveRoleId)}"]`);
+        const role = sel ? sel.value : "admin1";
+        await setAdminRole(saveRoleId, role);
+        return alert("已更新 role");
+      }
+    } catch (e) {
+      alert(e?.message || "操作失敗");
+    }
+  });
+
+  // Auth state
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      $("loginCard").classList.remove("hide");
+      $("main").classList.add("hide");
+      return;
+    }
+    $("whoEmail").textContent = user.email || "-";
+    $("whoUid").textContent = user.uid || "-";
+
+    try {
+      if (!(await isSuper(user.uid))) {
+        $("loginCard").classList.add("hide");
+        $("main").classList.add("hide");
+        alert("你不是 SUPER，無法使用此頁。");
+        return;
+      }
+      $("loginCard").classList.add("hide");
+      $("main").classList.remove("hide");
+      bindRealtime();
+    } catch (e) {
+      alert(e?.message || "載入失敗");
+    }
+  });
+</script>
+</body>
+</html>

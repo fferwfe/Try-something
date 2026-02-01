@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷-萬能管理主控台</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#2c3e50;
+      --card:#34495e;
+      --shadow:rgba(0,0,0,0.3);
+      --row:rgba(0,0,0,0.25);
+
+      --yellow:#f1c40f;
+      --teal:#1abc9c;
+
+      /* +10 深綠、+1 淺綠、-10 深紅、-1 淺紅 */
+      --plus:#4ade80;   /* +1 */
+      --plus10:#16a34a; /* +10 */
+      --minus:#f87171;  /* -1 */
+      --minus10:#b91c1c;/* -10 */
+
+      --warn:#f39c12;
+      --danger:#e74c3c;
+      --purple:#8e44ad;
+      --blue:#3498db;
+    }
+
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',sans-serif;
+      background:var(--bg);
+      color:#fff;
+      padding:20px;
+      text-align:center;
+      margin:0;
+    }
+
+    .card{
+      background:var(--card);
+      padding:15px 20px;
+      border-radius:20px;
+      max-width:650px;
+      margin:15px auto;
+      text-align:left;
+      position:relative;
+      border-left:6px solid var(--teal);
+      box-shadow:0 4px 15px var(--shadow);
+    }
+
+    .res-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin:8px 0;
+      background:var(--row);
+      padding:8px 15px;
+      border-radius:12px;
+      gap:10px;
+    }
+
+    .label-text{
+      font-weight:bold;
+      font-size:1.1em;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .val{
+      font-size:1.5em;
+      font-weight:bold;
+      color:var(--yellow);
+      min-width:60px;
+      text-align:center;
+    }
+
+    input,textarea,select{
+      width:100%;
+      padding:12px;
+      margin:8px 0;
+      border-radius:10px;
+      border:none;
+      box-sizing:border-box;
+      font-size:16px;
+      background:#ecf0f1;
+      color:#333;
+    }
+
+    .hint{opacity:.85;font-size:.95em;margin-top:4px;}
+
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:800;
+      color:#fff;
+      transition:transform .15s, filter .15s;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
+    }
+    .btn:hover{filter:brightness(1.08);}
+    .btn:active{transform:scale(0.96);}
+
+    .btn.plus{background:var(--plus);}
+    .btn.plus10{background:var(--plus10);}
+    .btn.minus{background:var(--minus);}
+    .btn.minus10{background:var(--minus10);}
+
+    .btn.warn{background:var(--warn); color:#1b1203;}
+    .btn.danger{background:var(--danger); color:#2a0705;}
+    .btn.blue{background:var(--blue);}
+
+    .global-btn{
+      width:100%;
+      padding:15px;
+      border:none;
+      border-radius:12px;
+      font-weight:bold;
+      cursor:pointer;
+      color:#fff;
+      font-size:1.1em;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .bottom-actions{
+      max-width:650px;
+      margin:40px auto;
+      display:flex;
+      flex-direction:column;
+      gap:15px;
+      align-items:center;
+    }
+
+    .clear-single{
+      position:absolute;
+      top:15px;
+      right:15px;
+      background:var(--purple);
+      font-size:13px;
+      padding:6px 12px;
+      border-radius:8px;
+      border:none;
+      color:#fff;
+      cursor:pointer;
+    }
+
+    .inv-tag{
+      background:var(--purple);
+      color:#fff;
+      padding:4px 12px;
+      border-radius:8px;
+      margin:4px;
+      display:inline-block;
+      font-size:14px;
+    }
+    .inv-tag i{cursor:pointer;margin-left:8px;color:#ffbcbc;}
+    .inv-input{width:60% !important;display:inline-block !important;padding:10px !important;margin:0 !important;}
+
+    #auth-overlay{
+      position:fixed; inset:0;
+      background:#1a1a1a;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:1000;
+    }
+    .hide{display:none !important;}
+
+    #local-timer{
+      font-size:2.5em;
+      font-weight:900;
+      font-family:monospace;
+      color:var(--yellow);
+      text-align:center;
+      margin:10px 0;
+    }
+
+    .row{margin:10px 0;}
+    .row label{display:block;font-weight:700;margin-bottom:6px;}
+    .row input[type="range"]{width:100%;}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(0,0,0,0.22);
+      font-weight:800;
+      font-size:0.95em;
+    }
+    .pill b{color:var(--yellow);}
+  </style>
+
+
+<!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --row:rgba(2,6,23,0.05);
+    --text:#0f172a;
+    --muted:rgba(15,23,42,0.72);
+    --shadow:rgba(2,6,23,0.12);
+
+    --blue:#3b82f6;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --violet:#8b5cf6;
+    --yellow:#fbbf24;
+
+    --radius:18px;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+      radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+      radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+      var(--bg) !important;
+    color:var(--text) !important;
+    margin:0 !important;
+    padding:14px !important;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* mobile-first container */
+  .wrap,.menu,.container,.main,.app{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+  }
+
+  /* common card look */
+  .card,.box,.config-card,#auth-overlay>div{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-radius:var(--radius) !important;
+    box-shadow:0 10px 26px var(--shadow) !important;
+    border:1px solid rgba(2,6,23,0.08) !important;
+  }
+
+  /* tighten text */
+  p,.hint,.sub,.small{color:var(--muted) !important;}
+
+  h1{font-size:1.6rem;margin:10px 0 12px;}
+  h2{font-size:1.25rem;}
+  h3{font-size:1.1rem;}
+
+  /* buttons */
+  .btn,.global-btn,.menu .btn,a.btn{
+    border-radius:14px !important;
+    font-weight:900 !important;
+    letter-spacing:0.2px;
+    box-shadow:0 6px 14px rgba(2,6,23,0.10);
+  }
+  .btn.plus{background:var(--ok) !important;}
+  .btn.plus10{background:rgba(34,197,94,0.92) !important;}
+  .btn.minus{background:rgba(239,68,68,0.75) !important;}
+  .btn.minus10{background:var(--danger) !important;}
+  .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
+  .btn.danger{background:var(--danger) !important;}
+  .btn.blue{background:var(--blue) !important;}
+  .btn.purple{background:var(--violet) !important;}
+
+  /* inputs */
+  input,select,textarea{
+    border-radius:12px !important;
+    font-size:16px !important;
+    background:#ffffff !important;
+    color:var(--text) !important;
+    border:1px solid rgba(2,6,23,0.14) !important;
+    box-shadow:0 6px 16px rgba(2,6,23,0.06);
+  }
+
+  /* rows */
+  .res-row,.row{flex-wrap:wrap;}
+  .res-row{background:var(--row) !important;}
+
+  /* values */
+  .val{color:var(--blue) !important;}
+
+  /* bottom actions */
+  .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+
+  /* overlay */
+  #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+</style>
+
+</head>
+
+<body>
+
+  <!-- Auth overlay：Email/Password 登入 -->
+  <div id="auth-overlay">
+    <div style="background:#2c3e50; padding:34px; border-radius:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 380px;">
+      <h2 style="margin:0 0 12px;"><i class="fas fa-lock"></i> 管理員登入</h2>
+
+      <input id="loginEmail" type="email" placeholder="Email（例如：boy96161@gmail.com）">
+      <input id="loginPass" type="password" placeholder="Password">
+
+      <button class="global-btn" style="background:var(--blue);" id="btnLogin">
+        <i class="fa-solid fa-right-to-bracket"></i> 登入
+      </button>
+
+      <div class="hint" style="margin-top:10px;">
+        ※ 本頁已改成「申請制」：只有主控能核准/剔除設備。
+      </div>
+    </div>
+  </div>
+
+  <!-- 未授權畫面：只能送申請，不能自己加入 -->
+  <div id="blocked-panel" class="card hide" style="border-left-color:var(--danger);">
+    <h3 class="label-text"><i class="fas fa-ban"></i> 此設備尚未授權</h3>
+    <div class="hint">
+      你已登入，但此設備尚未被主控核准。請填寫設備名稱並送出申請。
+    </div>
+
+    <div class="row">
+      <label>設備名稱（label）</label>
+      <input id="deviceLabel" type="text" placeholder="例如：教室筆電A / 管理員手機2 / 玩家平板3">
+      <div class="hint">主控核准時會用這個名稱辨識。</div>
+    </div>
+
+    <div class="row">
+      <label>申請類型</label>
+      <select id="reqType">
+        <option value="admin">管理員設備（最多 10 台）</option>
+        <option value="player">玩家設備（最多 10 台）</option>
+      </select>
+      <div class="hint">A 模式：玩家設備不綁玩家編號，進入玩家端後可自行選玩家。</div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+      <button class="btn warn" id="btnSubmitReq"><i class="fa-solid fa-paper-plane"></i> 送出申請</button>
+      <button class="btn danger" id="btnLogoutBlocked"><i class="fa-solid fa-right-from-bracket"></i> 登出</button>
+    </div>
+
+    <div class="hint" style="margin-top:10px;">
+      本機 deviceId：<b id="deviceIdText"></b>
+    </div>
+  </div>
+
+  <!-- 主內容 -->
+  <div id="admin-main" class="hide">
+    <h1>🎮 人生履歷 控制中心</h1>
+
+    <!-- 狀態列 -->
+    <div class="card" style="border-left-color:#7f8c8d;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="pill"><i class="fa-solid fa-user"></i> <span id="whoEmail">-</span></div>
+        <div class="pill"><i class="fa-solid fa-key"></i> role：<b id="whoRole">-</b></div>
+        <div class="pill"><i class="fa-solid fa-fingerprint"></i> device：<b id="whoDev">-</b></div>
+        <button class="btn danger" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i> 登出</button>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        ※ 只有主控能核准/剔除設備；一般管理員只能做遊戲管理功能。
+      </div>
+    </div>
+
+    <!-- 主控面板：只有主控看得到 -->
+    <div id="super-panel" class="card hide" style="border-left-color:var(--warn);">
+      <h3 class="label-text"><i class="fas fa-crown"></i> 主控面板（最高權限）</h3>
+
+      <div class="res-row">
+        <div class="label-text"><i class="fa-solid fa-inbox"></i> 申請清單</div>
+        <div class="pill">管理員：<b id="adminCount">0</b>/10　玩家：<b id="playerCount">0</b>/10</div>
+      </div>
+
+      <div id="reqList" style="margin-top:8px;"></div>
+
+      <div class="res-row" style="margin-top:12px;">
+        <div class="label-text"><i class="fa-solid fa-list"></i> 已授權設備（可剔除）</div>
+        <div class="hint" style="margin:0;">剔除後名額釋放</div>
+      </div>
+      <div id="deviceList" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- 跑馬燈公告 -->
+    <div class="card" style="border-left-color:#3498db;">
+      <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告</h3>
+      <textarea id="broadcastMsg" placeholder="輸入要廣播的公告內容..."></textarea>
+      <div style="display:flex; gap:10px;">
+        <button class="global-btn" style="background:#3498db; flex:2;" id="btnBroadcast">發送公告</button>
+        <button class="global-btn" style="background:#7f8c8d; flex:1;" id="btnBroadcastClear">清除</button>
+      </div>
+    </div>
+
+    <!-- 計時控制 -->
+    <div class="card" style="border-left-color:#9b59b6;">
+      <h3 class="label-text"><i class="fas fa-stopwatch"></i> 計時控制</h3>
+      <div id="local-timer">00:00</div>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <input type="number" id="setTimerSec" value="60" style="flex:1;">
+        <button class="btn plus" style="flex:1;" id="btnTimerStart">▶️ 開始</button>
+        <button class="btn warn" style="flex:1;" id="btnTimerPause">⏸️ 暫停</button>
+      </div>
+      <button class="global-btn" style="background:var(--danger);" id="btnTimerReset">🔄 重製時間</button>
+    </div>
+
+    <!-- 大螢幕控制台（controls：只有主控 rules 允許寫入） -->
+    <div class="card" style="border-left-color:#f39c12;">
+      <h2 style="margin:0 0 10px 0;"><i class="fa-solid fa-sliders"></i> 大螢幕控制台（主控寫入）</h2>
+
+      <div class="row">
+        <label>跑馬燈速度（秒，越小越快）</label>
+        <input id="ctrlMarquee" type="range" min="3" max="60" step="1" value="10">
+        <div class="hint">目前：<span id="ctrlMarqueeVal">10</span>s</div>
+      </div>
+
+      <div class="row">
+        <label>彈幕速度（秒，越小越快）</label>
+        <input id="ctrlDanmaku" type="range" min="3" max="60" step="1" value="10">
+        <div class="hint">目前：<span id="ctrlDanmakuVal">10</span>s</div>
+      </div>
+
+      <div class="row">
+        <label>彈幕字體大小（px）</label>
+        <input id="ctrlFont" type="range" min="12" max="64" step="1" value="22">
+        <div class="hint">目前：<span id="ctrlFontVal">22</span>px</div>
+      </div>
+
+      <div class="row">
+        <label>同時彈幕數量上限</label>
+        <input id="ctrlMaxOn" type="range" min="1" max="30" step="1" value="8">
+        <div class="hint">目前：<span id="ctrlMaxOnVal">8</span> 條</div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <button class="btn blue" id="btnSaveCtrl"><i class="fa-solid fa-floppy-disk"></i> 立即套用</button>
+        <button class="btn warn" id="btnResetCtrl"><i class="fa-solid fa-rotate-left"></i> 還原預設</button>
+        <button class="btn danger" id="btnClearDanmaku"><i class="fa-solid fa-broom"></i> 清空彈幕</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px;">
+        ※ 規則建議：controls 只讓主控寫（你 rules 若已鎖主控，非主控按下會失敗）。
+      </div>
+    </div>
+
+    <!-- 玩家清單容器 -->
+    <div id="player-list"></div>
+
+    <!-- 底部重置 -->
+    <div class="bottom-actions">
+      <button class="global-btn" style="background:var(--warn);" id="btnResetAllRes">
+        <i class="fas fa-eraser"></i> 清空資源、分數與背包 (不刪玩家名字)
+      </button>
+      <button class="global-btn" style="background:#c0392b;" id="btnResetTotal">
+        <i class="fas fa-trash-alt"></i> 徹底重置遊戲 (清空所有資料)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /***********************
+     * 0) Firebase init
+     ***********************/
+    const firebaseConfig = {
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    /***********************
+     * 1) 共用：deviceId（localStorage）
+     ***********************/
+    function getDeviceId() {
+      const KEY = "device_id";
+      let id = localStorage.getItem(KEY);
+      if (!id) {
+        id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(16).slice(2) + Date.now()));
+        localStorage.setItem(KEY, id);
+      }
+      return id;
+    }
+
+    /***********************
+     * 2) 權限判斷
+     ***********************/
+    async function isSuper(uid) {
+      const s = await db.ref("superAdmins/" + uid).get();
+      return s.exists() && s.val() === true;
+    }
+
+    async function isAllowedAdminDevice(deviceId) {
+      const s = await db.ref("adminDevices/" + deviceId).get();
+      return s.exists() && s.val()?.revoked !== true;
+    }
+
+    async function activeCount(path) {
+      const snap = await db.ref(path).get();
+      const all = snap.val() || {};
+      return Object.values(all).filter(d => d && d.revoked !== true).length;
+    }
+
+    /***********************
+     * 3) 申請制：送出 joinRequests（任何人可寫）
+     ***********************/
+    async function submitJoinRequest(want, label) {
+      const deviceId = getDeviceId();
+      await db.ref("joinRequests").push({
+        deviceId,
+        label: (label || "").trim() || ("設備-" + deviceId.slice(0,6)),
+        want, // "admin" | "player"
+        createdAt: Date.now(),
+        byUid: auth.currentUser ? auth.currentUser.uid : null,
+        byEmail: auth.currentUser ? (auth.currentUser.email || null) : null
+      });
+    }
+
+    /***********************
+     * 4) 主控：核准/拒絕/剔除
+     ***********************/
+    async function approveRequest(reqKey, reqObj) {
+      const uid = auth.currentUser.uid;
+      if (!(await isSuper(uid))) throw new Error("只有主控可核准");
+
+      const listPath = reqObj.want === "admin" ? "adminDevices" : "playerDevices";
+      const count = await activeCount(listPath);
+      if (count >= 10) throw new Error(`${reqObj.want === "admin" ? "管理員" : "玩家"}設備已滿 10 台`);
+
+      await db.ref(`${listPath}/${reqObj.deviceId}`).set({
+        label: reqObj.label || `${reqObj.want}-${reqObj.deviceId.slice(0,6)}`,
+        revoked: false,
+        createdAt: Date.now(),
+        addedBy: uid
+      });
+
+      await db.ref(`joinRequests/${reqKey}`).remove();
+    }
+
+    async function rejectRequest(reqKey) {
+      const uid = auth.currentUser.uid;
+      if (!(await isSuper(uid))) throw new Error("只有主控可拒絕");
+      await db.ref(`joinRequests/${reqKey}`).remove();
+    }
+
+    async function revokeDevice(listPath, deviceId) {
+      const uid = auth.currentUser.uid;
+      if (!(await isSuper(uid))) throw new Error("只有主控可剔除");
+      await db.ref(`${listPath}/${deviceId}`).update({
+        revoked: true,
+        revokedAt: Date.now(),
+        revokedBy: uid
+      });
+    }
+
+    /***********************
+     * 5) UI：渲染主控清單
+     ***********************/
+    const $reqList = document.getElementById("reqList");
+    const $deviceList = document.getElementById("deviceList");
+    const $adminCount = document.getElementById("adminCount");
+    const $playerCount = document.getElementById("playerCount");
+
+    function renderRequests(reqs) {
+      const entries = Object.entries(reqs || {})
+        .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+      if (entries.length === 0) {
+        $reqList.innerHTML = `<div class="hint">（目前沒有申請）</div>`;
+        return;
+      }
+
+      $reqList.innerHTML = entries.map(([key, r]) => {
+        const wantName = r.want === "admin" ? "管理員設備" : "玩家設備";
+        return `
+          <div class="res-row" style="align-items:flex-start;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:900;">
+                <i class="fa-solid ${r.want==='admin' ? 'fa-user-shield' : 'fa-gamepad'}"></i>
+                ${wantName}：${escapeHtml(r.label || "")}
+              </div>
+              <div class="hint" style="margin:6px 0 0;">
+                deviceId：${escapeHtml(r.deviceId || "")}<br>
+                申請者：${escapeHtml(r.byEmail || "-")}<br>
+                時間：${new Date(r.createdAt || Date.now()).toLocaleString()}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn plus10" data-approve="${key}"><i class="fa-solid fa-check"></i> 核准</button>
+              <button class="btn danger" data-reject="${key}"><i class="fa-solid fa-xmark"></i> 拒絕</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderDevices(admins, players) {
+      const build = (kind, obj) => {
+        const listPath = kind === "admin" ? "adminDevices" : "playerDevices";
+        const title = kind === "admin" ? "管理員設備" : "玩家設備";
+        const icon = kind === "admin" ? "fa-user-shield" : "fa-gamepad";
+
+        const entries = Object.entries(obj || {})
+          .filter(([_, v]) => v && v.revoked !== true)
+          .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+        return `
+          <div style="margin-top:10px; padding:10px; border-radius:12px; background:rgba(0,0,0,0.18);">
+            <div class="label-text" style="margin-bottom:8px;">
+              <i class="fas ${icon}"></i> ${title}（${entries.length}/10）
+            </div>
+            ${entries.length === 0 ? `<div class="hint">（目前沒有已授權設備）</div>` : ""}
+            ${entries.map(([id, v]) => `
+              <div class="res-row">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(v.label || (kind + "-" + id.slice(0,6)))}
+                  </div>
+                  <div class="hint" style="margin:0;">deviceId：${escapeHtml(id)}</div>
+                </div>
+                <button class="btn danger" data-revoke="${listPath}|${id}">
+                  <i class="fa-solid fa-user-slash"></i> 剔除
+                </button>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      };
+
+      const adminEntries = Object.entries(admins || {}).filter(([_,v]) => v && v.revoked !== true).length;
+      const playerEntries = Object.entries(players || {}).filter(([_,v]) => v && v.revoked !== true).length;
+      $adminCount.textContent = String(adminEntries);
+      $playerCount.textContent = String(playerEntries);
+
+      $deviceList.innerHTML = build("admin", admins) + build("player", players);
+    }
+
+    function bindSuperRealtime() {
+      // 監聽 joinRequests + 兩個設備名單
+      let reqs = {};
+      let admins = {};
+      let players = {};
+
+      db.ref("joinRequests").on("value", s => { reqs = s.val() || {}; renderRequests(reqs); });
+      db.ref("adminDevices").on("value", s => { admins = s.val() || {}; renderDevices(admins, players); });
+      db.ref("playerDevices").on("value", s => { players = s.val() || {}; renderDevices(admins, players); });
+
+      // 主控面板事件委派：核准/拒絕/剔除
+      document.getElementById("super-panel").addEventListener("click", async (e) => {
+        const t = e.target.closest("button");
+        if (!t) return;
+
+        const approveKey = t.getAttribute("data-approve");
+        const rejectKey = t.getAttribute("data-reject");
+        const revokeInfo = t.getAttribute("data-revoke");
+
+        try {
+          if (approveKey) {
+            const r = reqs[approveKey];
+            if (!r) return alert("申請不存在或已處理");
+            if (!confirm(`核准此申請？\n\n${r.want} / ${r.label}\n${r.deviceId}`)) return;
+            await approveRequest(approveKey, r);
+            return alert("已核准");
+          }
+
+          if (rejectKey) {
+            const r = reqs[rejectKey];
+            if (!confirm(`拒絕此申請？\n\n${r?.want} / ${r?.label}\n${r?.deviceId}`)) return;
+            await rejectRequest(rejectKey);
+            return alert("已拒絕");
+          }
+
+          if (revokeInfo) {
+            const [listPath, deviceId] = revokeInfo.split("|");
+            if (!confirm(`確定剔除此設備？\n\n${deviceId}`)) return;
+            await revokeDevice(listPath, deviceId);
+            return alert("已剔除（名額已釋放）");
+          }
+        } catch (err) {
+          alert(err.message || "操作失敗");
+        }
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    /***********************
+     * 6) 遊戲功能：資源欄位
+     ***********************/
+    const resConfig = {
+      time:      { name: '時間', icon: 'fa-clock',     color: '#9b59b6' },
+      money:     { name: '金錢', icon: 'fa-wallet',    color: '#f1c40f' },
+      health:    { name: '健康', icon: 'fa-heartbeat', color: '#e74c3c' },
+      knowledge: { name: '知識', icon: 'fa-book',      color: '#3498db' },
+      social:    { name: '人際', icon: 'fa-users',     color: '#2ecc71' },
+      score:     { name: '分數', icon: 'fa-star',      color: '#f39c12' }
+    };
+
+    /***********************
+     * 7) 公告
+     ***********************/
+    function sendTextBroadcast() {
+      const msg = document.getElementById("broadcastMsg").value || "";
+      db.ref("broadcast").set({ message: msg, time: Date.now() });
+    }
+    function clearBroadcast() {
+      db.ref("broadcast").set({ message: "", time: Date.now() });
+      document.getElementById("broadcastMsg").value = "";
+    }
+
+    /***********************
+     * 8) 計時器同步
+     ***********************/
+    let timeLeft = 60;
+    let isRunning = false;
+
+    function syncTimer() {
+      db.ref("timerSync").set({ timeLeft, isRunning, lastUpdate: Date.now() });
+    }
+    function setTimerDisplay(sec) {
+      const m = Math.floor(sec/60).toString().padStart(2, '0');
+      const s = (sec%60).toString().padStart(2, '0');
+      document.getElementById("local-timer").innerText = `${m}:${s}`;
+    }
+    function controlTimer(action) {
+      if (action === "start") isRunning = true;
+      if (action === "pause") isRunning = false;
+      if (action === "reset") {
+        isRunning = false;
+        const n = parseInt(document.getElementById("setTimerSec").value, 10);
+        timeLeft = Number.isFinite(n) ? n : 60;
+      }
+      syncTimer();
+    }
+
+    setInterval(() => {
+      if (isRunning && timeLeft > 0) {
+        timeLeft--;
+        syncTimer();
+      }
+    }, 1000);
+
+    db.ref("timerSync").on("value", (s) => {
+      const d = s.val();
+      if (!d) return;
+      timeLeft = d.timeLeft ?? timeLeft;
+      isRunning = d.isRunning ?? isRunning;
+      setTimerDisplay(timeLeft);
+    });
+
+    /***********************
+     * 9) 玩家清單渲染 + 監聽
+     ***********************/
+    function adj(playerId, key, delta) {
+      db.ref(`players/p${playerId}/res/${key}`).transaction(cur => Math.max(0, (cur || 0) + delta));
+    }
+
+    function addInv(playerId) {
+      const input = document.getElementById(`p${playerId}-inv-in`);
+      const name = (input?.value || "").trim();
+      if (!name) return;
+      db.ref(`players/p${playerId}/inventory`).push({ name });
+      input.value = "";
+    }
+
+    function delInv(playerId, itemKey) {
+      if (!confirm("確定移除此清單物品？")) return;
+      db.ref(`players/p${playerId}/inventory/${itemKey}`).remove();
+    }
+
+    function clearP(playerId) {
+      if (!confirm("確定清空此玩家名字與數據？")) return;
+      db.ref(`players/p${playerId}`).set({
+        name: "",
+        res: { time:0, money:0, health:0, knowledge:0, social:0, score:0 }
+      });
+    }
+
+    function renderList() {
+      const list = document.getElementById("player-list");
+      list.innerHTML = "";
+
+      for (let i=1; i<=10; i++) {
+        let h = `
+          <div class="card">
+            <button class="clear-single" data-clear="${i}">清除玩家</button>
+            <h3><i class="fas fa-user"></i> <span id="p${i}-n"></span> (ID:${i})</h3>
+        `;
+
+        Object.keys(resConfig).forEach(k => {
+          const isScore = (k === "score");
+          h += `
+            <div class="res-row">
+              <span class="label-text" style="color:${resConfig[k].color}">
+                <i class="fas ${resConfig[k].icon}"></i> ${resConfig[k].name}
+              </span>
+
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                ${!isScore ? `<button class="btn minus10" data-adj="${i}|${k}|-10">-10</button>` : ""}
+                <button class="btn minus" data-adj="${i}|${k}|-1">-1</button>
+                <span class="val" id="p${i}-${k}">0</span>
+                <button class="btn plus" data-adj="${i}|${k}|1">+1</button>
+                ${!isScore ? `<button class="btn plus10" data-adj="${i}|${k}|10">+10</button>` : ""}
+              </div>
+            </div>
+          `;
+        });
+
+        h += `
+          <div style="border-top:1px solid #555; margin-top:15px; padding-top:15px;">
+            <span class="label-text"><i class="fas fa-briefcase"></i> 人生背包管理:</span>
+            <div id="p${i}-inv-display" style="margin:8px 0; min-height:30px;"></div>
+            <input type="text" id="p${i}-inv-in" class="inv-input" placeholder="手動增加物品名稱...">
+            <button class="btn plus" data-addinv="${i}">新增</button>
+          </div>
+          </div>
+        `;
+
+        list.insertAdjacentHTML("beforeend", h);
+
+        db.ref(`players/p${i}`).on("value", s => {
+          const d = s.val() || {};
+          const nameEl = document.getElementById(`p${i}-n`);
+          if (nameEl) nameEl.innerText = d.name || "空位";
+
+          Object.keys(resConfig).forEach(k => {
+            const el = document.getElementById(`p${i}-${k}`);
+            if (el) el.innerText = (d.res && d.res[k]) || 0;
+          });
+
+          const invDiv = document.getElementById(`p${i}-inv-display`);
+          if (!invDiv) return;
+          invDiv.innerHTML = "";
+          if (d.inventory) {
+            for (let key in d.inventory) {
+              const item = d.inventory[key];
+              invDiv.insertAdjacentHTML("beforeend",
+                `<span class="inv-tag">${escapeHtml(item.name)}
+                   <i class="fas fa-times" data-delinv="${i}|${key}"></i>
+                 </span>`
+              );
+            }
+          }
+        });
+      }
+
+      // 事件委派（只綁一次）
+      list.addEventListener("click", (e) => {
+        const t = e.target;
+
+        const clearId = t.getAttribute?.("data-clear");
+        if (clearId) return clearP(Number(clearId));
+
+        const adjData = t.getAttribute?.("data-adj");
+        if (adjData) {
+          const [pid, key, delta] = adjData.split("|");
+          return adj(Number(pid), key, Number(delta));
+        }
+
+        const addInvId = t.getAttribute?.("data-addinv");
+        if (addInvId) return addInv(Number(addInvId));
+
+        const delInvData = t.getAttribute?.("data-delinv");
+        if (delInvData) {
+          const [pid, itemKey] = delInvData.split("|");
+          return delInv(Number(pid), itemKey);
+        }
+      }, { once: true });
+    }
+
+    /***********************
+     * 10) 重置
+     ***********************/
+    function resetAllRes() {
+      if (!confirm("確定清空所有人的資源、分數與背包？")) return;
+      for (let i=1; i<=10; i++) {
+        db.ref(`players/p${i}`).update({
+          res: { time:0, money:0, health:0, knowledge:0, social:0, score:0 },
+          inventory: null
+        });
+      }
+    }
+
+    function resetTotal() {
+      if (!confirm("重置將清空整個資料庫（含名字與公告），確定？")) return;
+      db.ref("players").remove();
+      db.ref("broadcast").remove();
+      db.ref("timerSync").remove();
+      db.ref("controls").remove();
+      db.ref("purchaseFeed").remove();
+      location.reload();
+    }
+
+    /***********************
+     * 11) 大螢幕 controls
+     ***********************/
+    const ctrlRef = db.ref("controls");
+    const $m = document.getElementById("ctrlMarquee");
+    const $d = document.getElementById("ctrlDanmaku");
+    const $f = document.getElementById("ctrlFont");
+    const $x = document.getElementById("ctrlMaxOn");
+
+    const $mv = document.getElementById("ctrlMarqueeVal");
+    const $dv = document.getElementById("ctrlDanmakuVal");
+    const $fv = document.getElementById("ctrlFontVal");
+    const $xv = document.getElementById("ctrlMaxOnVal");
+
+    function syncVals(){
+      if ($mv && $m) $mv.textContent = $m.value;
+      if ($dv && $d) $dv.textContent = $d.value;
+      if ($fv && $f) $fv.textContent = $f.value;
+      if ($xv && $x) $xv.textContent = $x.value;
+    }
+    [$m,$d,$f,$x].forEach(el => el && el.addEventListener("input", syncVals));
+    function applyControls(payload){ return ctrlRef.update(payload); }
+
+    ctrlRef.on("value", (snap) => {
+      const c = snap.val() || {};
+      if ($m) $m.value = Number(c.marqueeDurationSec ?? 10);
+      if ($d) $d.value = Number(c.danmakuDurationSec ?? 10);
+      if ($f) $f.value = Number(c.danmakuFontSizePx ?? 22);
+      if ($x) $x.value = Number(c.danmakuMaxOnScreen ?? 8);
+      syncVals();
+    });
+
+    /***********************
+     * 12) Gate：登入後決定顯示哪個畫面
+     ***********************/
+    async function showByRole(user) {
+      const deviceId = getDeviceId();
+
+      // 顯示 deviceId（未授權卡片）
+      const devText = document.getElementById("deviceIdText");
+      if (devText) devText.textContent = deviceId;
+
+      // 狀態列
+      document.getElementById("whoEmail").textContent = user.email || "-";
+      document.getElementById("whoDev").textContent = deviceId;
+
+      const superRole = await isSuper(user.uid);
+      if (superRole) {
+        document.getElementById("whoRole").textContent = "super";
+        document.getElementById("super-panel").classList.remove("hide");
+        bindSuperRealtime();
+        return { role:"super" };
+      }
+
+      // 非主控 → 必須是已核准的 adminDevices 才能進 admin 主畫面
+      const allowed = await isAllowedAdminDevice(deviceId);
+      if (allowed) {
+        document.getElementById("whoRole").textContent = "admin";
+        document.getElementById("super-panel").classList.add("hide");
+        return { role:"admin" };
+      }
+
+      document.getElementById("whoRole").textContent = "blocked";
+      return { role:"blocked" };
+    }
+
+    /***********************
+     * 13) DOM Ready 綁定事件 + Auth 監聽
+     ***********************/
+    document.addEventListener("DOMContentLoaded", () => {
+
+      // 登入按鈕
+      document.getElementById("btnLogin").addEventListener("click", async () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        const pass = document.getElementById("loginPass").value;
+        if (!email || !pass) return alert("請輸入 Email 與密碼");
+        try {
+          await auth.signInWithEmailAndPassword(email, pass);
+        } catch (e) {
+          alert(e.message || "登入失敗");
+        }
+      });
+
+      // 登出
+      document.getElementById("btnLogout").addEventListener("click", async () => {
+        await auth.signOut();
+        location.reload();
+      });
+      document.getElementById("btnLogoutBlocked").addEventListener("click", async () => {
+        await auth.signOut();
+        location.reload();
+      });
+
+      // 未授權：送出申請
+      document.getElementById("btnSubmitReq").addEventListener("click", async () => {
+        const label = document.getElementById("deviceLabel").value || "";
+        const want = document.getElementById("reqType").value || "admin";
+        try {
+          await submitJoinRequest(want, label);
+          alert("已送出申請！請通知主控核准後再重新整理。");
+        } catch (e) {
+          alert(e.message || "送出失敗");
+        }
+      });
+
+      // broadcast
+      document.getElementById("btnBroadcast").addEventListener("click", sendTextBroadcast);
+      document.getElementById("btnBroadcastClear").addEventListener("click", clearBroadcast);
+
+      // timer
+      document.getElementById("btnTimerStart").addEventListener("click", () => controlTimer("start"));
+      document.getElementById("btnTimerPause").addEventListener("click", () => controlTimer("pause"));
+      document.getElementById("btnTimerReset").addEventListener("click", () => controlTimer("reset"));
+
+      // controls
+      document.getElementById("btnSaveCtrl").addEventListener("click", async () => {
+        const payload = {
+          marqueeDurationSec: Number($m.value),
+          danmakuDurationSec: Number($d.value),
+          danmakuFontSizePx: Number($f.value),
+          danmakuMaxOnScreen: Number($x.value)
+        };
+        try {
+          await applyControls(payload);
+          alert("已套用到大螢幕！");
+        } catch (e) {
+          alert("套用失敗（若 rules 限制 controls 只給主控寫，非主控會失敗）");
+        }
+      });
+
+      document.getElementById("btnResetCtrl").addEventListener("click", async () => {
+        const payload = { marqueeDurationSec: 10, danmakuDurationSec: 10, danmakuFontSizePx: 22, danmakuMaxOnScreen: 8 };
+        try {
+          await applyControls(payload);
+          alert("已還原預設！");
+        } catch (e) {
+          alert("還原失敗（可能非主控）");
+        }
+      });
+
+      document.getElementById("btnClearDanmaku").addEventListener("click", async () => {
+        if (!confirm("確定要清空彈幕（purchaseFeed）？")) return;
+        await db.ref("purchaseFeed").remove();
+        alert("彈幕已清空！");
+      });
+
+      // reset
+      document.getElementById("btnResetAllRes").addEventListener("click", resetAllRes);
+      document.getElementById("btnResetTotal").addEventListener("click", resetTotal);
+
+      setTimerDisplay(timeLeft);
+      syncVals();
+
+      // Auth 狀態監聽：決定顯示哪個畫面
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          document.getElementById("auth-overlay").classList.remove("hide");
+          document.getElementById("admin-main").classList.add("hide");
+          document.getElementById("blocked-panel").classList.add("hide");
+          return;
+        }
+
+        document.getElementById("auth-overlay").classList.add("hide");
+
+        const r = await showByRole(user);
+
+        // 先全部隱藏
+        document.getElementById("admin-main").classList.add("hide");
+        document.getElementById("blocked-panel").classList.add("hide");
+
+        if (r.role === "blocked") {
+          document.getElementById("blocked-panel").classList.remove("hide");
+          return;
+        }
+
+        // admin or super
+        document.getElementById("admin-main").classList.remove("hide");
+        renderList();
+      });
+    });
+  </script>
+</body>
+</html>

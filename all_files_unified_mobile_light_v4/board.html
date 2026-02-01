@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>人生履歷 - 願景白板</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; margin: 0; padding: 0; overflow: hidden; min-height:100vh; }
+        
+        /* 無限畫布背景 */
+        #board-canvas {
+            width: 100vw; min-height:100vh;
+            background-color: #1e293b;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 30px 30px;
+            position: relative;
+        }
+
+        /* 頂部控制列（僅限主控者操作時顯示） */
+        .board-header {
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            display: flex; gap: 10px; background: rgba(15, 23, 42, 0.8);
+            padding: 15px; border-radius: 12px; border: 1px solid #334155;
+        }
+
+        input { background: #0f172a; color: white; border: 1px solid #4a5568; padding: 10px; border-radius: 5px; width: 200px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; background: #60a5fa; color: white; }
+
+        /* 便利貼樣式 */
+        .note {
+            position: absolute; width: 160px; min-height: 100px; padding: 15px;
+            background: #fde047; color: #1e293b; border-radius: 4px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3); cursor: move;
+            font-weight: bold; line-height: 1.4; transform: rotate(-1deg);
+        }
+        .note:nth-child(even) { background: #a5f3fc; transform: rotate(2deg); }
+        .note:nth-child(3n) { background: #fca5a5; transform: rotate(-2deg); }
+        
+        .note-close { position: absolute; top: 2px; right: 5px; cursor: pointer; color: rgba(0,0,0,0.3); }
+    </style>
+
+
+<!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --row:rgba(2,6,23,0.05);
+    --text:#0f172a;
+    --muted:rgba(15,23,42,0.72);
+    --shadow:rgba(2,6,23,0.12);
+
+    --blue:#3b82f6;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --violet:#8b5cf6;
+    --yellow:#fbbf24;
+
+    --radius:18px;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+      radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+      radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+      var(--bg) !important;
+    color:var(--text) !important;
+    margin:0 !important;
+    padding:14px !important;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* mobile-first container */
+  .wrap,.menu,.container,.main,.app{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+  }
+
+  /* common card look */
+  .card,.box,.config-card,#auth-overlay>div{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-radius:var(--radius) !important;
+    box-shadow:0 10px 26px var(--shadow) !important;
+    border:1px solid rgba(2,6,23,0.08) !important;
+  }
+
+  /* tighten text */
+  p,.hint,.sub,.small{color:var(--muted) !important;}
+
+  h1{font-size:1.6rem;margin:10px 0 12px;}
+  h2{font-size:1.25rem;}
+  h3{font-size:1.1rem;}
+
+  /* buttons */
+  .btn,.global-btn,.menu .btn,a.btn{
+    border-radius:14px !important;
+    font-weight:900 !important;
+    letter-spacing:0.2px;
+    box-shadow:0 6px 14px rgba(2,6,23,0.10);
+  }
+  .btn.plus{background:var(--ok) !important;}
+  .btn.plus10{background:rgba(34,197,94,0.92) !important;}
+  .btn.minus{background:rgba(239,68,68,0.75) !important;}
+  .btn.minus10{background:var(--danger) !important;}
+  .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
+  .btn.danger{background:var(--danger) !important;}
+  .btn.blue{background:var(--blue) !important;}
+  .btn.purple{background:var(--violet) !important;}
+
+  /* inputs */
+  input,select,textarea{
+    border-radius:12px !important;
+    font-size:16px !important;
+    background:#ffffff !important;
+    color:var(--text) !important;
+    border:1px solid rgba(2,6,23,0.14) !important;
+    box-shadow:0 6px 16px rgba(2,6,23,0.06);
+  }
+
+  /* rows */
+  .res-row,.row{flex-wrap:wrap;}
+  .res-row{background:var(--row) !important;}
+
+  /* values */
+  .val{color:var(--blue) !important;}
+
+  /* bottom actions */
+  .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+
+  /* overlay */
+  #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+</style>
+
+</head>
+<body>
+
+    <div class="board-header">
+        <input type="text" id="note-text" placeholder="輸入重大事件 (如: 玩家3 買房)">
+        <button class="btn" onclick="addNote()">新增到白板</button>
+        <button class="btn" style="background:#475569" onclick="clearBoard()">清空</button>
+    </div>
+
+    <div id="board-canvas">
+        </div>
+
+<script>
+    const canvas = document.getElementById('board-canvas');
+
+    // 載入舊的白板紀錄
+    window.onload = () => {
+        const savedNotes = JSON.parse(localStorage.getItem('boardNotes') || '[]');
+        savedNotes.forEach(n => createNoteElement(n.id, n.text, n.x, n.y));
+    };
+
+    function addNote() {
+        const text = document.getElementById('note-text').value;
+        if (!text) return;
+        const id = Date.now();
+        const x = 100 + Math.random() * 200;
+        const y = 150 + Math.random() * 200;
+        
+        createNoteElement(id, text, x, y);
+        saveNotes();
+        document.getElementById('note-text').value = '';
+    }
+
+    function createNoteElement(id, text, x, y) {
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.id = id;
+        note.style.left = x + 'px';
+        note.style.top = y + 'px';
+        note.innerHTML = `<span class="note-close" onclick="removeNote(${id})">✖</span>${text}`;
+        
+        // 拖拽功能
+        makeDraggable(note);
+        canvas.appendChild(note);
+    }
+
+    function makeDraggable(el) {
+        let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+        el.onmousedown = (e) => {
+            if(e.target.className === 'note-close') return;
+            p3 = e.clientX; p4 = e.clientY;
+            document.onmouseup = () => {
+                document.onmouseup = null; document.onmousemove = null;
+                saveNotes(); // 停止拖拽後存檔位置
+            };
+            document.onmousemove = (e) => {
+                p1 = p3 - e.clientX; p2 = p4 - e.clientY;
+                p3 = e.clientX; p4 = e.clientY;
+                el.style.top = (el.offsetTop - p2) + "px";
+                el.style.left = (el.offsetLeft - p1) + "px";
+            };
+        };
+    }
+
+    function removeNote(id) {
+        document.getElementById(id).remove();
+        saveNotes();
+    }
+
+    function saveNotes() {
+        const notes = [];
+        document.querySelectorAll('.note').forEach(n => {
+            notes.push({ id: n.id, text: n.innerText.replace('✖', ''), x: parseInt(n.style.left), y: parseInt(n.style.top) });
+        });
+        localStorage.setItem('boardNotes', JSON.stringify(notes));
+    }
+
+    function clearBoard() {
+        if(confirm("確定清空嗎？")) { canvas.innerHTML = ''; saveNotes(); }
+    }
+</script>
+</body>
+</html>

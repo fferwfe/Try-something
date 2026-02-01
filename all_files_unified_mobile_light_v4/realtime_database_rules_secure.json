@@ -1,0 +1,59 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "deviceLocks": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'AT3xEkjygoZEcCbrG8VdZVklEfj1'"
+    },
+    "devicesSeen": {
+      ".read": "auth != null && auth.uid === 'AT3xEkjygoZEcCbrG8VdZVklEfj1'",
+      "$deviceId": {
+        ".write": true,
+        ".validate": "newData.child('label').isString() && newData.child('label').val().length > 0 && newData.child('label').val().length <= 40 && newData.child('page').isString() && newData.child('page').val().length > 0 && newData.child('page').val().length <= 40 && newData.child('lastSeen').isNumber()"
+      }
+    },
+    "playerAllowed": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'AT3xEkjygoZEcCbrG8VdZVklEfj1'"
+    },
+    "joinRequests": {
+      ".read": "auth != null && auth.uid === 'AT3xEkjygoZEcCbrG8VdZVklEfj1'",
+      ".write": "auth != null && root.child('deviceLocks').child('adminLocked').val() !== true"
+    },
+    "adminDevices": {
+      ".read": true,
+      "$deviceId": {
+        ".write": "auth != null && auth.uid === 'AT3xEkjygoZEcCbrG8VdZVklEfj1' && (root.child('deviceLocks').child('adminLocked').val() !== true || newData.child('revoked').val() === true)"
+      }
+    },
+    "players": {
+      ".read": true,
+      ".write": true
+    },
+    "broadcast": {
+      ".read": true,
+      ".write": true
+    },
+    "timerSync": {
+      ".read": true,
+      ".write": true
+    },
+    "controls": {
+      ".read": true,
+      ".write": true
+    },
+    "shop": {
+      ".read": true,
+      ".write": true
+    },
+    "shopSettings": {
+      ".read": true,
+      ".write": true
+    },
+    "purchaseFeed": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
