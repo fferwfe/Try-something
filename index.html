@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <title>Redirecting…</title>
-
-  <!-- GitHub Pages 最穩定導向方式 -->
-  <meta http-equiv="refresh" content="0; url=./all_files_unified_mobile_light_v4/" />
+  <meta charset="UTF-8">
+  <title>系統入口</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 80px; }
+    button { font-size: 18px; padding: 12px 24px; margin: 10px; }
+  </style>
 </head>
 <body>
-  <p>正在進入系統…</p>
+
+  <h1>人生履歷 系統入口</h1>
+
+  <button onclick="go('v4')">進入 V4（穩定版）</button>
+  <button onclick="go('v5')">進入 V5（測試版）</button>
 
   <script>
-    // JS 保險（避免 meta refresh 被擋）
-    location.replace("./all_files_unified_mobile_light_v4/");
+    function go(folder) {
+      location.href = "./" + folder + "/";
+    }
   </script>
+
 </body>
 </html>
