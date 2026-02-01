@@ -1,19 +1,70 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>系統入口</title>
+  <meta charset="UTF-8" />
+  <title>人生履歷｜系統入口</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 80px; }
-    button { font-size: 18px; padding: 12px 24px; margin: 10px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #f5f6f8;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #fff;
+      padding: 32px 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      text-align: center;
+      max-width: 360px;
+      width: 90%;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: 22px;
+    }
+
+    button {
+      width: 100%;
+      font-size: 18px;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .v4 { background: #4f46e5; color: #fff; }
+    .v5 { background: #10b981; color: #fff; }
+
+    button:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
 
-  <h1>人生履歷 系統入口</h1>
+  <div class="box">
+    <h1>人生履歷 系統入口</h1>
 
-  <button onclick="go('v4')">進入 V4（穩定版）</button>
-  <button onclick="go('v5')">進入 V5（測試版）</button>
+    <!-- 改這裡的資料夾名稱即可 -->
+    <button class="v4" onclick="go('all_files_unified_mobile_light_v4')">
+      進入 V4（正式版）
+    </button>
+
+    <button class="v5" onclick="go('v5')">
+      進入 V5（測試版）
+    </button>
+  </div>
 
   <script>
     function go(folder) {
@@ -23,3 +74,80 @@
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>人生履歷｜系統入口</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #f5f6f8;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #fff;
+      padding: 32px 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      text-align: center;
+      max-width: 360px;
+      width: 90%;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: 22px;
+    }
+
+    button {
+      width: 100%;
+      font-size: 18px;
+      padding: 14px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .v4 { background: #4f46e5; color: #fff; }
+    .v5 { background: #10b981; color: #fff; }
+
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>人生履歷 系統入口</h1>
+
+    <!-- 改這裡的資料夾名稱即可 -->
+    <button class="v4" onclick="go('all_files_unified_mobile_light_v4')">
+      進入 V4（正式版）
+    </button>
+
+    <button class="v5" onclick="go('v5')">
+      進入 V5（測試版）
+    </button>
+  </div>
+
+  <script>
+    function go(folder) {
+      location.href = "./" + folder + "/";
+    }
+  </script>
+
+</body>
+</html>
+
