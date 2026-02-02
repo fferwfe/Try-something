@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商店管理 - 人生履歷</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card: #ffffff;
+            --row: rgba(2,6,23,0.05);
+            --text: #0f172a;
+            --muted: rgba(15,23,42,0.72);
+            --shadow: rgba(2,6,23,0.12);
+            --blue: #3b82f6;
+            --ok: #22c55e;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --violet: #8b5cf6;
+            --yellow: #fbbf24;
+            --radius: 18px;
+        }
+
+        /* 基礎設定 */
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', system-ui, -apple-system, sans-serif;
+            background: 
+                radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+                radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+                var(--bg);
+            color: var(--text);
+            padding: 14px;
+            text-align: center;
+        }
+
+        .wrap { width: 100%; max-width: 500px; margin: 0 auto; }
+
+        /* 卡片樣式 */
+        .config-card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 26px var(--shadow);
+            border: 1px solid rgba(2,6,23,0.08);
+            margin-bottom: 30px;
+        }
+
+        /* 狀態列 */
+        .status-bar {
+            margin-bottom: 15px;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 900;
+            transition: 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .status-bar.open { background: var(--ok); color: white; }
+        .status-bar.closed { background: var(--danger); color: white; }
+
+        /* 輸入框全面優化 */
+        input, select, textarea {
+            width: 90%;
+            padding: 12px 16px;
+            border-radius: 20px !important;
+            font-size: 16px !important;
+            background: #ffffff !important;
+            color: var(--text) !important;
+            border: 1px solid rgba(2,6,23,0.14) !important;
+            box-shadow: 0 4px 10px rgba(2,6,23,0.04);
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+            outline: none;
+            text-align: center;
+        }
+        input:focus { border-color: var(--blue) !important; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+
+        /* 資源設定欄位 */
+        .res-setter {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px;
+            background: var(--row);
+            border-radius: 12px;
+        }
+        .res-setter span { font-weight: 600; color: var(--muted); }
+        .val { color: var(--blue); font-weight: 900; min-width: 40px; display: inline-block; font-size: 1.2em; }
+
+        /* 按鈕基礎樣式 */
+        button {
+            padding: 10px 18px;
+            cursor: pointer;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            transition: transform 0.1s, opacity 0.2s;
+            background: var(--row);
+            color: var(--text);
+        }
+        button:active { transform: scale(0.95); }
+
+        .toggle-btn { width: 100%; margin-bottom: 20px; background: var(--blue); color: white; padding: 14px; }
+        .add-btn { background: var(--ok); color: white; width: 100%; padding: 16px; margin-top: 20px; font-size: 1.1em; }
+        .delete-btn { background: var(--danger); color: white; font-size: 0.9em; padding: 6px 12px; }
+
+        /* 商品列表項 */
+        .shop-item {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 14px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(2,6,23,0.05);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+        .item-info { text-align: left; }
+        .item-name { font-weight: 800; display: block; margin-bottom: 4px; }
+        .item-meta { font-size: 0.85em; font-weight: 600; }
+
+        /* 門鎖樣式 */
+        #gate { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .gate-card { width: 320px; background: var(--card); padding: 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <h2 style="margin-top:0;">🛒 商店管理</h2>
+    <p style="color:var(--muted); font-size:14px;">請輸入管理員密碼</p>
+    <input id="shopPass" type="password" placeholder="••••••">
+    <button id="btnShopEnter" class="add-btn" style="margin-top:0;">進入系統</button>
+  </div>
+</div>
+
+<div class="wrap">
+    <h1><i class="fas fa-store-cog" style="color:var(--blue);"></i> 商店管理</h1>
+    
+    <div id="shop-status" class="status-bar closed">載入中...</div>
+    <button class="toggle-btn" onclick="toggleShop()"><i class="fas fa-power-off"></i> 切換商店開關</button>
+
+    <div class="config-card">
+        <h3 style="margin-top:0;"><i class="fas fa-plus-circle" style="color:var(--ok);"></i> 新增商品</h3>
+        <input type="text" id="itemName" placeholder="商品名稱 (如：高級別墅)">
+        <input type="text" id="itemImageUrl" placeholder="圖片網址 (https://...)">
+        
+        <div id="res-inputs"></div>
+        
+        <div class="res-setter" style="margin-top:15px; background: rgba(251, 191, 36, 0.1);">
+            <span style="color:var(--warn)"><i class="fas fa-trophy"></i> 獲得分數</span>
+            <div>
+                <button onclick="updateBonus(-1)">-</button>
+                <span class="val" id="t-score" style="color:var(--warn)">0</span>
+                <button onclick="updateBonus(1)">+</button>
+            </div>
+        </div>
+
+        <button class="add-btn" onclick="addItem()"><i class="fas fa-upload"></i> 確認上架商品</button>
+    </div>
+
+    <div style="text-align: left;">
+        <h3 style="border-left: 4px solid var(--blue); padding-left: 10px; margin-bottom: 20px;">目前架上商品</h3>
+        <div id="items-display"></div>
+    </div>
+</div>
+
+<script>
+    // 1. 初始化 Firebase
+    const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. 密碼鎖邏輯
+    const SHOP_PASSWORD = "345721";
+    const KEY = "shop_gate_ok";
+    function openShopIfOk(){
+        if (sessionStorage.getItem(KEY) === "1") document.getElementById("gate").style.display = "none";
+    }
+    openShopIfOk();
+    document.getElementById("btnShopEnter").addEventListener("click", () => {
+        if (document.getElementById("shopPass").value === SHOP_PASSWORD) {
+            sessionStorage.setItem(KEY, "1");
+            openShopIfOk();
+        } else { alert("密碼錯誤"); }
+    });
+
+    // 3. 資源與狀態設定
+    const resTypes = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
+    let isShopOpen = false;
+    let tempRes = { time: 0, money: 0, health: 0, knowledge: 0, social: 0 };
+    let bonusScore = 0;
+
+    db.ref('shopSettings/isOpen').on('value', s => {
+        isShopOpen = s.val() || false;
+        const bar = document.getElementById('shop-status');
+        bar.innerText = isShopOpen ? "✅ 商店營業中" : "❌ 商店關閉中";
+        bar.className = isShopOpen ? "status-bar open" : "status-bar closed";
+    });
+
+    function toggleShop() { db.ref('shopSettings/isOpen').set(!isShopOpen); }
+
+    // 4. 生成代價輸入 UI
+    const resInputs = document.getElementById('res-inputs');
+    resInputs.innerHTML = Object.keys(resTypes).map(k => `
+        <div class="res-setter">
+            <span>${resTypes[k]}代價</span>
+            <div>
+                <button onclick="updateTemp('${k}',-1)">-</button>
+                <span class="val" id="t-${k}">0</span>
+                <button onclick="updateTemp('${k}',1)">+</button>
+            </div>
+        </div>
+    `).join('');
+
+    function updateTemp(k, v) { 
+        tempRes[k] = Math.max(0, tempRes[k] + v); 
+        document.getElementById(`t-${k}`).innerText = tempRes[k]; 
+    }
+
+    function updateBonus(v) { 
+        bonusScore = Math.max(0, bonusScore + v); 
+        document.getElementById('t-score').innerText = bonusScore; 
+    }
+
+    // 5. 上架邏輯
+    function addItem() {
+        const name = document.getElementById('itemName').value.trim();
+        const imageUrl = document.getElementById('itemImageUrl').value.trim();
+        if(!name) return alert("請輸入商品名稱");
+        
+        db.ref('shop/items').push({ 
+            name: name, 
+            cost: {...tempRes}, 
+            bonus: bonusScore,
+            imageUrl: imageUrl || ""
+        }).then(() => {
+            alert("上架成功！");
+            location.reload(); // 簡單重整以重置欄位
+        });
+    }
+
+    // 6. 渲染清單
+    db.ref('shop/items').on('value', s => {
+        const display = document.getElementById('items-display');
+        display.innerHTML = "";
+        const data = s.val();
+        if(!data) return display.innerHTML = "<p style='color:var(--muted); text-align:center;'>目前沒有商品</p>";
+        
+        for(let key in data) {
+            const item = data[key];
+            const costs = Object.entries(item.cost || {})
+                .filter(([_,v]) => v > 0)
+                .map(([k,v]) => `${resTypes[k]}:${v}`).join(' / ');
+
+            display.innerHTML += `
+                <div class="shop-item">
+                    <div class="item-info">
+                        <span class="item-name">${item.name}</span>
+                        <div class="item-meta">
+                            <span style="color:var(--warn)">🏆 分數 +${item.bonus || 0}</span><br>
+                            <span style="color:var(--danger)">💰 代價: ${costs || '免費'}</span>
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteItem('${key}')">下架</button>
+                </div>`;
+        }
+    });
+
+    function deleteItem(key) { if(confirm("確定下架？")) db.ref(`shop/items/${key}`).remove(); }
+</script>
+
+</body>
+</html>
