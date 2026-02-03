@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商店管理 - 人生履歷</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; text-align: center; }
+        .config-card { background: #222; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; border: 1px solid #444; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .status-bar { margin-bottom: 15px; padding: 15px; border-radius: 10px; font-weight: bold; transition: 0.3s; }
+        .open { background: #27ae60; } .closed { background: #c0392b; }
+        input { padding: 12px; width: 85%; border-radius: 8px; border: none; margin-bottom: 20px; text-align: center; font-size: 16px; background: #333; color: white; }
+        .res-setter { display: grid; grid-template-columns: 1fr 2fr; align-items: center; margin: 8px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .val { color: #ffd700; font-weight: bold; min-width: 35px; display: inline-block; font-size: 1.2em; }
+        button { padding: 10px 15px; cursor: pointer; border-radius: 5px; border: none; background: #444; color: white; font-weight: bold; }
+        .toggle-btn { width: 220px; margin-bottom: 20px; font-size: 1.1em; background: #3498db; }
+        .add-btn { background: #27ae60; width: 100%; padding: 15px; margin-top: 20px; font-size: 1.1em; }
+        .shop-item { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-top: 10px; text-align: left; position: relative; border-left: 4px solid #27ae60; display: flex; justify-content: space-between; align-items: center; }
+        .bonus-setter { border-top: 1px dashed #666; margin-top: 15px; padding-top: 15px; }
+    </style>
+
+
+<!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --row:rgba(2,6,23,0.05);
+    --text:#0f172a;
+    --muted:rgba(15,23,42,0.72);
+    --shadow:rgba(2,6,23,0.12);
+
+    --blue:#3b82f6;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --violet:#8b5cf6;
+    --yellow:#fbbf24;
+
+    --radius:18px;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+      radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+      radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+      var(--bg) !important;
+    color:var(--text) !important;
+    margin:0 !important;
+    padding:14px !important;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* mobile-first container */
+  .wrap,.menu,.container,.main,.app{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+  }
+
+  /* common card look */
+  .card,.box,.config-card,#auth-overlay>div{
+    background:var(--card) !important;
+    color:var(--text) !important;
+    border-radius:var(--radius) !important;
+    box-shadow:0 10px 26px var(--shadow) !important;
+    border:1px solid rgba(2,6,23,0.08) !important;
+  }
+
+  /* tighten text */
+  p,.hint,.sub,.small{color:var(--muted) !important;}
+
+  h1{font-size:1.6rem;margin:10px 0 12px;}
+  h2{font-size:1.25rem;}
+  h3{font-size:1.1rem;}
+
+  /* buttons */
+  .btn,.global-btn,.menu .btn,a.btn{
+    border-radius:14px !important;
+    font-weight:900 !important;
+    letter-spacing:0.2px;
+    box-shadow:0 6px 14px rgba(2,6,23,0.10);
+  }
+  .btn.plus{background:var(--ok) !important;}
+  .btn.plus10{background:rgba(34,197,94,0.92) !important;}
+  .btn.minus{background:rgba(239,68,68,0.75) !important;}
+  .btn.minus10{background:var(--danger) !important;}
+  .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
+  .btn.danger{background:var(--danger) !important;}
+  .btn.blue{background:var(--blue) !important;}
+  .btn.purple{background:var(--violet) !important;}
+
+  /* inputs */
+  input,select,textarea{
+    border-radius:12px !important;
+    font-size:16px !important;
+    background:#ffffff !important;
+    color:var(--text) !important;
+    border:1px solid rgba(2,6,23,0.14) !important;
+    box-shadow:0 6px 16px rgba(2,6,23,0.06);
+  }
+
+  /* rows */
+  .res-row,.row{flex-wrap:wrap;}
+  .res-row{background:var(--row) !important;}
+
+  /* values */
+  .val{color:var(--blue) !important;}
+
+  /* bottom actions */
+  .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+
+  /* overlay */
+  #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+</style>
+
+
+  <!-- Shared Firebase + helpers -->
+  <script src="js/firebase.js"></script>
+  <script src="js/common.js"></script>
+</head>
+<body>
+<!-- SHOP PASSWORD GATE (front-end) -->
+<div id="gate" style="position:fixed;inset:0;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;z-index:99999;">
+  <div style="width:360px;background:var(--card);color:var(--text);padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.5);">
+    <h2 style="margin:0 0 10px;">🛒 商店入口</h2>
+    <div style="opacity:.85;font-size:14px;line-height:1.4;">知道密碼才能進入 shop。</div>
+    <input id="shopPass" type="password" placeholder="輸入商店密碼"
+           style="width:100%;padding:12px;border-radius:10px;border:none;margin:12px 0;font-size:16px;">
+    <button id="btnShopEnter"
+            style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--danger);color:var(--text);font-weight:800;cursor:pointer;">
+      進入
+    </button>
+  </div>
+</div>
+
+<script>
+  // ===== SHOP PASSWORD (front-end gate) =====
+  const SHOP_PASSWORD = "345721";
+  const KEY = "shop_gate_ok";
+  function openShopIfOk(){
+    if (sessionStorage.getItem(KEY) === "1") {
+      const gate = document.getElementById("gate");
+      if (gate) gate.style.display = "none";
+    }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    openShopIfOk();
+    const btn = document.getElementById("btnShopEnter");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const p = (document.getElementById("shopPass").value || "").trim();
+      if (p !== SHOP_PASSWORD) return alert("密碼錯誤");
+      sessionStorage.setItem(KEY, "1");
+      openShopIfOk();
+    });
+  });
+</script>
+
+    <h1><i class="fas fa-store-cog"></i> 商店系統管理</h1>
+    
+    <div id="shop-status" class="status-bar closed">載入中...</div>
+    <button class="toggle-btn" onclick="toggleShop()"><i class="fas fa-power-off"></i> 切換商店開關</button>
+
+    <div class="config-card">
+        <h3><i class="fas fa-plus-circle"></i> 新增商品</h3>
+        <input type="text" id="itemName" placeholder="輸入商品名稱 (例如：高級轎車)">
+        <input type="text" id="itemImageUrl" placeholder="(可選) 商品圖片網址 https://... (建議用方形圖)">
+        
+        <div id="res-inputs"></div>
+        
+        <div class="res-setter bonus-setter">
+            <span style="color:#f39c12"><i class="fas fa-trophy"></i> 獲得分數</span>
+            <div>
+                <button onclick="updateBonus(-1)">-1</button>
+                <span class="val" id="t-score">0</span>
+                <button onclick="updateBonus(1)">+1</button>
+            </div>
+        </div>
+
+        <button class="add-btn" onclick="addItem()"><i class="fas fa-upload"></i> 上架商品</button>
+    </div>
+
+    <div style="max-width:500px; margin: 30px auto; text-align: left;">
+        <h3 style="border-bottom: 2px solid #444; padding-bottom: 10px;">目前架上商品</h3>
+        <div id="items-display"></div>
+    </div>
+
+    <script>
+    // 1. 初始化 Firebase (必須增加這兩行)
+    
+    const db = firebase.database();
+
+    // 2. devicesSeen heartbeat (shop)
+    function getDeviceId(){
+        const KEY="device_id";
+        let id=localStorage.getItem(KEY);
+        if(!id){
+            id=(crypto.randomUUID?crypto.randomUUID():("dev_"+Math.random().toString(16).slice(2)+Date.now()));
+            localStorage.setItem(KEY,id);
+        }
+        return id;
+    }
+
+    function getDeviceLabel(){
+        const KEY="device_label";
+        let label=localStorage.getItem(KEY);
+        if(!label){
+            label = "裝置-" + getDeviceId().slice(0,6);
+            localStorage.setItem(KEY,label);
+        }
+        return label;
+    }
+
+    function heartbeat(){
+        try{
+            const deviceId=getDeviceId();
+            const label=getDeviceLabel();
+            db.ref("devicesSeen/"+deviceId).update({
+                label,
+                kind:"shop",
+                page:"shop.html",
+                lastSeen: Date.now()
+            });
+        }catch(e){ console.error("Heartbeat error:", e); }
+    }
+    heartbeat();
+    setInterval(heartbeat, 15000);
+
+    const resTypes = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際' };
+    let isShopOpen = false;
+    let tempRes = { time: 0, money: 0, health: 0, knowledge: 0, social: 0 };
+    let bonusScore = 0;
+
+    // 3. 監聽商店全域狀態
+    db.ref('shopSettings/isOpen').on('value', s => {
+        isShopOpen = s.val() || false;
+        const bar = document.getElementById('shop-status');
+        if(bar) {
+            bar.innerText = isShopOpen ? "✅ 商店營業中" : "❌ 商店關閉中";
+            bar.className = isShopOpen ? "status-bar open" : "status-bar closed";
+        }
+    });
+
+    function toggleShop() { db.ref('shopSettings/isOpen').set(!isShopOpen); }
+
+    // 4. 初始化代價輸入 UI
+    const resInputs = document.getElementById('res-inputs');
+    if(resInputs) {
+        let html = '';
+        Object.keys(resTypes).forEach(k => {
+            html += `
+                <div class="res-setter">
+                    <span>${resTypes[k]}代價</span>
+                    <div>
+                        <button onclick="updateTemp('${k}',-1)">-</button>
+                        <span class="val" id="t-${k}">0</span>
+                        <button onclick="updateTemp('${k}',1)">+</button>
+                    </div>
+                </div>`;
+        });
+        resInputs.innerHTML = html;
+    }
+
+    // 5. 數值更新與上架邏輯
+    function updateTemp(k, v) { 
+        tempRes[k] = Math.max(0, tempRes[k] + v); 
+        document.getElementById(`t-${k}`).innerText = tempRes[k]; 
+    }
+
+    function updateBonus(v) { 
+        bonusScore = Math.max(0, bonusScore + v); 
+        document.getElementById('t-score').innerText = bonusScore; 
+    }
+
+    function addItem() {
+        const name = document.getElementById('itemName').value.trim();
+        const imageUrl = document.getElementById('itemImageUrl').value.trim();
+        if(!name) return alert("請輸入商品名稱");
+        
+        db.ref('shop/items').push({ 
+            name: name, 
+            cost: {...tempRes}, 
+            bonus: bonusScore,
+            imageUrl: imageUrl || ""
+        }).then(() => {
+            bonusScore = 0; 
+            document.getElementById('t-score').innerText = 0;
+            document.getElementById('itemName').value = "";
+            document.getElementById('itemImageUrl').value = "";
+            Object.keys(tempRes).forEach(k => { 
+                tempRes[k] = 0; 
+                document.getElementById(`t-${k}`).innerText = 0; 
+            });
+            alert("商品上架成功！");
+        });
+    }
+    
+    // 6. 監聽並渲染商品列表
+    db.ref('shop/items').on('value', s => {
+        const display = document.getElementById('items-display');
+        if(!display) return;
+        display.innerHTML = "";
+        const data = s.val();
+        if(!data) {
+            display.innerHTML = "<p style='color:#666'>目前沒有商品</p>";
+            return;
+        }
+        for(let key in data) {
+            const item = data[key];
+            display.innerHTML += `
+                <div class="shop-item">
+                    <div>
+                        <strong>${item.name}</strong> 
+                        ${item.imageUrl ? `<div style="margin-top:8px;"><img src="${item.imageUrl}" alt="${item.name}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;border:1px solid #333;"></div>` : ''}
+                        <div style="font-size:0.8em; color:#aaa; margin-top:4px;">
+                            <span style="color:#f39c12">🏆 分數:+${item.bonus || 0}</span>
+                        </div>
+                    </div>
+                    <button style="background:#c0392b; color:white;" onclick="deleteItem('${key}')"><i class="fas fa-trash-alt"></i> 下架</button>
+                </div>`;
+        }
+    });
+
+    function deleteItem(key) { 
+        if(confirm("確定下架此商品？")) db.ref(`shop/items/${key}`).remove(); 
+    }
+</script>
+</body>
+</html>
