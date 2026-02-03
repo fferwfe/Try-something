@@ -3,191 +3,322 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>玩家掃碼扣資源</title>
+  <title>玩家掃碼扣資源（測試版）</title>
 
-  <!-- Firebase -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
 
-  <!-- 專案共用 -->
+  <!-- 你專案的共用初始化（請確認路徑） -->
   <script src="js/firebase.js"></script>
   <script src="js/common.js"></script>
 
-  <!-- QR 掃描 -->
+  <!-- QR 掃描（相機 + 圖片解碼） -->
   <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
 
   <style>
-    body{margin:0;font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:#f6f8fb;color:#0f172a}
-    .wrap{max-width:900px;margin:0 auto;padding:18px}
-    .card{background:#fff;border:1px solid rgba(2,6,23,.14);border-radius:18px;
-      padding:16px;box-shadow:0 10px 24px rgba(2,6,23,.06);margin-bottom:14px}
-    h1{margin:0 0 10px 0}
-    label{font-weight:900;display:block;margin-bottom:6px}
-    input,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(2,6,23,.14);font-size:16px}
-    .btn{border:1px solid rgba(2,6,23,.14);background:#fff;padding:10px 12px;border-radius:12px;
-      font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-    .btn.blue{background:rgba(59,130,246,.12)}
-    .btn.ok{background:rgba(34,197,94,.12)}
-    .btn.danger{background:rgba(239,68,68,.12)}
-    .hint{font-size:13px;opacity:.72}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(2,6,23,.14);
-      margin:4px 6px 0 0;font-weight:900}
-    #reader{width:100%;border:1px dashed rgba(2,6,23,.14);border-radius:16px}
-    .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap}
+    :root{ --bg:#f6f8fb; --card:#fff; --line:rgba(2,6,23,.14); --text:#0f172a; --muted:rgba(15,23,42,.72); }
+    body{ margin:0; font-family:'Segoe UI','Microsoft JhengHei',sans-serif; background:var(--bg); color:var(--text); }
+    .wrap{ max-width:900px; margin:0 auto; padding:18px; }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 10px 24px rgba(2,6,23,.06); margin-bottom:14px; }
+    h1{ margin:0 0 10px 0; }
+    .row{ margin:10px 0; }
+    label{ display:block; font-weight:900; margin-bottom:6px; }
+    input,select{
+      width:100%; box-sizing:border-box;
+      border-radius:12px; font-size:16px;
+      border:1px solid var(--line);
+      background:#fff; color:var(--text);
+      padding:10px 12px;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff; color:var(--text);
+      padding:10px 12px; border-radius:12px;
+      font-weight:900; cursor:pointer;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn.blue{ background:rgba(59,130,246,0.12); }
+    .btn.danger{ background:rgba(239,68,68,0.12); }
+    .hint{ color:var(--muted); font-size:13px; line-height:1.5; }
+    #reader{ width:100%; border:1px dashed var(--line); border-radius:16px; overflow:hidden; background:#fff; }
+    .status{
+      border-radius:14px; padding:10px 12px; font-weight:950;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+    .ok{ background:rgba(34,197,94,0.12); }
+    .bad{ background:rgba(239,68,68,0.12); }
+    .mono{ font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12px; white-space:pre-wrap; word-break:break-word; }
   </style>
 </head>
 
 <body>
 <div class="wrap">
-  <h1>📷 玩家掃碼扣資源</h1>
+  <h1>📷 玩家掃碼扣資源（測試版）</h1>
 
   <div class="card">
-    <label>玩家 ID</label>
-    <select id="pid">
-      <option value="1">玩家 1</option><option value="2">玩家 2</option><option value="3">玩家 3</option>
-      <option value="4">玩家 4</option><option value="5">玩家 5</option>
-      <option value="6">玩家 6</option><option value="7">玩家 7</option>
-      <option value="8">玩家 8</option><option value="9">玩家 9</option>
-      <option value="10">玩家 10</option>
-    </select>
-
-    <label style="margin-top:10px">暱稱（可選）</label>
-    <input id="pname" placeholder="小明">
+    <div class="hint">
+      ✅ 測試模式：<b>不檢查資源是否足夠</b>（可扣到負數）。<br>
+      掃到 QR 後會<b>直接扣</b>，只回報成功/失敗（不顯示扣什麼）。
+    </div>
   </div>
 
   <div class="card">
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn blue" id="btnCam">📷 相機掃描</button>
+    <h2 style="margin:0 0 10px 0;">玩家</h2>
+
+    <div class="row">
+      <label>玩家 ID（1~10）</label>
+      <select id="pid">
+        <option value="1">玩家 1</option><option value="2">玩家 2</option><option value="3">玩家 3</option><option value="4">玩家 4</option><option value="5">玩家 5</option>
+        <option value="6">玩家 6</option><option value="7">玩家 7</option><option value="8">玩家 8</option><option value="9">玩家 9</option><option value="10">玩家 10</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>暱稱（可選，用於紀錄）</label>
+      <input id="pname" placeholder="例如：小明">
+    </div>
+
+    <div class="hint">
+      建議用 Chrome/Safari 開啟（避免 LINE 內建瀏覽器擋相機）。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 10px 0;">掃碼</h2>
+
+    <div class="row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button class="btn blue" id="btnStart">📷 開相機</button>
       <button class="btn danger" id="btnStop" disabled>■ 停止</button>
 
-      <label class="btn">
+      <label class="btn" style="cursor:pointer;">
         📁 選擇截圖
-        <input id="imgPick" type="file" accept="image/*" style="display:none">
+        <input id="imgPick" type="file" accept="image/*" style="display:none;">
       </label>
     </div>
 
-    <div id="reader" style="margin-top:10px"></div>
+    <div id="reader"></div>
 
-    <div class="hint" id="status">尚未掃描</div>
-
-    <div style="margin-top:10px">
-      <b>將扣除：</b>
-      <div id="costBox"></div>
+    <div class="row">
+      <div id="status" class="status">待掃描…</div>
     </div>
 
-    <button class="btn ok" id="btnConfirm" disabled style="margin-top:12px">確認扣除</button>
-
-    <div class="mono" id="raw" style="margin-top:10px"></div>
+    <div class="row">
+      <div class="hint">掃到的內容（debug）：</div>
+      <div id="raw" class="mono"></div>
+    </div>
   </div>
 </div>
 
 <script>
-  if(!firebase.apps.length){ alert("Firebase 尚未初始化"); throw new Error("no firebase"); }
+  // ---- 基本防呆：common.js 沒載到也能跑 ----
+  if (typeof window.escapeHtml !== "function") {
+    window.escapeHtml = (s) => String(s ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  // ---- Firebase ready ----
+  if (!window.firebase || !firebase.apps || firebase.apps.length === 0) {
+    alert("Firebase 尚未初始化：請確認 js/firebase.js 路徑正確且有 initializeApp(firebaseConfig)");
+    throw new Error("Firebase not initialized");
+  }
   const db = firebase.database();
 
-  const COST = { time:3, money:2, health:2, social:1, knowledge:2 };
-  const NAMES = { time:'時間', money:'金錢', health:'健康', social:'人際', knowledge:'知識' };
+  // ---- 固定扣款（你指定的）----
+  // 時間3、金錢2、健康2、人際1、知識2
+  const FIXED_COST = { time:3, money:2, health:2, social:1, knowledge:2 };
 
+  // ---- UI ----
   const statusEl = document.getElementById("status");
-  const costBox = document.getElementById("costBox");
   const rawEl = document.getElementById("raw");
-  const btnConfirm = document.getElementById("btnConfirm");
+  const btnStart = document.getElementById("btnStart");
+  const btnStop = document.getElementById("btnStop");
+  const imgPick = document.getElementById("imgPick");
 
+  // ---- scanner state ----
   let scanner = null;
-  let ready = false;
+  let lastScanAt = 0;
 
-  function showCost(){
-    costBox.innerHTML = "";
-    Object.keys(COST).forEach(k=>{
-      costBox.insertAdjacentHTML("beforeend",
-        `<span class="pill">${NAMES[k]} -${COST[k]}</span>`);
-    });
-  }
-  showCost();
-
-  function onDecoded(text){
-    rawEl.textContent = text;
-    statusEl.textContent = "✅ 掃描成功，請確認扣除";
-    btnConfirm.disabled = false;
-    ready = true;
+  function setStatus(text, kind){
+    statusEl.classList.remove("ok","bad");
+    if(kind === "ok") statusEl.classList.add("ok");
+    if(kind === "bad") statusEl.classList.add("bad");
+    statusEl.textContent = text;
   }
 
-  document.getElementById("btnCam").onclick = async ()=>{
-    if(scanner) return;
-    scanner = new Html5Qrcode("reader");
-    document.getElementById("btnStop").disabled = false;
+  function parseCheckpointFromText(text){
+    // 支援：
+    // 1) URL: ...?g=1
+    // 2) JSON: {"g":1} / {"checkpoint":1}
+    let t = String(text || "").trim();
 
-    try{
-      await scanner.start({facingMode:"environment"}, {fps:10,qrbox:250},
-        (text)=>{ stopScan(); onDecoded(text); });
-      statusEl.textContent = "相機已開啟，對準 QR";
-    }catch(e){
-      statusEl.textContent = "❌ 相機啟動失敗";
-      scanner = null;
+    // URL
+    if(/^https?:\/\//i.test(t)){
+      const u = new URL(t);
+      const g = u.searchParams.get("g");
+      if(g) return String(g).trim();
     }
-  };
+
+    // JSON
+    try{
+      const obj = JSON.parse(t);
+      if(obj && (obj.g != null || obj.checkpoint != null)){
+        return String(obj.g ?? obj.checkpoint).trim();
+      }
+    }catch(e){}
+
+    // 直接掃到 "1" 也允許（可選）
+    if(/^\d+$/.test(t)) return t;
+
+    return null;
+  }
 
   async function stopScan(){
     if(!scanner) return;
-    try{ await scanner.stop(); await scanner.clear(); }catch(e){}
+    try{ await scanner.stop(); }catch(e){}
+    try{ await scanner.clear(); }catch(e){}
     scanner = null;
-    document.getElementById("btnStop").disabled = true;
+    btnStart.disabled = false;
+    btnStop.disabled = true;
   }
-  document.getElementById("btnStop").onclick = stopScan;
 
-  document.getElementById("imgPick").addEventListener("change", async (e)=>{
-    const file = e.target.files[0];
+  async function startScan(){
+    if(scanner) return;
+    setStatus("正在請求相機權限…");
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+
+    scanner = new Html5Qrcode("reader");
+
+    try{
+      // 更穩：先列相機再挑後鏡頭
+      const cams = await Html5Qrcode.getCameras();
+      if(!cams || cams.length === 0){
+        setStatus("❌ 找不到相機裝置", "bad");
+        await stopScan();
+        return;
+      }
+      let camId = cams[0].id;
+      const back = cams.find(c => /back|rear|environment/i.test(c.label || ""));
+      if(back) camId = back.id;
+
+      await scanner.start(
+        camId,
+        { fps: 10, qrbox: { width: 280, height: 280 } },
+        async (decodedText) => {
+          // 防連續觸發（1.2 秒內忽略）
+          const now = Date.now();
+          if(now - lastScanAt < 1200) return;
+          lastScanAt = now;
+
+          rawEl.textContent = decodedText;
+
+          const gid = parseCheckpointFromText(decodedText);
+          if(!gid){
+            setStatus("❌ QR 格式不支援（需要 ?g= 或 JSON {g}）", "bad");
+            return;
+          }
+
+          // 掃到就直接扣（測試版）
+          await stopScan(); // 掃到先停，避免重扣
+
+          setStatus("處理中…");
+          const ok = await applyDeduct_TestMode(gid);
+          if(ok){
+            setStatus("✅ 扣除成功", "ok");
+          }else{
+            setStatus("❌ 扣除失敗（請看 console/規則/路徑）", "bad");
+          }
+        }
+      );
+
+      setStatus("相機已開啟，對準 QR…");
+    }catch(err){
+      console.error("camera start error:", err);
+      const msg = (err && (err.name || err.message)) ? (err.name + " / " + err.message) : String(err);
+      setStatus("❌ 相機啟動失敗：" + msg, "bad");
+      await stopScan();
+    }
+  }
+
+  // ====== 核心：測試模式扣款（無上限、不檢查足夠）======
+  async function applyDeduct_TestMode(gid){
+    const pid = Number(document.getElementById("pid").value);
+    const pname = (document.getElementById("pname").value || "").trim() || ("玩家" + pid);
+
+    // 這裡先不做「每關一次」鎖（你說後面再做）
+    // 測試先讓每次掃都會扣，方便確認流程
+
+    try{
+      const resRef = db.ref(`players/p${pid}/res`);
+
+      // transaction：直接扣（可扣到負數）
+      const tx = await resRef.transaction(cur=>{
+        const res = cur || {};
+        for(const k in FIXED_COST){
+          res[k] = Number(res[k] || 0) - Number(FIXED_COST[k] || 0);
+        }
+        return res;
+      });
+
+      if(!tx.committed) return false;
+
+      // 寫一筆測試紀錄（後台統計先用這個節點）
+      db.ref("qrTestLogs").push({
+        ts: Date.now(),
+        gid,
+        playerId: pid,
+        playerName: pname,
+        cost: FIXED_COST,
+        mode: "test_no_limit"
+      });
+
+      return true;
+    }catch(e){
+      console.error(e);
+      return false;
+    }
+  }
+
+  // ---- 綁定按鈕 ----
+  btnStart.addEventListener("click", startScan);
+  btnStop.addEventListener("click", stopScan);
+
+  // ---- 掃相簿截圖 ----
+  imgPick.addEventListener("change", async (e)=>{
+    const file = e.target.files && e.target.files[0];
     if(!file) return;
     await stopScan();
-    const tmp = new Html5Qrcode("reader");
+
+    setStatus("正在從圖片解碼 QR…");
     try{
-      const text = await tmp.scanFile(file,true);
-      await tmp.clear();
-      onDecoded(text);
-    }catch(e){
-      statusEl.textContent = "❌ 圖片解碼失敗";
+      const tmp = new Html5Qrcode("reader");
+      const decodedText = await tmp.scanFile(file, true);
+      try{ await tmp.clear(); }catch(_){}
+
+      rawEl.textContent = decodedText;
+
+      const gid = parseCheckpointFromText(decodedText);
+      if(!gid){
+        setStatus("❌ QR 格式不支援（需要 ?g= 或 JSON {g}）", "bad");
+        e.target.value = "";
+        return;
+      }
+
+      setStatus("處理中…");
+      const ok = await applyDeduct_TestMode(gid);
+      setStatus(ok ? "✅ 扣除成功" : "❌ 扣除失敗", ok ? "ok" : "bad");
+
+    }catch(err){
+      console.error(err);
+      setStatus("❌ 圖片解碼失敗：請確保 QR 清楚夠大", "bad");
+    }finally{
+      e.target.value = "";
     }
   });
 
-  btnConfirm.onclick = async ()=>{
-    if(!ready) return;
-
-    const pid = document.getElementById("pid").value;
-    const pname = document.getElementById("pname").value || ("玩家"+pid);
-
-    btnConfirm.disabled = true;
-    statusEl.textContent = "扣除中…";
-
-    const ref = db.ref("players/p"+pid+"/res");
-
-    const tx = await ref.transaction(cur=>{
-      cur = cur || {};
-      for(const k in COST){
-        if((cur[k]||0) < COST[k]) return;
-      }
-      for(const k in COST){
-        cur[k] = (cur[k]||0) - COST[k];
-      }
-      return cur;
-    });
-
-    if(!tx.committed){
-      statusEl.textContent = "❌ 資源不足，扣除失敗";
-      btnConfirm.disabled = false;
-      return;
-    }
-
-    db.ref("purchaseFeed").push({
-      playerId: pid,
-      playerName: pname,
-      via: "qr",
-      cost: COST,
-      ts: Date.now()
-    });
-
-    statusEl.textContent = "🎉 扣除成功！";
-    ready = false;
-  };
 </script>
 </body>
 </html>
