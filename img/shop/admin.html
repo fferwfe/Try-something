@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷-萬能管理主控台 (全功能整合終極版)</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #121a24; --card: #1b2a3a; --shadow: rgba(0,0,0,0.4); --row: rgba(255,255,255,0.06);
+      --yellow: #f1c40f; --teal: #1abc9c; --blue: #3498db; --purple: #8e44ad; --gray: #7f8c8d;
+      --ok: #22c55e; --warn: #f39c12; --danger: #e74c3c;
+      --plus: #4ade80; --plus10: #16a34a; --minus: #f87171; --minus10: #b91c1c;
+      --violet: #a78bfa; --muted: #94a3b8;
+    }
+    body {
+      font-family: 'Segoe UI','Microsoft JhengHei',sans-serif;
+      background: var(--bg); color: #fff; padding: 20px; text-align: center; margin: 0;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .card {
+      background: var(--card); padding: 18px 20px; border-radius: 20px; margin: 15px auto;
+      text-align: left; position: relative; border-left: 6px solid var(--teal);
+      box-shadow: 0 4px 15px var(--shadow);
+    }
+    .res-row {
+      display: flex; align-items: center; justify-content: space-between; margin: 8px 0;
+      background: var(--row); padding: 8px 15px; border-radius: 12px; gap: 10px; flex-wrap: wrap;
+    }
+    .label-text { font-weight: bold; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+    .val { font-size: 1.5em; font-weight: bold; color: var(--yellow); min-width: 60px; text-align: center; }
+
+    input, textarea, select {
+      width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none;
+      box-sizing: border-box; font-size: 16px; background: #ecf0f1; color: #333;
+    }
+    .hint { opacity: .85; font-size: .92em; line-height: 1.4; margin-top: 4px; }
+    .btn {
+      border: none; border-radius: 14px; padding: 10px 14px; cursor: pointer;
+      font-weight: 800; color: #fff; transition: transform .15s, filter .15s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; user-select: none; white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: scale(0.96); }
+    .btn.plus { background: var(--plus); } .btn.plus10 { background: var(--plus10); }
+    .btn.minus { background: var(--minus); } .btn.minus10 { background: var(--minus10); }
+    .btn.warn { background: var(--warn); color: #1b1203; }
+    .btn.danger { background: var(--danger); color: #fff; }
+    .btn.blue { background: var(--blue); } .btn.gray { background: var(--gray); }
+    .btn.ok { background: var(--ok); } .btn.violet { background: var(--violet); color:#1b102e; }
+
+    .global-btn {
+      width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold;
+      cursor: pointer; color: #fff; font-size: 1.1em; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .bottom-actions { max-width: 650px; margin: 40px auto; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    .clear-single {
+      position: absolute; top: 15px; right: 15px; background: var(--purple);
+      font-size: 13px; padding: 6px 12px; border-radius: 8px; border: none; color: #fff; cursor: pointer;
+    }
+    .inv-tag { background: var(--purple); color: #fff; padding: 4px 12px; border-radius: 8px; margin: 4px; display: inline-block; font-size: 14px; }
+    .inv-tag i { cursor: pointer; margin-left: 8px; color: #ffbcbc; }
+    .inv-input { width: 60% !important; display: inline-block !important; padding: 10px !important; margin: 0 !important; }
+
+    #auth-overlay {
+      position: fixed; inset: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .hide { display: none !important; }
+    #local-timer { font-size: 2.5em; font-weight: 900; font-family: monospace; color: var(--yellow); text-align: center; margin: 10px 0; }
+    .row { margin: 10px 0; }
+    .row label { display: block; font-weight: 700; margin-bottom: 6px; text-align: left;}
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,0.22); font-weight: 800; font-size: 0.95em; }
+    .pill b { color: var(--yellow); }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-weight: 950; font-size: 0.86em; margin-left: 8px; }
+    .badge.ok { background: rgba(34,197,94,0.18); color: #b7f7c7; }
+    .badge.danger { background: rgba(239,68,68,0.18); color: #ffc2c2; }
+    .badge.warn { background: rgba(245,158,11,0.18); color: #ffe2b6; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- Login Overlay -->
+  <div id="auth-overlay">
+    <div style="background:var(--card); padding:34px; border-radius:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 380px;">
+      <h2 style="margin:0 0 12px;"><i class="fas fa-lock"></i> 管理員登入</h2>
+      <input id="loginEmail" type="email" placeholder="Email">
+      <input id="loginPass" type="password" placeholder="Password">
+      <button class="global-btn" style="background:var(--blue);" id="btnLogin">登入</button>
+      <div class="hint" style="margin-top:10px;">※ 需透過主控核准 deviceId 才能進入系統。</div>
+    </div>
+  </div>
+
+  <!-- Blocked -->
+  <div id="blocked-panel" class="card hide" style="border-left-color:var(--danger);">
+    <h3 class="label-text"><i class="fas fa-ban"></i> 此設備尚未授權</h3>
+
+    <div class="row">
+      <label>設備名稱（label）</label>
+      <input id="deviceLabel" type="text" placeholder="例如：管理員手機A">
+    </div>
+
+    <div class="row">
+      <label>管理員等級</label>
+      <select id="reqType">
+        <option value="admin1">admin1 (資源/公告/計時)</option>
+        <option value="admin2">admin2 (含大螢幕控制)</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>申請密碼</label>
+      <input id="reqPass" type="password" placeholder="輸入 345721">
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn warn" id="btnSubmitReq">送出申請</button>
+      <button class="btn danger" id="btnLogoutBlocked">登出</button>
+      <button class="btn blue" id="btnResetDevice">重設本機裝置</button>
+    </div>
+
+    <div class="hint" style="margin-top:10px;">本機 deviceId：<b id="deviceIdText"></b></div>
+  </div>
+
+  <!-- Admin Main -->
+  <div id="admin-main" class="hide">
+    <h1>🎮 人生履歷 控制中心</h1>
+
+    <!-- Who -->
+    <div class="card" style="border-left-color:var(--gray);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div class="pill">Email：<span id="whoEmail">-</span></div>
+        <div class="pill">Role：<b id="whoRole">-</b></div>
+        <div class="pill">Device：<b id="whoDev">-</b></div>
+        <button class="btn danger" id="btnLogout">登出</button>
+      </div>
+    </div>
+
+    <!-- Super Panel -->
+    <div id="super-panel" class="card hide" style="border-left-color:var(--warn);">
+      <h3 class="label-text"><i class="fas fa-crown"></i> SUPER 主控管理</h3>
+
+      <div class="res-row">
+        <div>Admin 鎖定：<span id="adminLockBadge" class="badge">-</span></div>
+        <div style="display:flex; gap:5px;">
+          <button class="btn danger" id="btnAdminLock" style="padding:4px 8px;">上鎖</button>
+          <button class="btn ok" id="btnAdminUnlock" style="padding:4px 8px;">解鎖</button>
+        </div>
+      </div>
+
+      <div class="res-row">
+        <div>Player 鎖定：<span id="playerLockBadge" class="badge">-</span></div>
+        <div style="display:flex; gap:5px;">
+          <button class="btn danger" id="btnPlayerLock" style="padding:4px 8px;">上鎖</button>
+          <button class="btn ok" id="btnPlayerUnlock" style="padding:4px 8px;">解鎖</button>
+        </div>
+      </div>
+
+      <div id="reqList" style="margin-top:10px;"></div>
+
+      <div class="grid2" style="margin-top:10px;">
+        <div>
+          <h3>Admin 列表</h3>
+          <div id="adminDevicesContainer"></div>
+        </div>
+        <div>
+          <h3>Player 列表</h3>
+          <div id="playerDevicesContainer"></div>
+        </div>
+      </div>
+
+      <div id="seenList" style="font-size:0.8em; margin-top:10px; max-height:150px; overflow-y:auto; background:var(--row); padding:5px;"></div>
+    </div>
+
+    <!-- Marquee -->
+    <div class="card" style="border-left-color:#3498db;">
+      <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告</h3>
+      <textarea id="broadcastMsg" placeholder="輸入公告內容..."></textarea>
+
+      <div class="grid2">
+        <div class="row">
+          <label>方向</label>
+          <select id="broadcastDir">
+            <option value="left">向左</option>
+            <option value="right">向右</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>啟用</label>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
+            <input type="checkbox" id="broadcastEnable" checked style="width:auto; transform:scale(1.1); margin:0;">
+            <span class="hint" style="margin:0;">勾選代表立即顯示</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <button class="btn blue" style="flex:2;" id="btnBroadcast">發送公告</button>
+        <button class="btn gray" style="flex:1;" id="btnBroadcastClear">清除</button>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="card" style="border-left-color:#9b59b6;">
+      <h3 class="label-text"><i class="fas fa-stopwatch"></i> 計時控制</h3>
+      <div id="local-timer">00:00</div>
+      <div style="display:flex; gap:10px;">
+        <input type="number" id="setTimerSec" value="60" style="flex:1;">
+        <button class="btn plus" id="btnTimerStart">▶️ 開始</button>
+        <button class="btn warn" id="btnTimerPause">⏸️ 暫停</button>
+      </div>
+      <button class="global-btn" style="background:var(--danger); margin-top:10px;" id="btnTimerReset">🔄 重置時間</button>
+    </div>
+
+    <!-- Big Screen: Marquee Controls -->
+    <div id="controls-marquee" class="card" style="border-left-color:#f39c12;">
+      <h2 style="margin:0 0 10px 0;"><i class="fa-solid fa-sliders"></i> 大螢幕控制 (admin2/super)</h2>
+
+      <div class="row">
+        <label>跑馬燈速度 (秒)</label>
+        <input id="ctrlMarquee" type="range" min="3" max="60" step="1" value="10">
+        <div class="hint">目前：<span id="ctrlMarqueeVal">10</span>s</div>
+      </div>
+
+      <div class="row">
+        <label>跑馬燈字體大小</label>
+        <input id="ctrlMarqueeFont" type="range" min="12" max="64" step="1" value="22">
+        <div class="hint">目前：<span id="ctrlMarqueeFontVal">22</span>px</div>
+      </div>
+    </div>
+
+    <!-- Big Screen: Danmaku Controls -->
+    <div id="controls-danmaku" class="card" style="border-left-color:#f39c12;">
+      <div class="res-row" style="margin-bottom: 20px; background: rgba(0,0,0,0.25);">
+        <div class="label-text">
+          <i class="fas fa-comment-dots"></i> 彈幕顯示狀態
+        </div>
+        <button class="btn ok" id="btnToggleDanmaku" style="min-width: 120px;">
+          <i class="fas fa-toggle-on"></i> <span id="danmakuStatusText">開啟中</span>
+        </button>
+      </div>
+
+      <div class="row">
+        <label>彈幕速度 (秒)</label>
+        <input id="ctrlDanmaku" type="range" min="3" max="60" step="1" value="10">
+        <div class="hint">目前：<span id="ctrlDanmakuVal">10</span>s</div>
+      </div>
+
+      <div class="row">
+        <label>彈幕字體大小 (px)</label>
+        <input id="ctrlFont" type="range" min="12" max="64" step="1" value="22">
+        <div class="hint">目前：<span id="ctrlFontVal">22</span>px</div>
+      </div>
+
+      <div class="row">
+        <label>彈幕透明度 (0.2 ~ 1)</label>
+        <input id="ctrlOpacity" type="range" min="0.2" max="1" step="0.05" value="0.9">
+        <div class="hint">目前：<span id="ctrlOpacityVal">0.9</span></div>
+      </div>
+
+      <div class="row">
+        <label>同時彈幕上限</label>
+        <input id="ctrlMaxOn" type="range" min="1" max="30" step="1" value="8">
+        <div class="hint">目前：<span id="ctrlMaxOnVal">8</span> 條</div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 20px;">
+        <button class="btn blue" id="btnSaveCtrl" style="flex: 1;">立即套用</button>
+        <button class="btn warn" id="btnResetCtrl" style="flex: 1;">還原預設</button>
+        <button class="btn danger" id="btnClearDanmaku" style="flex: 1;">清空彈幕</button>
+      </div>
+
+      <div id="controls-lock-hint" class="hint hide" style="color:var(--danger);">大螢幕控制已鎖定。</div>
+    </div>
+
+    <!-- Players -->
+    <div id="player-list"></div>
+
+    <!-- Bottom -->
+    <div class="bottom-actions">
+      <button class="global-btn" style="background:var(--warn);" id="btnResetAllRes">清空資源、分數與背包</button>
+      <button class="global-btn" style="background:#c0392b;" id="btnResetTotal">徹底重置遊戲</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ========= 1) Firebase =========
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+
+  const SUPER_UID = "AT3xEkjygoZEcCbrG8VdZVklEfj1";
+  const ADMIN_REQUEST_PASSWORD = "345721";
+
+  // ========= 2) Utils =========
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  function getDeviceId() {
+    let id = localStorage.getItem("device_id");
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(16).slice(2) + Date.now()));
+      localStorage.setItem("device_id", id);
+    }
+    return id;
+  }
+  function resetDeviceId() {
+    localStorage.removeItem("device_id");
+    location.reload();
+  }
+
+  // ========= 3) Resource / Adjust (batched) =========
+  const resConfig = {
+    time: { name:'時間', icon:'fa-clock', color:'#8b5cf6' },
+    money: { name:'金錢', icon:'fa-wallet', color:'#fbbf24' },
+    health: { name:'健康', icon:'fa-heartbeat', color:'#ef4444' },
+    knowledge: { name:'知識', icon:'fa-book', color:'#3b82f6' },
+    social: { name:'人際', icon:'fa-users', color:'#22c55e' },
+    score: { name:'分數', icon:'fa-star', color:'#f59e0b' }
+  };
+
+  const pending = {};
+  let flushTimer = null;
+
+  function adj(playerId, key, delta) {
+    // optimistic UI
+    const vEl = $(`p${playerId}-${key}`);
+    if (vEl) vEl.innerText = String(Math.max(0, (Number(vEl.innerText)||0) + delta));
+
+    const pathKey = `players/p${playerId}/res/${key}`;
+    pending[pathKey] = (pending[pathKey] || 0) + delta;
+
+    if (flushTimer) return;
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      const batch = Object.entries(pending);
+      for (const [path, d] of batch) {
+        if (!d) continue;
+        pending[path] = 0;
+        db.ref(path).transaction(cur => Math.max(0, (cur || 0) + d));
+      }
+    }, 150);
+  }
+
+  // ========= 4) Timer Sync =========
+  let timeLeft = 60;
+  let isRunning = false;
+
+  function renderLocalTimer() {
+    const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+    const s = (timeLeft % 60).toString().padStart(2,'0');
+    $("local-timer").innerText = `${m}:${s}`;
+  }
+
+  function syncTimer() {
+    db.ref("timerSync").set({ timeLeft, isRunning, lastUpdate: Date.now() });
+  }
+
+  db.ref("timerSync").on("value", snap => {
+    const d = snap.val() || {};
+    timeLeft = (d.timeLeft ?? timeLeft);
+    isRunning = (d.isRunning ?? isRunning);
+    renderLocalTimer();
+  });
+
+  setInterval(() => {
+    if (!isRunning) return;
+    if (timeLeft <= 0) return;
+    timeLeft -= 1;
+    syncTimer();
+  }, 1000);
+
+  // ========= 5) Controls UI =========
+  const ui = {
+    mSpeed: $("ctrlMarquee"),
+    mFont: $("ctrlMarqueeFont"),
+    dSpeed: $("ctrlDanmaku"),
+    dFont: $("ctrlFont"),
+    dMax: $("ctrlMaxOn"),
+    dOpacity: $("ctrlOpacity"),
+  };
+
+  function updateSliderDisp() {
+    $("ctrlMarqueeVal").innerText = ui.mSpeed.value;
+    $("ctrlMarqueeFontVal").innerText = ui.mFont.value;
+    $("ctrlDanmakuVal").innerText = ui.dSpeed.value;
+    $("ctrlFontVal").innerText = ui.dFont.value;
+    $("ctrlMaxOnVal").innerText = ui.dMax.value;
+    $("ctrlOpacityVal").innerText = ui.dOpacity.value;
+  }
+
+  function setDanmakuButton(isEnabled) {
+    const btn = $("btnToggleDanmaku");
+    const txt = $("danmakuStatusText");
+    const icon = btn.querySelector("i");
+    btn.className = isEnabled ? "btn ok" : "btn danger";
+    txt.innerText = isEnabled ? "開啟中" : "已關閉";
+    if (icon) icon.className = isEnabled ? "fas fa-toggle-on" : "fas fa-toggle-off";
+  }
+
+  // ========= 6) Broadcast =========
+  function sendBroadcast() {
+    const text = $("broadcastMsg").value || "";
+    const enabled = $("broadcastEnable").checked;
+    const direction = $("broadcastDir").value;
+
+    db.ref("marquee").update({
+      enabled,
+      text,
+      direction,
+      bgColor: "#6c5ce7",
+      textColor: "#ffffff",
+      fontSize: Number(ui.mFont.value),
+      updatedAt: Date.now()
+    });
+  }
+
+  // ========= 7) Players Render =========
+  function renderPlayerList() {
+    const list = $("player-list");
+    list.innerHTML = "";
+
+    for (let i = 1; i <= 10; i++) {
+      let h = `<div class="card">
+        <button class="clear-single" data-clear="${i}">清除玩家</button>
+        <h3><i class="fas fa-user"></i> <span id="p${i}-n"></span> (ID:${i})</h3>`;
+
+      for (const k of Object.keys(resConfig)) {
+        const cfg = resConfig[k];
+        h += `
+          <div class="res-row">
+            <span class="label-text" style="color:${cfg.color}">
+              <i class="fas ${cfg.icon}"></i> ${cfg.name}
+            </span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${k !== "score" ? `<button class="btn minus10" data-adj="${i}|${k}|-10">-10</button>` : ""}
+              <button class="btn minus" data-adj="${i}|${k}|-1">-1</button>
+              <span class="val" id="p${i}-${k}">0</span>
+              <button class="btn plus" data-adj="${i}|${k}|1">+1</button>
+              ${k !== "score" ? `<button class="btn plus10" data-adj="${i}|${k}|10">+10</button>` : ""}
+            </div>
+          </div>`;
+      }
+
+      h += `
+        <div style="border-top:1px solid #ddd; margin-top:10px; padding-top:10px;">
+          人生背包: <div id="p${i}-inv-display"></div>
+          <input type="text" id="p${i}-inv-in" class="inv-input" placeholder="物品名">
+          <button class="btn plus" data-addinv="${i}">新增</button>
+        </div>
+      </div>`;
+
+      list.insertAdjacentHTML("beforeend", h);
+
+      db.ref(`players/p${i}`).on("value", s => {
+        const d = s.val() || {};
+        $(`p${i}-n`).innerText = d.name || "空位";
+
+        for (const k of Object.keys(resConfig)) {
+          $(`p${i}-${k}`).innerText = d.res?.[k] ?? 0;
+        }
+
+        const invDiv = $(`p${i}-inv-display`);
+        invDiv.innerHTML = "";
+        if (d.inventory) {
+          for (const [key, item] of Object.entries(d.inventory)) {
+            invDiv.insertAdjacentHTML("beforeend",
+              `<span class="inv-tag">${escapeHtml(item.name)}<i class="fas fa-times" data-delinv="${i}|${key}"></i></span>`
+            );
+          }
+        }
+      });
+    }
+  }
+
+  // ========= 8) Super Bind =========
+  function bindSuperData() {
+    db.ref("joinRequests").on("value", s => {
+      const list = $("reqList");
+      const entries = Object.entries(s.val() || {});
+      list.innerHTML = entries.map(([k,r]) => `
+        <div class="res-row">
+          <div>${escapeHtml(r.label)} (${escapeHtml(r.want)})</div>
+          <button class="btn ok" data-approve="${k}">核准</button>
+        </div>
+      `).join("");
+    });
+
+    db.ref("adminDevices").on("value", s => {
+      const cont = $("adminDevicesContainer");
+      const entries = Object.entries(s.val() || {}).filter(([,v]) => !v.revoked);
+      cont.innerHTML = entries.map(([id,v]) => `
+        <div class="res-row" style="font-size:0.75em;">
+          ${escapeHtml(v.label)} <span class="pill" style="margin-left:auto;">${escapeHtml(v.role || "-")}</span>
+          <button class="btn danger" data-revoke="adminDevices|${id}" style="padding:2px 8px;">剔</button>
+        </div>
+      `).join("");
+    });
+
+    db.ref("playerDevices").on("value", s => {
+      const cont = $("playerDevicesContainer");
+      const entries = Object.entries(s.val() || {}).filter(([,v]) => !v.revoked);
+      cont.innerHTML = entries.map(([id,v]) => `
+        <div class="res-row" style="font-size:0.75em;">
+          ${escapeHtml(v.label)}
+          <button class="btn danger" data-revoke="playerDevices|${id}" style="padding:2px 8px;">剔</button>
+        </div>
+      `).join("");
+    });
+
+    db.ref("deviceLocks").on("value", s => {
+      const d = s.val() || {};
+      $("adminLockBadge").innerText = d.adminLocked ? "LOCKED" : "UNLOCKED";
+      $("playerLockBadge").innerText = d.playerLocked ? "LOCKED" : "UNLOCKED";
+
+      $("adminLockBadge").className = "badge " + (d.adminLocked ? "danger" : "ok");
+      $("playerLockBadge").className = "badge " + (d.playerLocked ? "danger" : "ok");
+    });
+  }
+
+  // ========= 9) Remote Sync =========
+  function startRemoteSync() {
+    // controls
+    db.ref("controls").on("value", snap => {
+      const data = snap.val() || {};
+      const map = {
+        marqueeDurationSec: ui.mSpeed,
+        danmakuDurationSec: ui.dSpeed,
+        danmakuFontSizePx: ui.dFont,
+        danmakuMaxOnScreen: ui.dMax,
+        danmakuOpacity: ui.dOpacity
+      };
+      for (const [k, el] of Object.entries(map)) {
+        if (data[k] !== undefined && el) el.value = data[k];
+      }
+      updateSliderDisp();
+    });
+
+    // marquee font + enable
+    db.ref("marquee").on("value", snap => {
+      const m = snap.val() || {};
+      if (m.fontSize !== undefined) ui.mFont.value = m.fontSize;
+      if (m.enabled !== undefined) $("broadcastEnable").checked = !!m.enabled;
+      if (m.direction) $("broadcastDir").value = m.direction;
+      updateSliderDisp();
+    });
+
+    // danmaku settings
+    db.ref("danmakuSettings").on("value", snap => {
+      const d = snap.val() || {};
+      const enabled = (d.enabled ?? true);
+      setDanmakuButton(enabled);
+
+      if (d.fontSize !== undefined) ui.dFont.value = d.fontSize;
+      if (d.opacity !== undefined) ui.dOpacity.value = d.opacity;
+      if (d.maxLines !== undefined) ui.dMax.value = d.maxLines;
+
+      updateSliderDisp();
+    });
+  }
+
+  // ========= 10) Role lock helper =========
+  function lockBigScreenControls() {
+    $("controls-lock-hint").classList.remove("hide");
+    const lockEls = [
+      ui.mSpeed, ui.mFont, ui.dSpeed, ui.dFont, ui.dMax, ui.dOpacity,
+      $("btnSaveCtrl"), $("btnResetCtrl"), $("btnClearDanmaku"), $("btnToggleDanmaku")
+    ];
+    lockEls.forEach(el => { if (el) el.disabled = true; });
+  }
+
+  // ========= 11) Events =========
+  function bindEvents() {
+    // sliders live display
+    [ui.mSpeed, ui.mFont, ui.dSpeed, ui.dFont, ui.dMax, ui.dOpacity]
+      .forEach(el => el && el.addEventListener("input", updateSliderDisp));
+
+    // login/logout
+    $("btnLogin").addEventListener("click", () => {
+      auth.signInWithEmailAndPassword($("loginEmail").value, $("loginPass").value);
+    });
+    $("btnLogout").addEventListener("click", () => auth.signOut().then(() => location.reload()));
+    $("btnLogoutBlocked").addEventListener("click", () => auth.signOut().then(() => location.reload()));
+    $("btnResetDevice").addEventListener("click", resetDeviceId);
+
+    // join request
+    $("btnSubmitReq").addEventListener("click", () => {
+      const pass = $("reqPass").value;
+      if (pass !== ADMIN_REQUEST_PASSWORD) return alert("密碼錯誤");
+
+      db.ref("joinRequests").push({
+        deviceId: getDeviceId(),
+        label: $("deviceLabel").value || "未命名設備",
+        want: $("reqType").value,
+        createdAt: Date.now(),
+        byEmail: auth.currentUser?.email || "anon"
+      });
+
+      alert("已送出申請");
+    });
+
+    // broadcast
+    $("btnBroadcast").addEventListener("click", sendBroadcast);
+    $("btnBroadcastClear").addEventListener("click", () => {
+      db.ref("marquee").update({ enabled: false, text: "", updatedAt: Date.now() });
+      $("broadcastMsg").value = "";
+      $("broadcastEnable").checked = false;
+    });
+
+    // timer
+    $("btnTimerStart").addEventListener("click", () => { isRunning = true; syncTimer(); });
+    $("btnTimerPause").addEventListener("click", () => { isRunning = false; syncTimer(); });
+    $("btnTimerReset").addEventListener("click", () => {
+      isRunning = false;
+      timeLeft = parseInt($("setTimerSec").value, 10) || 60;
+      syncTimer();
+    });
+
+    // save controls
+    $("btnSaveCtrl").addEventListener("click", async () => {
+      const payload = {
+        marqueeDurationSec: Number(ui.mSpeed.value),
+        danmakuDurationSec: Number(ui.dSpeed.value),
+        danmakuFontSizePx: Number(ui.dFont.value),
+        danmakuMaxOnScreen: Number(ui.dMax.value),
+        danmakuOpacity: Number(ui.dOpacity.value),
+        updatedAt: Date.now()
+      };
+
+      await db.ref("controls").update(payload);
+      await db.ref("marquee").update({ fontSize: Number(ui.mFont.value), updatedAt: Date.now() });
+
+      await db.ref("danmakuSettings").update({
+        enabled: true,
+        fontSize: Number(ui.dFont.value),
+        maxLines: Number(ui.dMax.value),
+        opacity: Number(ui.dOpacity.value),
+        speedPxPerSec: Math.round(1400 / Math.max(3, Number(ui.dSpeed.value))),
+        updatedAt: Date.now()
+      });
+
+      alert("已套用");
+    });
+
+    $("btnResetCtrl").addEventListener("click", async () => {
+      ui.mSpeed.value = 10;
+      ui.mFont.value = 22;
+      ui.dSpeed.value = 10;
+      ui.dFont.value = 22;
+      ui.dOpacity.value = 0.9;
+      ui.dMax.value = 8;
+      updateSliderDisp();
+      alert("已還原預設（尚未寫入，按「立即套用」才會同步到大螢幕）");
+    });
+
+    $("btnClearDanmaku").addEventListener("click", async () => {
+      if (!confirm("確定清空彈幕？")) return;
+      // 你如果彈幕是存在 purchaseFeed 或 danmakuFeed，請改這裡的 ref
+      await db.ref("purchaseFeed").remove().catch(()=>{});
+      alert("已清空（若你的彈幕不是在 purchaseFeed，告訴我你的路徑我幫你對齊）");
+    });
+
+    $("btnToggleDanmaku").addEventListener("click", async () => {
+      const snap = await db.ref("danmakuSettings/enabled").once("value");
+      const cur = snap.val();
+      const next = !(cur ?? true);
+      await db.ref("danmakuSettings").update({ enabled: next, updatedAt: Date.now() });
+    });
+
+    // click delegation
+    document.body.addEventListener("click", async (e) => {
+      const t = e.target.closest("[data-adj],[data-clear],[data-addinv],[data-delinv],[data-approve],[data-revoke]");
+      if (!t) return;
+
+      if (t.hasAttribute("data-adj")) {
+        const [p, k, d] = t.getAttribute("data-adj").split("|");
+        adj(p, k, Number(d));
+        return;
+      }
+
+      if (t.hasAttribute("data-clear")) {
+        const pid = t.getAttribute("data-clear");
+        if (!confirm("清空該玩家？")) return;
+        db.ref(`players/p${pid}`).set({
+          name: "",
+          res: { time:0, money:0, health:0, knowledge:0, social:0, score:0 }
+        });
+        return;
+      }
+
+      if (t.hasAttribute("data-addinv")) {
+        const p = t.getAttribute("data-addinv");
+        const v = $(`p${p}-inv-in`).value.trim();
+        if (!v) return;
+        db.ref(`players/p${p}/inventory`).push({ name: v });
+        $(`p${p}-inv-in`).value = "";
+        return;
+      }
+
+      if (t.hasAttribute("data-delinv")) {
+        const [p, k] = t.getAttribute("data-delinv").split("|");
+        if (!confirm("移除該物品？")) return;
+        db.ref(`players/p${p}/inventory/${k}`).remove();
+        return;
+      }
+
+      // super approve
+      if (t.hasAttribute("data-approve")) {
+        const k = t.getAttribute("data-approve");
+        const snap = await db.ref("joinRequests/" + k).once("value");
+        const r = snap.val();
+        if (!r) return;
+
+        const path = "adminDevices"; // 你這套是 Admin 才需要審核；playerDevices 留給玩家端用
+        const role = (r.want === "admin2") ? "admin2" : "admin1";
+        await db.ref(`${path}/${r.deviceId}`).set({ label: r.label, revoked: false, role, createdAt: Date.now() });
+        await db.ref("joinRequests/" + k).remove();
+        return;
+      }
+
+      if (t.hasAttribute("data-revoke")) {
+        const [path, id] = t.getAttribute("data-revoke").split("|");
+        if (!confirm("剔除該設備？")) return;
+        await db.ref(`${path}/${id}`).update({ revoked: true, revokedAt: Date.now() });
+        return;
+      }
+    });
+
+    // resets
+    $("btnResetAllRes").addEventListener("click", async () => {
+      if (!confirm("清空全部玩家資源與背包？")) return;
+      const updates = {};
+      for (let i=1; i<=10; i++) {
+        updates[`players/p${i}/res`] = { time:0, money:0, health:0, knowledge:0, social:0, score:0 };
+        updates[`players/p${i}/inventory`] = null;
+      }
+      await db.ref().update(updates);
+      alert("已清空");
+    });
+
+    $("btnResetTotal").addEventListener("click", async () => {
+      if (!confirm("徹底重置資料庫？")) return;
+      await db.ref().update({
+        players: null,
+        timerSync: null,
+        controls: null,
+        purchaseFeed: null,
+        marquee: null,
+        danmakuSettings: null,
+        joinRequests: null
+      });
+      location.reload();
+    });
+
+    // super locks
+    $("btnAdminLock").addEventListener("click", () => db.ref("deviceLocks").update({ adminLocked: true, updatedAt: Date.now() }));
+    $("btnAdminUnlock").addEventListener("click", () => db.ref("deviceLocks").update({ adminLocked: false, updatedAt: Date.now() }));
+    $("btnPlayerLock").addEventListener("click", () => db.ref("deviceLocks").update({ playerLocked: true, updatedAt: Date.now() }));
+    $("btnPlayerUnlock").addEventListener("click", () => db.ref("deviceLocks").update({ playerLocked: false, updatedAt: Date.now() }));
+  }
+
+  // ========= 12) Auth Gate =========
+  function show(el) { el.classList.remove("hide"); }
+  function hide(el) { el.classList.add("hide"); }
+
+  function boot() {
+    renderPlayerList();
+    updateSliderDisp();
+    renderLocalTimer();
+    bindEvents();
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        show($("auth-overlay"));
+        hide($("admin-main"));
+        hide($("blocked-panel"));
+        return;
+      }
+
+      hide($("auth-overlay"));
+
+      const devId = getDeviceId();
+      $("deviceIdText").innerText = devId;
+      $("whoEmail").innerText = user.email;
+      $("whoDev").innerText = devId;
+
+      // SUPER
+      if (user.uid === SUPER_UID) {
+        $("whoRole").innerText = "super";
+        show($("super-panel"));
+        show($("admin-main"));
+        bindSuperData();
+        startRemoteSync();
+        return;
+      }
+
+      // Admin device allow list
+      const snap = await db.ref("adminDevices/" + devId).once("value");
+      const dev = snap.val();
+
+      if (dev && !dev.revoked) {
+        $("whoRole").innerText = dev.role || "admin1";
+        show($("admin-main"));
+        hide($("blocked-panel"));
+        hide($("super-panel"));
+
+        startRemoteSync();
+
+        if ((dev.role || "admin1") === "admin1") {
+          lockBigScreenControls();
+        }
+      } else {
+        // blocked
+        hide($("admin-main"));
+        show($("blocked-panel"));
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+
+</body>
+</html>
