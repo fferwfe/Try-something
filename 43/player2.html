@@ -10,8 +10,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- ✅ QR 掃碼（相機＋截圖） -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+ 
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -31,7 +30,7 @@
 
     /* 跑馬燈公告欄位 */
     #notice-bar {
-      background: #6c5ce7; color: white; border-radius: 20px;
+      background: #6b6edc; color: white; border-radius: 20px;
       margin-bottom: 15px; display: none; overflow: hidden; position: relative;
     }
     .marquee-container { padding: 12px; white-space: nowrap; overflow: hidden; }
@@ -61,11 +60,11 @@
 
     /* 中文資源配色與新增「分數」格 */
     .c-time { border-color: #a29bfe; color: #6c5ce7; }
-    .c-money { border-color: #ffeaa7; color: #f39c12; }
+    .c-money { border-color: #d5a813; color: #8ba509a1; }
     .c-health { border-color: #ff7675; color: #d63031; }
     .c-knowledge { border-color: #74b9ff; color: #0984e3; }
     .c-social { border-color: #55efc4; color: #00b894; }
-    .c-score { border-color: #ffd700; color: #f39c12; } /* 分數配色 */
+    .c-score { border-color: #263dd0; color: #b92a89; } /* 分數配色 */
 
     /* 人生背包清單 */
     .inv-item {
@@ -82,49 +81,7 @@
     select, input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; }
     #join-btn { background: #00b894; color: white; border: none; font-weight: bold; cursor: pointer; }
 
-    /* ✅ QR 區塊樣式（融入你的 box 風格） */
-    .qr-card{
-      background:#fafafa;
-      border-top: 5px solid #6c5ce7;
-      padding: 15px;
-      border-radius: 20px;
-      margin-top: 20px;
-      text-align:left;
-    }
-    .qr-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .qr-btn{
-      background:#fff;
-      border:2px solid #eee;
-      border-radius:15px;
-      padding:12px 14px;
-      font-weight:900;
-      cursor:pointer;
-      width:auto;
-      margin: 0;
-    }
-    .qr-btn.blue{ background: rgba(59,130,246,0.12); }
-    .qr-btn.danger{ background: rgba(239,68,68,0.12); }
-    #qrReader{
-      margin-top: 10px;
-      border: 2px dashed #ddd;
-      border-radius: 18px;
-      overflow:hidden;
-      background:#fff;
-      min-height: 120px;
-    }
-    #qrStatus{
-      margin-top:10px;
-      font-weight:900;
-      color:#636e72;
-      word-break: break-word;
-    }
-    #qrRaw{
-      margin-top:8px;
-      font-size:12px;
-      color:#636e72;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
+
   </style>
 
   <!-- Shared Firebase + helpers -->
@@ -176,435 +133,306 @@
     <div id="shop-msg"></div>
     <div id="shop-display"></div>
 
-    <!-- ✅ QR 扣資源（整合進玩家端） -->
-    <div class="qr-card">
-      <h3 style="margin:0 0 8px 0; color:#6c5ce7;"><i class="fas fa-qrcode"></i> QR 扣資源（測試：無上限）</h3>
-      <div style="font-size:12px; color:#636e72;">
-        掃到 QR 後直接扣資源，只顯示成功/失敗（不顯示扣什麼）。測試模式：可扣到負數。
-      </div>
-
-      <div class="qr-actions" style="margin-top:10px;">
-        <button class="qr-btn blue" id="qrStart"><i class="fas fa-camera"></i> 開相機</button>
-        <button class="qr-btn danger" id="qrStop" disabled><i class="fas fa-stop"></i> 停止</button>
-
-        <label class="qr-btn" style="cursor:pointer; display:inline-flex; gap:8px; align-items:center;">
-          <i class="fas fa-image"></i> 選擇截圖
-          <input id="qrImgPick" type="file" accept="image/*" style="display:none;">
-        </label>
-      </div>
-
-      <div id="qrReader"></div>
-      <div id="qrStatus">待掃描…</div>
-      <div id="qrRaw"></div>
-    </div>
   </div>
 
-  <script>
-    // ====== Firebase init check ======
-    if (!window.firebase || !firebase.apps || firebase.apps.length === 0) {
-      alert("Firebase 尚未初始化：請確認 js/firebase.js 路徑正確且有 firebase.initializeApp(firebaseConfig)");
-      throw new Error("Firebase not initialized");
+    
+
+ <script>
+  // ====== Firebase init check ======
+  if (!window.firebase || !firebase.apps || firebase.apps.length === 0) {
+    alert("Firebase 尚未初始化：請確認 js/firebase.js 路徑正確且有 firebase.initializeApp(firebaseConfig)");
+    throw new Error("Firebase not initialized");
+  }
+  const db = firebase.database();
+
+  // ✅ 跑馬燈（公告）：統一只讀 /marquee（文字/速度/字體/方向/開關）
+  const marqueeRef = db.ref("marquee");
+  const noticeBar  = document.getElementById("notice-bar");
+  const noticeText = document.getElementById("notice-text");
+
+  marqueeRef.on("value", (snap) => {
+    const v = snap.val() || {};
+    const enabled   = v.enabled ?? true;
+    const text      = v.text ?? "";
+    const speedSec  = Math.max(3, Number(v.speedSec ?? 10));
+    const direction = (v.direction === "right") ? "right" : "left";
+    const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
+
+    noticeBar.style.display = (enabled && text.trim()) ? "block" : "none";
+    if (!(enabled && text.trim())) return;
+
+    noticeText.textContent = text;
+    noticeText.style.fontSize = fontSize + "px";
+    noticeText.style.setProperty("--mq-sec", `${speedSec}s`);
+    noticeText.style.setProperty("--mq-anim", `marquee-${direction}`);
+
+    if (v.bgColor) noticeBar.style.background = v.bgColor;
+    if (v.textColor) noticeBar.style.color = v.textColor;
+
+    noticeText.style.animation = "none";
+    void noticeText.offsetWidth;
+    noticeText.style.animation = `var(--mq-anim) var(--mq-sec) linear infinite`;
+  });
+
+  /***********************
+   * Device registry (devicesSeen)
+   ***********************/
+  function getDeviceId(){
+    const KEY = "device_id";
+    let id = localStorage.getItem(KEY);
+    if(!id){
+      id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(16).slice(2) + Date.now()));
+      localStorage.setItem(KEY, id);
     }
-    const db = firebase.database();
+    return id;
+  }
+  function getDeviceLabel(){
+    return (localStorage.getItem("device_label") || "").trim();
+  }
+  function setDeviceLabel(label){
+    const v = String(label || "").trim();
+    if(v) localStorage.setItem("device_label", v);
+  }
 
-    // ✅ 跑馬燈（公告）：統一只讀 /marquee（文字/速度/字體/方向/開關）
-    const marqueeRef = db.ref("marquee");
-    const noticeBar  = document.getElementById("notice-bar");
-    const noticeText = document.getElementById("notice-text");
+  async function heartbeat(){
+    try{
+      const deviceId = getDeviceId();
+      const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+      await db.ref("devicesSeen/" + deviceId).update({
+        label,
+        kind: "player",
+        page: "player.html",
+        lastSeen: Date.now()
+      });
+    }catch(e){}
+  }
+  heartbeat();
+  setInterval(heartbeat, 15000);
 
-    marqueeRef.on("value", (snap) => {
-      const v = snap.val() || {};
-      const enabled   = v.enabled ?? true;
-      const text      = v.text ?? "";
-      const speedSec  = Math.max(3, Number(v.speedSec ?? 10));
-      const direction = (v.direction === "right") ? "right" : "left";
-      const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
+  /***********************
+   * ✅ 位子鎖定（不用 rules / 前端硬踢）
+   * seatLocks/p{pid} = { deviceId, name, label, ts }
+   ***********************/
+  function kickToLogin(msg){
+    if (msg) alert(msg);
+    // 回到登入畫面（完全不能用）
+    document.getElementById('game').classList.add('hide');
+    document.getElementById('login').classList.remove('hide');
+  }
 
-      noticeBar.style.display = (enabled && text.trim()) ? "block" : "none";
-      if (!(enabled && text.trim())) return;
+  async function enforceSeatLockOrKick(pid, playerName){
+    const deviceId = getDeviceId();
+    const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+    const lockRef = db.ref(`seatLocks/p${pid}`);
 
-      noticeText.textContent = text;
-      noticeText.style.fontSize = fontSize + "px";
-      noticeText.style.setProperty("--mq-sec", `${speedSec}s`);
-      noticeText.style.setProperty("--mq-anim", `marquee-${direction}`);
-
-      if (v.bgColor) noticeBar.style.background = v.bgColor;
-      if (v.textColor) noticeBar.style.color = v.textColor;
-
-      noticeText.style.animation = "none";
-      void noticeText.offsetWidth;
-      noticeText.style.animation = `var(--mq-anim) var(--mq-sec) linear infinite`;
-    });
-
-    /***********************
-     * Device registry (devicesSeen)
-     ***********************/
-    function getDeviceId(){
-      const KEY = "device_id";
-      let id = localStorage.getItem(KEY);
-      if(!id){
-        id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(16).slice(2) + Date.now()));
-        localStorage.setItem(KEY, id);
-      }
-      return id;
+    let snap;
+    try{
+      snap = await lockRef.get();
+    }catch(err){
+      // 讀不到（例如 rules 以後限制）就先保守：不讓進
+      kickToLogin("系統無法確認位子鎖定狀態，已中止登入。");
+      return false;
     }
-    function getDeviceLabel(){
-      return (localStorage.getItem("device_label") || "").trim();
+
+    const lock = snap.val();
+
+    // 已被其他裝置鎖定 → 踢掉
+    if(lock && lock.deviceId && lock.deviceId !== deviceId){
+      kickToLogin(`此玩家位子（p${pid}）已被其他裝置使用：\n${lock.label || lock.deviceId}\n你無法登入。`);
+      return false;
     }
-    function setDeviceLabel(label){
-      const v = String(label || "").trim();
-      if(v) localStorage.setItem("device_label", v);
-    }
-    async function heartbeat(){
+
+    // 沒鎖定 → 本裝置取得鎖定（第一次綁定）
+    if(!lock || !lock.deviceId){
       try{
-        const deviceId = getDeviceId();
-        const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
-        await db.ref("devicesSeen/" + deviceId).update({
+        await lockRef.set({
+          deviceId,
+          name: playerName || "",
           label,
-          kind: "player",
-          page: "player.html",
-          lastSeen: Date.now()
+          ts: Date.now()
+        });
+      }catch(err){
+        kickToLogin("位子鎖定寫入失敗，已中止登入。");
+        return false;
+      }
+    }else{
+      // 同一台裝置重登：更新資訊
+      try{
+        await lockRef.update({
+          name: playerName || lock.name || "",
+          label,
+          ts: Date.now()
         });
       }catch(e){}
     }
-    heartbeat();
-    setInterval(heartbeat, 15000);
 
-    const resNames = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際', score: '分數' };
-    let myId, myName, myRes = {}, radarChart;
+    return true;
+  }
 
-    function join() {
-      myId = document.getElementById('pid').value;
-      const name = document.getElementById('pname').value;
-      if(!name) return alert("請輸入暱稱");
-      myName = name;
+  const resNames = { time: '時間', money: '金錢', health: '健康', knowledge: '知識', social: '人際', score: '分數' };
+  let myId, myName, myRes = {}, radarChart;
 
-      const labelInput = document.getElementById('deviceLabel');
-      if (labelInput && labelInput.value) setDeviceLabel(labelInput.value);
-      heartbeat();
+  // ✅ join 改成 async（最少改動）
+  async function join() {
+    myId = document.getElementById('pid').value;
+    const name = document.getElementById('pname').value;
+    if(!name) return alert("請輸入暱稱");
+    myName = name;
 
-      db.ref(`players/p${myId}`).update({ name: name });
-      document.getElementById('login').classList.add('hide');
-      document.getElementById('game').classList.remove('hide');
-      document.getElementById('me').innerText = name;
+    const labelInput = document.getElementById('deviceLabel');
+    if (labelInput && labelInput.value) setDeviceLabel(labelInput.value);
+    await heartbeat();
 
-      initRadar();
-      syncData();
+    // ✅ 先做「位子鎖定檢查」：不過就直接踢回登入（完全不能用）
+    const ok = await enforceSeatLockOrKick(myId, myName);
+    if(!ok) return;
 
-      // ✅ 啟用 QR 扣資源
-      initQrDeduct();
-    }
+    // 你原本的：寫入玩家名稱 + 進入遊戲
+    db.ref(`players/p${myId}`).update({ name: name });
 
-    document.getElementById('join-btn').addEventListener('click', join);
+    document.getElementById('login').classList.add('hide');
+    document.getElementById('game').classList.remove('hide');
+    document.getElementById('me').innerText = name;
 
-    document.getElementById('deviceLabel').addEventListener('change', (e) => {
-      setDeviceLabel(e.target.value);
-      heartbeat();
+    initRadar();
+    syncData();
+  }
+
+  document.getElementById('join-btn').addEventListener('click', join);
+
+  document.getElementById('deviceLabel').addEventListener('change', async (e) => {
+    setDeviceLabel(e.target.value);
+    await heartbeat();
+  });
+
+  function initRadar() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['時間', '金錢', '健康', '知識', '人際'],
+        datasets: [{
+          data: [0, 0, 0, 0, 0],
+          backgroundColor: 'rgba(108, 92, 231, 0.2)',
+          borderColor: '#6c5ce7',
+          pointBackgroundColor: '#ff7675'
+        }]
+      },
+      options: {
+        scales: { r: { beginAtZero: true, ticks: { display: false } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function syncData() {
+    const keys = ['time','money','health','knowledge','social','score'];
+    keys.forEach(k => {
+      db.ref(`players/p${myId}/res/${k}`).on('value', s => {
+        myRes[k] = s.val() || 0;
+        const el = document.getElementById(k);
+        if(el) el.innerText = myRes[k];
+        radarChart.data.datasets[0].data = [myRes.time, myRes.money, myRes.health, myRes.knowledge, myRes.social];
+        radarChart.update();
+      });
     });
 
-    function initRadar() {
-      const ctx = document.getElementById('radarChart').getContext('2d');
-      radarChart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: ['時間', '金錢', '健康', '知識', '人際'],
-          datasets: [{
-            data: [0, 0, 0, 0, 0],
-            backgroundColor: 'rgba(108, 92, 231, 0.2)',
-            borderColor: '#6c5ce7',
-            pointBackgroundColor: '#ff7675'
-          }]
-        },
-        options: {
-          scales: { r: { beginAtZero: true, ticks: { display: false } } },
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
+    db.ref(`players/p${myId}/inventory`).on('value', s => {
+      const list = document.getElementById('inventory-list');
+      list.innerHTML = "";
+      const data = s.val();
+      if(!data) { list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>"; return; }
+      for(let key in data) { list.innerHTML += `<div class="inv-item">✨ ${data[key].name}</div>`; }
+    });
 
-    function syncData() {
-      const keys = ['time','money','health','knowledge','social','score'];
-      keys.forEach(k => {
-        db.ref(`players/p${myId}/res/${k}`).on('value', s => {
-          myRes[k] = s.val() || 0;
-          const el = document.getElementById(k);
-          if(el) el.innerText = myRes[k];
-          radarChart.data.datasets[0].data = [myRes.time, myRes.money, myRes.health, myRes.knowledge, myRes.social];
-          radarChart.update();
-        });
-      });
+    db.ref('timerSync').on('value', s => {
+      const d = s.val();
+      if (d) {
+        const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
+        const sc = (d.timeLeft % 60).toString().padStart(2, '0');
+        const timerDisp = document.getElementById('timer-display');
+        timerDisp.innerText = `${m}:${sc}`;
+        timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
+      }
+    });
 
-      db.ref(`players/p${myId}/inventory`).on('value', s => {
-        const list = document.getElementById('inventory-list');
-        list.innerHTML = "";
-        const data = s.val();
-        if(!data) { list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>"; return; }
-        for(let key in data) { list.innerHTML += `<div class="inv-item">✨ ${data[key].name}</div>`; }
-      });
+    db.ref('shopSettings/isOpen').on('value', s => {
+      const isOpen = s.val() || false;
+      const display = document.getElementById('shop-display');
+      const msg = document.getElementById('shop-msg');
+      if(!isOpen) {
+        display.style.opacity = "0.3"; display.style.pointerEvents = "none";
+        msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
+      } else {
+        display.style.opacity = "1"; display.style.pointerEvents = "auto";
+        msg.innerText = "";
+      }
+    });
 
-      db.ref('timerSync').on('value', s => {
-        const d = s.val();
-        if (d) {
-          const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
-          const sc = (d.timeLeft % 60).toString().padStart(2, '0');
-          const timerDisp = document.getElementById('timer-display');
-          timerDisp.innerText = `${m}:${sc}`;
-          timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
-        }
-      });
+    db.ref('shop/items').on('value', s => {
+      const list = document.getElementById('shop-display');
+      list.innerHTML = "";
+      const data = s.val() || {};
+      for(let key in data) {
+        const item = data[key];
+        let costText = Object.keys(resNames)
+          .map(k => (item.cost && item.cost[k]>0)?`${resNames[k]}:${item.cost[k]}`:'')
+          .filter(t=>t!=='').join(' ');
 
-      db.ref('shopSettings/isOpen').on('value', s => {
-        const isOpen = s.val() || false;
-        const display = document.getElementById('shop-display');
-        const msg = document.getElementById('shop-msg');
-        if(!isOpen) {
-          display.style.opacity = "0.3"; display.style.pointerEvents = "none";
-          msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
-        } else {
-          display.style.opacity = "1"; display.style.pointerEvents = "auto";
-          msg.innerText = "";
-        }
-      });
-
-      db.ref('shop/items').on('value', s => {
-        const list = document.getElementById('shop-display');
-        list.innerHTML = "";
-        const data = s.val() || {};
-        for(let key in data) {
-          const item = data[key];
-          let costText = Object.keys(resNames).map(k => (item.cost && item.cost[k]>0)?`${resNames[k]}:${item.cost[k]}`:'').filter(t=>t!=='').join(' ');
-          list.innerHTML += `
-            <div class="shop-card">
-              <div style="display:flex; gap:12px; align-items:center;">
-                ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:56px;height:56px;object-fit:cover;border-radius:14px;border:2px solid #eee;"/>` : `<div style="width:56px;height:56px;border-radius:14px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;">🛍️</div>`}
-                <div style="flex:1;">
-                  <strong>${item.name}</strong>
-                  ${item.bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${item.bonus}</span>` : ''}
-                  <br><small>代價: ${costText||'免費'}</small>
-                </div>
+        list.innerHTML += `
+          <div class="shop-card">
+            <div style="display:flex; gap:12px; align-items:center;">
+              ${item.imageUrl
+                ? `<img src="${item.imageUrl}" alt="${item.name}" style="width:56px;height:56px;object-fit:cover;border-radius:14px;border:2px solid #eee;"/>`
+                : `<div style="width:56px;height:56px;border-radius:14px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;">🛍️</div>`}
+              <div style="flex:1;">
+                <strong>${item.name}</strong>
+                ${item.bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${item.bonus}</span>` : ''}
+                <br><small>代價: ${costText||'免費'}</small>
               </div>
-              <button class="shop-btn" onclick='processBuy(${JSON.stringify({name: item.name, cost: item.cost||{}, bonus: item.bonus||0, imageUrl: item.imageUrl||""})})'>確認達成</button>
-            </div>`;
-        }
+            </div>
+            <button class="shop-btn"
+              onclick='processBuy(${JSON.stringify({name: item.name, cost: item.cost||{}, bonus: item.bonus||0, imageUrl: item.imageUrl||""})})'>
+              確認達成
+            </button>
+          </div>`;
+      }
+    });
+
+    db.ref('currentEvent').on('value', s => {
+      const d = s.val();
+      if(d && d.target == myId) {
+        document.getElementById('event-text').innerText = d.message;
+        document.getElementById('event-overlay').classList.remove('hide');
+      }
+    });
+  }
+
+  function processBuy(item) {
+    const name = item.name;
+    const cost = item.cost || {};
+    const bonus = item.bonus || 0;
+    const imageUrl = item.imageUrl || "";
+
+    for(let k in cost) { if((myRes[k]||0) < cost[k]) return alert(`❌ 你的「${resNames[k]}」不足！`); }
+
+    if(confirm(`準備好達成「${name}」了嗎？`)) {
+      for(let k in cost) { db.ref(`players/p${myId}/res/${k}`).set(myRes[k] - cost[k]); }
+      db.ref(`players/p${myId}/inventory`).push({ name: name, imageUrl: imageUrl, time: Date.now() });
+      db.ref('purchaseFeed').push({
+        playerId: myId,
+        playerName: myName || `玩家${myId}`,
+        itemName: name,
+        imageUrl: imageUrl,
+        ts: Date.now()
       });
-
-      db.ref('currentEvent').on('value', s => {
-        const d = s.val();
-        if(d && d.target == myId) {
-          document.getElementById('event-text').innerText = d.message;
-          document.getElementById('event-overlay').classList.remove('hide');
-        }
-      });
+      if(bonus > 0) {
+        db.ref(`players/p${myId}/res/score`).transaction(current => (current || 0) + bonus);
+      }
+      alert(`🎉 成功獲得「${name}」！${bonus > 0 ? `並額外獲得 ${bonus} 分！` : ''}`);
     }
+  }
+</script>
 
-    function processBuy(item) {
-      const name = item.name;
-      const cost = item.cost || {};
-      const bonus = item.bonus || 0;
-      const imageUrl = item.imageUrl || "";
-
-      for(let k in cost) { if((myRes[k]||0) < cost[k]) return alert(`❌ 你的「${resNames[k]}」不足！`); }
-
-      if(confirm(`準備好達成「${name}」了嗎？`)) {
-        for(let k in cost) { db.ref(`players/p${myId}/res/${k}`).set(myRes[k] - cost[k]); }
-        db.ref(`players/p${myId}/inventory`).push({ name: name, imageUrl: imageUrl, time: Date.now() });
-        db.ref('purchaseFeed').push({
-          playerId: myId,
-          playerName: myName || `玩家${myId}`,
-          itemName: name,
-          imageUrl: imageUrl,
-          ts: Date.now()
-        });
-        if(bonus > 0) {
-          db.ref(`players/p${myId}/res/score`).transaction(current => (current || 0) + bonus);
-        }
-        alert(`🎉 成功獲得「${name}」！${bonus > 0 ? `並額外獲得 ${bonus} 分！` : ''}`);
-      }
-    }
-
-    /***********************
-     * ✅ QR 扣資源（測試：無上限）
-     * - 相機掃 / 相簿截圖
-     * - 掃到就扣
-     * - 只顯示成功/失敗
-     ***********************/
-    function initQrDeduct(){
-      // 你指定的扣款：時間3 金錢2 健康2 人際1 知識2
-      const FIXED_COST = { time:3, money:2, health:2, social:1, knowledge:2 };
-
-      const statusEl = document.getElementById("qrStatus");
-      const rawEl = document.getElementById("qrRaw");
-      const btnStart = document.getElementById("qrStart");
-      const btnStop = document.getElementById("qrStop");
-      const imgPick = document.getElementById("qrImgPick");
-
-      let scanner = null;
-      let lastScanAt = 0;
-
-      function setStatus(text, ok){
-        statusEl.style.color = ok === true ? "#15803d" : (ok === false ? "#b91c1c" : "#636e72");
-        statusEl.textContent = text;
-      }
-
-      function parseGid(text){
-        let t = String(text || "").trim();
-
-        // URL: ...?g=1
-        try{
-          if(/^https?:\/\//i.test(t)){
-            const u = new URL(t);
-            const g = u.searchParams.get("g");
-            if(g) return String(g).trim();
-          }
-        }catch(e){}
-
-        // JSON: {"g":1} / {"checkpoint":1}
-        try{
-          const obj = JSON.parse(t);
-          if(obj && (obj.g != null || obj.checkpoint != null)){
-            return String(obj.g ?? obj.checkpoint).trim();
-          }
-        }catch(e){}
-
-        // 純數字也接受
-        if(/^\d+$/.test(t)) return t;
-
-        return null;
-      }
-
-      async function stopScan(){
-        if(!scanner) return;
-        try{ await scanner.stop(); }catch(e){}
-        try{ await scanner.clear(); }catch(e){}
-        scanner = null;
-        btnStart.disabled = false;
-        btnStop.disabled = true;
-      }
-
-      async function applyDeductTestMode(gid){
-        try{
-          const resRef = db.ref(`players/p${myId}/res`);
-
-          // 測試：不檢查足夠，直接扣（可扣到負數）
-          const tx = await resRef.transaction(cur=>{
-            const res = cur || {};
-            for(const k in FIXED_COST){
-              res[k] = Number(res[k] || 0) - Number(FIXED_COST[k] || 0);
-            }
-            return res;
-          });
-
-          if(!tx.committed) return false;
-
-          // 測試紀錄：之後後台可以直接統計
-          db.ref("qrTestLogs").push({
-            ts: Date.now(),
-            gid,
-            playerId: myId,
-            playerName: myName || (`玩家${myId}`),
-            cost: FIXED_COST,
-            mode: "test_no_limit"
-          });
-
-          return true;
-        }catch(e){
-          console.error(e);
-          return false;
-        }
-      }
-
-      async function startScan(){
-        if(scanner) return;
-        setStatus("正在請求相機權限…");
-        btnStart.disabled = true;
-        btnStop.disabled = false;
-
-        scanner = new Html5Qrcode("qrReader");
-
-        try{
-          // 更穩：先列相機再挑後鏡頭
-          const cams = await Html5Qrcode.getCameras();
-          if(!cams || cams.length === 0){
-            setStatus("❌ 找不到相機裝置", false);
-            await stopScan();
-            return;
-          }
-          let camId = cams[0].id;
-          const back = cams.find(c => /back|rear|environment/i.test(c.label || ""));
-          if(back) camId = back.id;
-
-          await scanner.start(
-            camId,
-            { fps: 10, qrbox: { width: 260, height: 260 } },
-            async (decodedText) => {
-              const now = Date.now();
-              if(now - lastScanAt < 1200) return; // 防連刷
-              lastScanAt = now;
-
-              rawEl.textContent = decodedText;
-
-              const gid = parseGid(decodedText);
-              if(!gid){
-                setStatus("❌ QR 格式不支援（需要 ?g= 或 JSON {g}）", false);
-                return;
-              }
-
-              await stopScan(); // 掃到先停，避免重扣
-              setStatus("處理中…");
-
-              const ok = await applyDeductTestMode(gid);
-              setStatus(ok ? "✅ 扣除成功" : "❌ 扣除失敗（可能 rules 擋或連線）", ok);
-            }
-          );
-
-          setStatus("相機已開啟，對準 QR…");
-        }catch(err){
-          console.error("camera start error:", err);
-          const msg = (err && (err.name || err.message)) ? (err.name + " / " + err.message) : String(err);
-          setStatus("❌ 相機啟動失敗：" + msg, false);
-          await stopScan();
-        }
-      }
-
-      // 相簿截圖解碼
-      imgPick.addEventListener("change", async (e)=>{
-        const file = e.target.files && e.target.files[0];
-        if(!file) return;
-
-        await stopScan();
-        setStatus("正在從圖片解碼…");
-
-        try{
-          const tmp = new Html5Qrcode("qrReader");
-          const decodedText = await tmp.scanFile(file, true);
-          try{ await tmp.clear(); }catch(_){}
-
-          rawEl.textContent = decodedText;
-
-          const gid = parseGid(decodedText);
-          if(!gid){
-            setStatus("❌ QR 格式不支援（需要 ?g= 或 JSON {g}）", false);
-            e.target.value = "";
-            return;
-          }
-
-          setStatus("處理中…");
-          const ok = await applyDeductTestMode(gid);
-          setStatus(ok ? "✅ 扣除成功" : "❌ 扣除失敗（可能 rules 擋或連線）", ok);
-
-        }catch(err){
-          console.error(err);
-          setStatus("❌ 圖片解碼失敗：請確保 QR 清楚夠大", false);
-        }finally{
-          e.target.value = "";
-        }
-      });
-
-      btnStart.addEventListener("click", startScan);
-      btnStop.addEventListener("click", stopScan);
-
-      setStatus("待掃描…");
-    }
-  </script>
 </body>
 </html>
