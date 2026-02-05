@@ -1,128 +1,113 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人生履歷 - 系統入口</title>
-    <style>
-        body { font-family: 'PingFang TC', sans-serif; background: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; min-min-height:100vh; margin: 0; }
-        .menu { text-align: center; width: 90%; max-width: 400px; }
-        .btn { display: block; padding: 20px; margin: 15px 0; border-radius: 12px; text-decoration: none; color: white; font-size: 1.2em; font-weight: bold; transition: 0.3s; }
-        .admin-btn { background: #e74c3c; }
-        .display_purchases-btn { background: #2980b9; }
-        .player-btn { background: #27ae60; }
-        .btn:hover { opacity: 0.8; transform: translateY(-3px); }
-        p { color: #888; font-size: 0.9em; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人生履歷 - 系統入口</title>
 
-
-<!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
 <style>
-  :root{
-    --bg:#f6f8fb;
-    --card:#ffffff;
-    --row:rgba(2,6,23,0.05);
-    --text:#0f172a;
-    --muted:rgba(15,23,42,0.72);
-    --shadow:rgba(2,6,23,0.12);
+:root{
+  --bg:#f6f8fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
 
-    --blue:#3b82f6;
-    --ok:#22c55e;
-    --warn:#f59e0b;
-    --danger:#ef4444;
-    --violet:#8b5cf6;
-    --yellow:#fbbf24;
+  --admin:#ef4444;
+  --display:#3b82f6;
+  --player:#22c55e;
+  --shop:#f59e0b;
 
-    --radius:18px;
-  }
+  --radius:18px;
+}
 
-  html,body{height:100%;}
-  body{
-    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
-    background:
-      radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
-      radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
-      radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
-      var(--bg) !important;
-    color:var(--text) !important;
-    margin:0 !important;
-    padding:14px !important;
-    -webkit-text-size-adjust:100%;
-  }
+html,body{height:100%;}
 
-  /* mobile-first container */
-  .wrap,.menu,.container,.main,.app{
-    width:100%;
-    max-width:720px;
-    margin:0 auto;
-  }
+body{
+  font-family:'Segoe UI','Microsoft JhengHei',system-ui,sans-serif;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:
+    radial-gradient(900px 420px at 15% 0%, rgba(59,130,246,.18), transparent 60%),
+    radial-gradient(900px 420px at 85% 0%, rgba(34,197,94,.15), transparent 60%),
+    radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,.15), transparent 65%),
+    var(--bg);
+}
 
-  /* common card look */
-  .card,.box,.config-card,#auth-overlay>div{
-    background:var(--card) !important;
-    color:var(--text) !important;
-    border-radius:var(--radius) !important;
-    box-shadow:0 10px 26px var(--shadow) !important;
-    border:1px solid rgba(2,6,23,0.08) !important;
-  }
+.menu{
+  width:90%;
+  max-width:420px;
+  background:var(--card);
+  border-radius:22px;
+  padding:28px 22px 30px;
+  text-align:center;
+  box-shadow:0 20px 40px rgba(2,6,23,.15);
+}
 
-  /* tighten text */
-  p,.hint,.sub,.small{color:var(--muted) !important;}
+h1{
+  margin:0 0 18px;
+  font-size:1.7rem;
+  letter-spacing:.5px;
+  color:var(--text);
+}
 
-  h1{font-size:1.6rem;margin:10px 0 12px;}
-  h2{font-size:1.25rem;}
-  h3{font-size:1.1rem;}
+.btn{
+  display:block;
+  padding:18px;
+  margin:14px 0;
+  border-radius:16px;
+  text-decoration:none;
+  font-size:1.15rem;
+  font-weight:900;
+  color:white;
+  transition:.25s ease;
+  box-shadow:0 10px 20px rgba(2,6,23,.18);
+}
 
-  /* buttons */
-  .btn,.global-btn,.menu .btn,a.btn{
-    border-radius:14px !important;
-    font-weight:900 !important;
-    letter-spacing:0.2px;
-    box-shadow:0 6px 14px rgba(2,6,23,0.10);
-  }
-  .btn.plus{background:var(--ok) !important;}
-  .btn.plus10{background:rgba(34,197,94,0.92) !important;}
-  .btn.minus{background:rgba(239,68,68,0.75) !important;}
-  .btn.minus10{background:var(--danger) !important;}
-  .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
-  .btn.danger{background:var(--danger) !important;}
-  .btn.blue{background:var(--blue) !important;}
-  .btn.purple{background:var(--violet) !important;}
+/* ===== 各角色配色 ===== */
+.admin-btn{
+  background:linear-gradient(135deg,#f87171,var(--admin));
+}
 
-  /* inputs */
-  input,select,textarea{
-    border-radius:12px !important;
-    font-size:16px !important;
-    background:#ffffff !important;
-    color:var(--text) !important;
-    border:1px solid rgba(2,6,23,0.14) !important;
-    box-shadow:0 6px 16px rgba(2,6,23,0.06);
-  }
+.display-btn{
+  background:linear-gradient(135deg,#60a5fa,var(--display));
+}
 
-  /* rows */
-  .res-row,.row{flex-wrap:wrap;}
-  .res-row{background:var(--row) !important;}
+.player-btn{
+  background:linear-gradient(135deg,#4ade80,var(--player));
+}
 
-  /* values */
-  .val{color:var(--blue) !important;}
+.shop-btn{
+  background:linear-gradient(135deg,#fbbf24,var(--shop));
+}
 
-  /* bottom actions */
-  .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+/* hover 效果 */
+.btn:hover{
+  transform:translateY(-4px) scale(1.02);
+  box-shadow:0 18px 30px rgba(2,6,23,.25);
+  filter:brightness(1.05);
+}
 
-  /* overlay */
-  #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+p{
+  margin-top:16px;
+  font-size:.9rem;
+  color:var(--muted);
+}
 </style>
-
 </head>
+
 <body>
-    <div class="menu">
-        <h1>人生履歷 遊戲系統</h1>
-        <a href="admin.html" class="btn admin-btn">管理端 </a>
-        <a href="display.html" class="btn display-btn">顯示端 </a>
-        <a href="display_purchases.html" class="btn display-btn">顯示端(含達成/彈幕) </a>
-        <a href="player.html" class="btn player-btn">玩家端 </a>
-         <a href="shop.html" class="btn player-btn">商品端 </a>
-        <p>請確保已在安全環進下遊玩，不要亂按喔</p>
-    </div>
+<div class="menu">
+  <h1>人生履歷 遊戲系統</h1>
+
+  <a href="admin.html" class="btn admin-btn">管理端</a>
+  <a href="display.html" class="btn display-btn">顯示端</a>
+  <a href="display_purchases.html" class="btn display-btn">顯示端（含達成／彈幕）</a>
+  <a href="player.html" class="btn player-btn">玩家端</a>
+  <a href="shop.html" class="btn shop-btn">商品端</a>
+
+  <p>請確保在安全環境下操作，避免誤觸系統功能</p>
+</div>
 </body>
 </html>
