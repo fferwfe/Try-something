@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>UI 主題設定台（背景＋音效）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#fff; --row:rgba(2,6,23,0.05);
+      --text:#0f172a; --muted:rgba(15,23,42,0.72); --shadow:rgba(2,6,23,0.12);
+      --blue:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --violet:#8b5cf6;
+      --radius:18px;
+    }
+    html,body{height:100%;}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+        radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+        var(--bg);
+      color:var(--text);
+      margin:0;
+      padding:14px;
+    }
+    .wrap{width:100%;max-width:880px;margin:0 auto;}
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 10px 26px var(--shadow);
+      border:1px solid rgba(2,6,23,0.08);
+      padding:14px 16px;
+      margin:12px 0;
+    }
+    h1{font-size:1.45rem;margin:10px 0 6px;}
+    h2{font-size:1.15rem;margin:0 0 10px;}
+    .hint{color:var(--muted);font-size:.95em;line-height:1.4;margin:6px 0 0;}
+    label{font-weight:900;display:block;margin:10px 0 6px;}
+    input,select,textarea{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      font-size:16px;
+      border:1px solid rgba(2,6,23,0.14);
+      box-shadow:0 6px 16px rgba(2,6,23,0.06);
+      box-sizing:border-box;
+      background:#fff;
+      color:var(--text);
+    }
+    textarea{min-height:130px;resize:vertical;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+    .row{background:var(--row);border-radius:14px;padding:12px;}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    .btn{
+      border:none;border-radius:14px;padding:12px 14px;cursor:pointer;font-weight:1000;
+      color:#fff;display:inline-flex;align-items:center;gap:8px;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+    .btn.blue{background:var(--blue);}
+    .btn.ok{background:var(--ok);}
+    .btn.warn{background:var(--warn);color:#1b1203;}
+    .btn.danger{background:var(--danger);}
+    .btn.violet{background:var(--violet);}
+    code{background:rgba(2,6,23,0.06);padding:2px 6px;border-radius:8px;}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media (max-width:560px){.two{grid-template-columns:1fr;}}
+    .kv{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .kv .v{font-weight:1000;color:var(--blue);}
+  </style>
+</head>
+<body data-page="ui-config">
+  <div class="wrap">
+    <h1>🎨 UI 主題設定台（背景＋音效）</h1>
+    <div class="hint">本頁會寫入 <code>/system/uiConfig</code>。其他頁引用 <code>./js/site-ui-db.js</code> 會即時套用。</div>
+
+    <div class="card">
+      <div class="kv"><div class="hint">路徑</div><div class="v">/system/uiConfig</div></div>
+      <div class="kv"><div class="hint">最後更新</div><div class="v" id="lastUpdate">-</div></div>
+      <div class="hint" id="statusMsg">連線中…</div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-image"></i> 背景（每頁不同）</h2>
+      <div class="grid">
+        <div class="row">
+          <label>頁面</label>
+          <select id="pageKey">
+            <option value="admin">admin</option>
+            <option value="player">player</option>
+            <option value="shop">shop</option>
+            <option value="display">display</option>
+            <option value="super">super</option>
+          </select>
+
+          <label>背景檔名（放在 /images）</label>
+          <input id="bgFile" placeholder="例如：bg-player.jpg">
+
+          <div class="two">
+            <div>
+              <label>透明度（0~1）</label>
+              <input id="bgOpacity" type="number" min="0" max="1" step="0.01" value="0.18">
+            </div>
+            <div>
+              <label>模糊（px）</label>
+              <input id="bgBlur" type="number" min="0" max="40" step="1" value="0">
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn blue" id="btnApplyBg"><i class="fa-solid fa-floppy-disk"></i> 儲存此頁背景</button>
+            <button class="btn warn" id="btnLoadBg"><i class="fa-solid fa-rotate"></i> 讀取此頁現況</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>全站預設資料夾</label>
+          <div class="two">
+            <div>
+              <label>imagesDir</label>
+              <input id="imagesDir" value="./images">
+            </div>
+            <div>
+              <label>sfxDir</label>
+              <input id="sfxDir" value="./sfx">
+            </div>
+          </div>
+
+          <label>全站預設背景（未指定頁面時）</label>
+          <input id="bgDefault" placeholder="例如：bg-player.jpg">
+
+          <div class="actions">
+            <button class="btn violet" id="btnSaveDefaults"><i class="fa-solid fa-screwdriver-wrench"></i> 儲存全站預設</button>
+          </div>
+
+          <div class="hint">你也可以在全站預設裡調透明度/模糊，所有頁面一起變。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-volume-high"></i> 音效（可開關）</h2>
+      <div class="grid">
+        <div class="row">
+          <label>音效預設開關</label>
+          <select id="sfxEnabled">
+            <option value="true">開啟</option>
+            <option value="false">關閉</option>
+          </select>
+
+          <label>音量（0~1）</label>
+          <input id="sfxVolume" type="number" min="0" max="1" step="0.01" value="0.35">
+
+          <div class="actions">
+            <button class="btn ok" id="btnSaveSfx"><i class="fa-solid fa-floppy-disk"></i> 儲存音效預設</button>
+          </div>
+          <div class="hint">每個使用者端仍可用右下角面板調整（localStorage）；按「跟隨系統」回到這裡的預設。</div>
+        </div>
+
+        <div class="row">
+          <label>音效檔名（放在 /sfx）</label>
+          <div class="two">
+            <div><label>click</label><input id="sfx_click" value="click.mp3"></div>
+            <div><label>ok</label><input id="sfx_ok" value="ok.mp3"></div>
+            <div><label>alert</label><input id="sfx_alert" value="alert.mp3"></div>
+            <div><label>danmaku</label><input id="sfx_danmaku" value="danmaku.mp3"></div>
+            <div><label>error</label><input id="sfx_error" value="error.mp3"></div>
+          </div>
+
+          <div class="actions">
+            <button class="btn blue" id="btnSaveSfxFiles"><i class="fa-solid fa-file-audio"></i> 儲存音效檔名</button>
+            <button class="btn warn" id="btnLoadSfxFiles"><i class="fa-solid fa-rotate"></i> 重新讀取</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-code"></i> JSON 匯出/匯入</h2>
+      <div class="row">
+        <label>目前設定 JSON</label>
+        <textarea id="jsonBox" placeholder="會自動填入目前 /system/uiConfig 的 JSON"></textarea>
+        <div class="actions">
+          <button class="btn blue" id="btnExport"><i class="fa-solid fa-download"></i> 重新載入並匯出</button>
+          <button class="btn warn" id="btnImport"><i class="fa-solid fa-upload"></i> 將此 JSON 匯入覆蓋</button>
+          <button class="btn danger" id="btnReset"><i class="fa-solid fa-trash"></i> 清空 /system/uiConfig</button>
+        </div>
+        <div class="hint">匯入會覆蓋整個節點，請謹慎。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hint">
+        ✅ 你的其他頁面要即時套用：每頁最後加入<br>
+        <code>&lt;script src="./js/site-ui-db.js"&gt;&lt;/script&gt;</code><br>
+        並在 body 加 <code>data-page</code>：例如 <code>&lt;body data-page="player"&gt;</code>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/ui-config.js"></script>
+</body>
+</html>
