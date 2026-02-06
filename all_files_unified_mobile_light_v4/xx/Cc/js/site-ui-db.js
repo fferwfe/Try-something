@@ -1,6 +1,17 @@
 // /js/site-ui-db.js
-// 從 Firebase /system/uiConfig 讀取「背景＋音效」設定，套用到每一頁。
-// ✅ 本版本：移除每頁音效控制 UI；音效完全由 /system/uiConfig 控制（不允許使用者覆寫）
+// =======================================================
+// 全站 UI 套用器（背景 + 音效）
+// ✅ 背景：固定資料夾 + 固定命名 + 可選覆蓋（override）
+//    - 固定資料夾：./images/backgrounds
+//    - 固定檔名：bg-{page}.jpg（player/admin/shop/display/super）
+//    - 覆蓋檔名：/system/uiConfig/bgOverride/{pageKey} = "any-file.jpg"
+//      - 若檔案存在 -> 用覆蓋
+//      - 不存在 -> console.warn 並回退固定檔
+// ✅ 音效：完全由 /system/uiConfig 控制（不注入任何每頁音效面板 UI）
+//    - defaults: sfxEnabled / sfxVolume / sfxDir
+//    - sfxFiles: 任意 key -> 檔名（支援你新增/刪除）
+//    - 使用：SFX.play("buy") / SFX.play("win") ...
+// =======================================================
 
 (() => {
   const firebaseConfig = {
@@ -17,63 +28,124 @@
   const db = firebase.database();
   const uiRef = db.ref("system/uiConfig");
 
-  const pageKey = (document.body.dataset.page || "").trim() || guessPageKey();
+  const pageKey = (document.body?.dataset?.page || "").trim() || guessPageKey();
   injectBackgroundCSS();
 
-  // ✅ 不允許使用者覆寫（全部跟系統）
+  // ===== 固定背景規則 =====
+  const FIXED_BG_DIR = "./images/backgrounds";
+  const FIXED_BG_MAP = {
+    player:  "bg-player.jpg",
+    admin:   "bg-admin.jpg",
+    shop:    "bg-shop.jpg",
+    display: "bg-display.jpg",
+    super:   "bg-super.jpg"
+  };
+
+  // runtime cache
   let runtime = null;
 
   uiRef.on("value", (snap) => {
     runtime = snap.val() || {};
-    applyAll();
+    applyAll().catch(e => console.warn("[UI] applyAll failed", e));
   });
 
-  function applyAll(){
+  async function applyAll(){
     const d = runtime.defaults || {};
-    const imagesDir = d.imagesDir || "./images";
-    const sfxDir = d.sfxDir || "./sfx";
+    const overrideMap = runtime.bgOverride || {};
 
-    // ---- Background ----
+    // ---- Background style params (UI-controlled) ----
     const bgOpacity = clamp01(d.bgOpacity ?? 0.18);
-    const bgBlurPx = clampNum(d.bgBlurPx ?? 0, 0, 40);
-    const bgDefault = (d.bgDefault || "").trim();
-    const bgFile = ((runtime.backgrounds || {})[pageKey] || bgDefault || "").trim();
-    const bgUrl = bgFile ? `url('${imagesDir}/${bgFile}')` : "none";
-
-    document.documentElement.style.setProperty("--bg-img", bgUrl);
+    const bgBlurPx  = clampNum(d.bgBlurPx ?? 0, 0, 40);
     document.documentElement.style.setProperty("--bg-opacity", String(bgOpacity));
     document.documentElement.style.setProperty("--bg-blur", `${bgBlurPx}px`);
 
+    // ---- Background fixed + override ----
+    const fixedFile = FIXED_BG_MAP[pageKey] || FIXED_BG_MAP.player;
+    const overrideFile = String(overrideMap[pageKey] || "").trim();
+    await applyBackground(overrideFile, fixedFile);
+
     // ---- SFX (system-only) ----
     const enabled = (d.sfxEnabled ?? true) === true;
-    const volume = clamp01(d.sfxVolume ?? 0.35);
+    const volume  = clamp01(d.sfxVolume ?? 0.35);
+    const sfxDir  = String(d.sfxDir || "./sfx").replace(/\/+$/g, "") || "./sfx";
 
-    const f = runtime.sfxFiles || {};
-    const src = {
-      click: `${sfxDir}/${(f.click || "click.mp3")}`,
-      ok: `${sfxDir}/${(f.ok || "ok.mp3")}`,
-      alert: `${sfxDir}/${(f.alert || "alert.mp3")}`,
-      danmaku: `${sfxDir}/${(f.danmaku || "danmaku.mp3")}`,
-      error: `${sfxDir}/${(f.error || "error.mp3")}`,
-    };
-
-    ensureSFX(src, enabled, volume);
-
-    // ❌ 不再注入任何音效 UI（panel）
-    // （使用者端不能控制，全部由 ui_config 控制）
+    // Build source map from sfxFiles (supports arbitrary keys)
+    const srcMap = buildSfxSrcMap(sfxDir, runtime.sfxFiles || {});
+    ensureSFX(srcMap, enabled, volume);
   }
 
-  // ---- SFX core ----
+  async function applyBackground(overrideFile, fixedFile){
+    // ① override
+    if (overrideFile){
+      const u1 = `${FIXED_BG_DIR}/${overrideFile}`;
+      if (await imgExists(u1)){
+        setBg(u1, "override");
+        return;
+      }
+      console.warn(`[UI] 覆蓋背景不存在：${u1}（page=${pageKey}），回退固定背景`);
+    }
+
+    // ② fixed
+    const u2 = `${FIXED_BG_DIR}/${fixedFile}`;
+    if (await imgExists(u2)){
+      setBg(u2, "fixed");
+      return;
+    }
+
+    // ③ none
+    document.documentElement.style.setProperty("--bg-img", "none");
+    console.error(`[UI] ❌ 找不到固定背景：${u2}（page=${pageKey}）。請放到 /images/backgrounds/ 並命名正確。`);
+  }
+
+  function setBg(url, mode){
+    document.documentElement.style.setProperty("--bg-img", `url('${url}')`);
+    console.log(`[UI] 使用 ${mode} 背景：${url}（page=${pageKey}）`);
+  }
+
+  function imgExists(url){
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(); // avoid cache misread
+    });
+  }
+
+  // ===== SFX core =====
   let sfx = null;
 
   function ensureSFX(srcMap, enabled, volume){
     if (!sfx){
       sfx = createSFX();
-      window.SFX = sfx.api; // ✅ 全站可用：SFX.play("click")...
+      window.SFX = sfx.api; // SFX.play("buy")
     }
     sfx.setSources(srcMap);
     sfx.setEnabled(enabled);
     sfx.setVolume(volume);
+  }
+
+  function buildSfxSrcMap(sfxDir, sfxFilesObj){
+    const out = {};
+
+    // Optional fallbacks (so base events work even if you didn't add them to sfxFiles)
+    const fallbacks = {
+      click: "click.mp3",
+      ok: "ok.mp3",
+      alert: "alert.mp3",
+      danmaku: "danmaku.mp3",
+      error: "error.mp3"
+    };
+    Object.keys(fallbacks).forEach(k => out[k] = `${sfxDir}/${fallbacks[k]}`);
+
+    // Server-defined arbitrary keys
+    Object.entries(sfxFilesObj || {}).forEach(([k, file]) => {
+      const key = String(k || "").trim();
+      const fn  = String(file || "").trim();
+      if (!key || !fn) return;
+      out[key] = `${sfxDir}/${fn}`;
+    });
+
+    return out;
   }
 
   function createSFX(){
@@ -96,27 +168,30 @@
     function play(name){
       if (!enabled) return;
       unlockOnce();
-      const src = sources[name];
-      if (!src) return;
-      const a = new Audio(src);
-      a.volume = volume;
-      a.play().catch(()=>{});
+      const key = String(name || "").trim();
+      const src = sources[key];
+      if (!src){
+        console.warn(`[SFX] 找不到音效 key="${key}"（請到 ui.html 新增 sfxFiles）`);
+        return;
+      }
+      try{
+        const a = new Audio(src);
+        a.volume = volume;
+        a.play().catch(()=>{});
+      }catch(e){
+        console.warn("[SFX] play exception", e);
+      }
     }
 
     return {
-      api: {
-        play,
-        // ✅ 不提供 setUserEnabled / setUserVolume / resetUserOverride
-        // 因為你要「全部由 ui_config 控制」
-        get pageKey(){ return pageKey; }
-      },
+      api: { play, get pageKey(){ return pageKey; } },
       setEnabled(v){ enabled = !!v; },
       setVolume(v){ volume = clamp01(v); },
       setSources(m){ sources = m || {}; }
     };
   }
 
-  // ---- Background CSS ----
+  // ===== Background CSS injection =====
   function injectBackgroundCSS(){
     if (document.getElementById("bg-css")) return;
     const st = document.createElement("style");
@@ -127,18 +202,13 @@
       body::before{
         content:"";
         position:fixed; inset:0;
-        background-image: var(--bg-img);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
+        background:var(--bg-img) center/cover no-repeat;
         opacity: var(--bg-opacity);
         filter: blur(var(--bg-blur));
         pointer-events:none;
         z-index:0;
       }
-      .wrap,.menu,.container,.main,.app,#admin-main,#main,#display-header{
-        position:relative; z-index:1;
-      }
+      body > * { position:relative; z-index:1; }
     `;
     document.head.appendChild(st);
   }
