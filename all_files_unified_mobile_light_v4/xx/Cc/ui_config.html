@@ -1,94 +1,252 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>UI 資源庫</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>UI 主題設定台（背景＋音效）</title>
 
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
 
-<style>
-body{font-family:system-ui,'Microsoft JhengHei';background:#f6f8fb;margin:0;padding:14px}
-.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;
-box-shadow:0 6px 18px rgba(0,0,0,.1)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
-.plus{background:#3b82f6;color:#fff}
-.danger{background:#ef4444;color:#fff}
-.ok{background:#22c55e;color:#fff}
-input,select{width:100%;padding:8px;margin-top:6px}
-.badge{font-size:12px;color:#555}
-</style>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --row:rgba(2,6,23,0.05);
+      --text:#0f172a;
+      --muted:rgba(15,23,42,0.65);
+      --shadow:rgba(2,6,23,0.12);
+      --blue:#3b82f6;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --radius:18px;
+    }
+
+    body{
+      margin:0;
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      padding:16px;
+    }
+
+    .wrap{max-width:900px;margin:auto;}
+    h1{margin:8px 0;}
+    .hint{color:var(--muted);font-size:.95em;}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:16px;
+      margin:14px 0;
+      box-shadow:0 10px 26px var(--shadow);
+      border:1px solid rgba(2,6,23,.08);
+    }
+
+    label{font-weight:900;display:block;margin:10px 0 6px;}
+    input,select,textarea{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(2,6,23,.15);
+      font-size:16px;
+      box-sizing:border-box;
+    }
+
+    textarea{min-height:140px;font-family:monospace;}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+
+    .row{
+      background:var(--row);
+      padding:12px;
+      border-radius:14px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:900;
+      color:#fff;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 6px 14px rgba(2,6,23,.12);
+    }
+    .btn.blue{background:var(--blue);}
+    .btn.ok{background:var(--ok);}
+    .btn.warn{background:var(--warn);color:#1b1203;}
+    .btn.danger{background:var(--danger);}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    code{background:rgba(2,6,23,.06);padding:2px 6px;border-radius:6px;}
+  </style>
 </head>
 
 <body>
+<div class="wrap">
+  <h1>🎨 UI 主題設定台</h1>
+  <div class="hint">所有頁面的「背景＋音效」唯一設定來源（寫入 <code>/system/uiConfig</code>）</div>
 
-<div class="card">
-  <h2 style="display:flex;justify-content:space-between;align-items:center">
-    🎨 UI 背景資源庫
-    <button class="btn plus" onclick="openAdd()">➕ 新增</button>
-  </h2>
-</div>
-
-<div class="grid" id="bgList"></div>
-
-<!-- 新增彈窗 -->
-<div id="addBox" style="display:none" class="card">
-  <h3>➕ 新增背景</h3>
-  名稱 <input id="bgName">
-  檔名(images/) <input id="bgFile" placeholder="bg-xxx.jpg">
-  <div>
-    <label><input type="checkbox" value="player"> player</label>
-    <label><input type="checkbox" value="admin"> admin</label>
-    <label><input type="checkbox" value="display"> display</label>
+  <!-- 狀態 -->
+  <div class="card">
+    <div class="hint">最後更新：<b id="lastUpdate">-</b></div>
+    <div class="hint" id="status">連線中…</div>
   </div>
-  <br>
-  <button class="btn ok" onclick="saveBg()">儲存</button>
+
+  <!-- 全站預設 -->
+  <div class="card">
+    <h2>🌍 全站預設</h2>
+
+    <label>背景圖片資料夾（imagesDir）</label>
+    <input id="imagesDir" value="./images/background">
+
+    <label>音效資料夾（sfxDir）</label>
+    <input id="sfxDir" value="./sfx">
+
+    <div class="grid">
+      <div>
+        <label>背景透明度（0~1）</label>
+        <input id="bgOpacity" type="number" step="0.01" min="0" max="1" value="0.18">
+      </div>
+      <div>
+        <label>背景模糊（px）</label>
+        <input id="bgBlurPx" type="number" min="0" max="40" value="0">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn blue" id="saveDefaults"><i class="fa-solid fa-floppy-disk"></i> 儲存全站預設</button>
+    </div>
+  </div>
+
+  <!-- 每頁背景 -->
+  <div class="card">
+    <h2>🖼️ 每頁背景</h2>
+
+    <label>頁面</label>
+    <select id="pageKey">
+      <option value="player">player</option>
+      <option value="admin">admin</option>
+      <option value="shop">shop</option>
+      <option value="display">display</option>
+      <option value="super">super</option>
+    </select>
+
+    <label>背景檔名（只填檔名）</label>
+    <input id="bgFile" placeholder="bg-player.jpg">
+
+    <div class="actions">
+      <button class="btn blue" id="saveBg">儲存此頁背景</button>
+      <button class="btn warn" id="loadBg">讀取</button>
+    </div>
+  </div>
+
+  <!-- 音效 -->
+  <div class="card">
+    <h2>🔊 音效（全站唯一）</h2>
+
+    <label>是否啟用音效</label>
+    <select id="sfxEnabled">
+      <option value="true">啟用</option>
+      <option value="false">關閉</option>
+    </select>
+
+    <label>音效音量（0~1）</label>
+    <input id="sfxVolume" type="number" step="0.01" min="0" max="1" value="0.35">
+
+    <label>音效事件 → 檔名（JSON）</label>
+    <textarea id="sfxJson">
+{
+  "click": "click.mp3",
+  "ok": "ok.mp3",
+  "buy": "buy.mp3",
+  "win": "win.mp3",
+  "danmaku": "danmaku.mp3",
+  "error": "error.mp3"
+}
+    </textarea>
+
+    <div class="actions">
+      <button class="btn blue" id="saveSfx">儲存音效設定</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-firebase.initializeApp({
-  databaseURL:"https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app"
-});
-const db=firebase.database();
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
 
-const list=document.getElementById("bgList");
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const ref = db.ref("system/uiConfig");
 
-db.ref("uiAssets/backgrounds").on("value",snap=>{
-  list.innerHTML="";
-  snap.forEach(s=>{
-    const d=s.val();
-    list.innerHTML+=`
-      <div class="card">
-        <b>${d.name}</b>
-        <div class="badge">${d.file}</div>
-        <div class="badge">${(d.usableFor||[]).join(", ")}</div>
-        <button class="btn ok" onclick="applyBg('${s.key}')">套用</button>
-        <button class="btn danger" onclick="delBg('${s.key}')">刪除</button>
-      </div>`;
+  const $ = id => document.getElementById(id);
+
+  ref.on("value", snap => {
+    const v = snap.val() || {};
+    $("lastUpdate").textContent = v.updatedAt ? new Date(v.updatedAt).toLocaleString() : "-";
+
+    const d = v.defaults || {};
+    $("imagesDir").value = d.imagesDir || "./images/background";
+    $("sfxDir").value = d.sfxDir || "./sfx";
+    $("bgOpacity").value = d.bgOpacity ?? 0.18;
+    $("bgBlurPx").value = d.bgBlurPx ?? 0;
+    $("sfxEnabled").value = String(d.sfxEnabled ?? true);
+    $("sfxVolume").value = d.sfxVolume ?? 0.35;
+
+    $("status").textContent = "已連線";
   });
-});
 
-function openAdd(){ addBox.style.display="block"; }
+  $("saveDefaults").onclick = async () => {
+    await ref.child("defaults").set({
+      imagesDir: $("imagesDir").value.trim(),
+      sfxDir: $("sfxDir").value.trim(),
+      bgOpacity: Number($("bgOpacity").value),
+      bgBlurPx: Number($("bgBlurPx").value),
+      sfxEnabled: $("sfxEnabled").value === "true",
+      sfxVolume: Number($("sfxVolume").value)
+    });
+    await ref.update({ updatedAt: Date.now() });
+    alert("已儲存全站預設");
+  };
 
-function saveBg(){
-  const name=bgName.value;
-  const file=bgFile.value;
-  const usable=[...addBox.querySelectorAll("input[type=checkbox]:checked")].map(i=>i.value);
-  db.ref("uiAssets/backgrounds").push({name,file,usableFor:usable});
-  addBox.style.display="none";
-}
+  $("saveBg").onclick = async () => {
+    const k = $("pageKey").value;
+    await ref.child("backgrounds").child(k).set($("bgFile").value.trim());
+    await ref.update({ updatedAt: Date.now() });
+    alert("背景已儲存");
+  };
 
-function delBg(id){
-  if(confirm("刪除？")) db.ref("uiAssets/backgrounds/"+id).remove();
-}
+  $("loadBg").onclick = async () => {
+    const snap = await ref.child("backgrounds").child($("pageKey").value).get();
+    $("bgFile").value = snap.val() || "";
+  };
 
-function applyBg(id){
-  db.ref("system/uiConfig/activeBackground/player").set(id);
-  alert("已套用到 player");
-}
+  $("saveSfx").onclick = async () => {
+    let obj;
+    try{ obj = JSON.parse($("sfxJson").value); }
+    catch{ return alert("JSON 格式錯誤"); }
+    await ref.child("sfxFiles").set(obj);
+    await ref.update({ updatedAt: Date.now() });
+    alert("音效設定已儲存");
+  };
 </script>
-
 </body>
 </html>
