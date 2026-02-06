@@ -12,7 +12,6 @@ const gate = document.getElementById("gate");
 const btnEnter = document.getElementById("btnShopEnter");
 const passEl = document.getElementById("shopPass");
 
-
 const bar = document.getElementById("shop-status");
 const btnToggle = document.getElementById("btnToggleShop");
 
@@ -35,7 +34,7 @@ function closeAdmin(){
 if (sessionStorage.getItem(KEY) === "1") openAdmin();
 else closeAdmin();
 
-btnEnter.addEventListener("click", () => {
+btnEnter?.addEventListener("click", () => {
   if (passEl.value === SHOP_PASSWORD) {
     sessionStorage.setItem(KEY, "1");
     openAdmin();
@@ -49,7 +48,7 @@ db.ref("shopSettings/isOpen").on("value", s => {
   bar.textContent = isShopOpen ? "✅ 商店營業中" : "❌ 商店關閉中";
   bar.className = "status-bar " + (isShopOpen ? "open" : "closed");
 });
-btnToggle.addEventListener("click", () => {
+btnToggle?.addEventListener("click", () => {
   db.ref("shopSettings/isOpen").set(!isShopOpen);
 });
 
@@ -97,7 +96,7 @@ async function loadImageList(){
       const file = String(fn || "").trim();
       if(!file) return;
       const opt = document.createElement("option");
-      opt.value = BASE_PATH + file;
+      opt.value = BASE_PATH + file;   // ✅ 重要：上站後正確路徑就是 images/shop/xxx
       opt.textContent = file;
       itemImageLocal.appendChild(opt);
     });
@@ -115,30 +114,35 @@ itemImageUrl.addEventListener("input", () => {
 });
 
 /* ========= 上架 ========= */
-document.getElementById("btnAddItem").addEventListener("click", () => {
+document.getElementById("btnAddItem")?.addEventListener("click", async () => {
   const name = itemName.value.trim();
   if (!name) return alert("請輸入商品名稱");
 
   const localImg = (itemImageLocal.value || "").trim();
   const urlImg = (itemImageUrl.value || "").trim();
+
+  // ✅ 統一圖片欄位：image 是主要欄位，同時寫入 imageUrl 以相容舊 player
   const image = localImg || urlImg || "";
 
-  db.ref("shop/items").push({
-    name,
-    cost: { ...tempRes },
-    bonus: bonusScore,
-    image,
-    imageType: localImg ? "local" : (urlImg ? "url" : "")
-  }).then(() => {
+  try{
+    await db.ref("shop/items").push({
+      name,
+      cost: { ...tempRes },
+      bonus: bonusScore,
+      image,             // ✅ 新版主要欄位
+      imageUrl: image,   // ✅ 相容舊 player.html（只看 imageUrl）
+      imageType: localImg ? "local" : (urlImg ? "url" : "")
+    });
+
     alert("上架成功！");
     location.reload();
-  }).catch(err => {
+  }catch(err){
     console.error(err);
     alert("上架失敗：" + (err?.message || err));
-  });
+  }
 });
 
-/* ========= 商品列表（玩家也看這個） ========= */
+/* ========= 商品列表（管理端預覽） ========= */
 db.ref("shop/items").on("value", s => {
   itemsDisplay.innerHTML = "";
   const data = s.val();
@@ -148,7 +152,7 @@ db.ref("shop/items").on("value", s => {
   }
 
   Object.entries(data).forEach(([key, item]) => {
-    const imgSrc = ((item.image || item.imageUrl) || "").trim();
+    const imgSrc = String((item.image || item.imageUrl || "")).trim(); // ✅ 同時支援
     const costs = Object.entries(item.cost || {})
       .filter(([_,v]) => v > 0)
       .map(([k,v]) => `${resTypes[k]}:${v}`).join(' / ');
@@ -167,13 +171,11 @@ db.ref("shop/items").on("value", s => {
           </div>
         </div>
 
-        <!-- 只有管理員看到下架 -->
         <button class="delete-btn admin-only" data-key="${key}">下架</button>
       </div>
     `;
   });
 
-  // 綁定下架（只對 admin 顯示）
   document.querySelectorAll(".admin-only").forEach(btn => {
     btn.style.display = (sessionStorage.getItem(KEY) === "1") ? "inline-block" : "none";
     btn.onclick = () => {
