@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人資源盤 - 終極整合版（Player）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+      background: none;
+      color: #333;
+      padding: 15px;
+      text-align: center;
+      margin: 0;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .box {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 30px;
+      max-width: 450px;
+      margin: auto;
+      margin-bottom: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+      border: 2px solid #fff;
+    }
+    h2 { color: #ff6b6b; font-weight: 800; margin-top: 0; }
+
+    /* 跑馬燈公告欄位 */
+    #notice-bar {
+      background: #6b6edc; color: white; border-radius: 20px;
+      margin-bottom: 15px; display: none; overflow: hidden; position: relative;
+    }
+    .marquee-container { padding: 12px; white-space: nowrap; overflow: hidden; }
+    #notice-text{
+      display:inline-block;
+      padding-left:100%;
+      font-weight:bold;
+      --mq-sec: 10s;
+      --mq-anim: marquee-left;
+      animation: var(--mq-anim) var(--mq-sec) linear infinite;
+    }
+    @keyframes marquee-left  { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }
+    @keyframes marquee-right { 0%{transform:translateX(0)} 100%{transform:translateX(100%)} }
+
+    /* 獨立計時器 */
+    #timer-display {
+      background: #e74c3c; color: white; padding: 8px 20px;
+      border-radius: 15px; display: inline-block; margin-bottom: 15px;
+      font-weight: 900; font-size: 1.8em; letter-spacing: 2px;
+    }
+
+    /* 資源顯示區 */
+    .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+    .res-item { background: #fff; padding: 15px; border-radius: 20px; border: 2px solid #f1f2f6; }
+    .res-item i { font-size: 1.4em; margin-bottom: 8px; display: block; }
+    .num { font-size: 2.2em; font-weight: 900; display: block; }
+
+    .c-time { border-color: #a29bfe; color: #6c5ce7; }
+    .c-money { border-color: #d5a813; color: #8ba509a1; }
+    .c-health { border-color: #ff7675; color: #d63031; }
+    .c-knowledge { border-color: #74b9ff; color: #0984e3; }
+    .c-social { border-color: #55efc4; color: #00b894; }
+    .c-score { border-color: #263dd0; color: #b92a89; }
+
+    .inv-item {
+      background: #e1f5fe; padding: 8px 15px; border-radius: 15px;
+      border: 2px solid #3498db; font-weight: bold; color: #0277bd;
+      margin: 5px; display: inline-block; font-size: 0.9em;
+    }
+
+    .shop-card { background: #f8f9fa; padding: 18px; border-radius: 20px; margin-top: 15px; text-align: left; border-left: 6px solid #6c5ce7; }
+    .shop-btn { background: #6c5ce7; color: white; width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+    .hide { display: none !important; }
+    select, input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; }
+    #join-btn { background: #00b894; color: white; border: none; font-weight: bold; cursor: pointer; }
+
+    .mini-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+    .mini-btn{
+      flex:1;
+      min-width: 140px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 900;
+      cursor: pointer;
+      background: #7f8c8d;
+      color:#fff;
+    }
+    .mini-btn.danger{ background:#e74c3c; }
+    .mini-btn.blue{ background:#3498db; }
+
+    /* 背景層（不閃） */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: var(--bg-opacity, 1);
+      transition: opacity .35s ease, filter .35s ease;
+      background-image: radial-gradient(circle at top left,#fdfbfb,#ebedee);
+      filter: var(--bg-blur, none);
+    }
+    body.bg-off::before{ opacity: 0; }
+    body.bg-ready::before{ background-image: var(--bg-image); }
+  </style>
+
+  <!-- Shared Firebase + helpers -->
+  <script src="js/firebase.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/site-ui-db.js"></script>
+</head>
+
+<body data-page="player">
+
+  <div id="event-overlay" class="hide">
+    <div class="box" style="border: 5px solid #ff7675;">
+      <h1 style="color:#ff7675;"><i class="fas fa-bolt"></i> 突發事件！</h1>
+      <p id="event-text" style="font-size:1.2em; font-weight:bold; margin: 20px 0;"></p>
+      <button onclick="document.getElementById('event-overlay').classList.add('hide')" style="background:#ff7675;">收到了！</button>
+    </div>
+  </div>
+
+  <div class="box" id="login">
+    <h2>角色登入</h2>
+    <select id="pid">
+      <option value="1">1號玩家</option><option value="2">2號玩家</option><option value="3">3號玩家</option><option value="4">4號玩家</option><option value="5">5號玩家</option>
+      <option value="6">6號玩家</option><option value="7">7號玩家</option><option value="8">8號玩家</option><option value="9">9號玩家</option><option value="10">10號玩家</option>
+    </select>
+    <input type="text" id="pname" placeholder="輸入你的暱稱">
+    <input type="text" id="deviceLabel" placeholder="（選填）此裝置名稱：玩家手機1 / 平板2">
+    <button id="join-btn">開始遊戲</button>
+    <div class="mini-actions">
+      <button class="mini-btn blue" id="btnRelog" type="button">重新嘗試自動登入</button>
+      <button class="mini-btn danger" id="btnForget" type="button">清除記住的登入</button>
+    </div>
+  </div>
+
+  <div class="box hide" id="game">
+    <div id="notice-bar"><div class="marquee-container"><span id="notice-text"></span></div></div>
+    <div id="timer-display">00:00</div>
+    <h2 id="me" style="color:#6c5ce7; margin-bottom:10px;">---</h2>
+    <canvas id="radarChart" style="margin-bottom:15px;"></canvas>
+
+    <div class="res-grid">
+      <div class="res-item c-time"><i class="fas fa-clock"></i> 時間 <span class="num" id="time">0</span></div>
+      <div class="res-item c-money"><i class="fas fa-wallet"></i> 金錢 <span class="num" id="money">0</span></div>
+      <div class="res-item c-health"><i class="fas fa-heartbeat"></i> 健康 <span class="num" id="health">0</span></div>
+      <div class="res-item c-knowledge"><i class="fas fa-book"></i> 知識 <span class="num" id="knowledge">0</span></div>
+      <div class="res-item c-social"><i class="fas fa-users"></i> 人際 <span id="social" class="num">0</span></div>
+      <div class="res-item c-score"><i class="fas fa-star"></i> 分數 <span id="score" class="num">0</span></div>
+    </div>
+
+    <div class="box" style="margin-top: 20px; border-top: 5px solid #3498db; background:#fafafa; padding: 15px;">
+      <h3><i class="fas fa-briefcase"></i> 已獲得的人生清單</h3>
+      <div id="inventory-list" style="min-height: 40px;"></div>
+    </div>
+
+    <h3 style="margin-top:30px; color:#636e72;"><i class="fas fa-shopping-cart"></i> 驚喜商店</h3>
+    <div id="shop-msg"></div>
+    <div id="shop-display"></div>
+
+    <div class="mini-actions">
+      <button class="mini-btn danger" id="btnUnlockSeat" type="button">解除本位子鎖定</button>
+      <button class="mini-btn" id="btnLogoutLocal" type="button">登出（回登入頁）</button>
+    </div>
+  </div>
+
+<script>
+  // ============================================================
+  // ✅ Player：彈幕已完全移除 + 登入資訊同步給 Super（players/p{pid}）
+  // ✅ 加入：強制登出（devices/{devId}/forceLogoutAt）
+  // ============================================================
+
+  const db = window.db || (window.firebase ? firebase.database() : null);
+  if(!db){
+    alert("找不到 window.db：請確認已載入 js/firebase.js，且 Firebase SDK 先載入。");
+    throw new Error("DB_NOT_READY");
+  }
+
+  // ===== Safe helpers =====
+  const SFXplay = (key) => { try{ window.SFX?.play?.(key); }catch(e){} };
+  const clamp01 = (v)=>{ v=Number(v); return Number.isFinite(v)? Math.max(0,Math.min(1,v)) : 0; };
+  const clampNum = (v,lo,hi)=>{ v=Number(v); return Number.isFinite(v)? Math.max(lo,Math.min(hi,v)) : lo; };
+
+  // ===== Device helpers =====
+  function getDeviceId(){
+    try{ if(window.LR?.getDeviceId) return window.LR.getDeviceId(); }catch(e){}
+    const k="lifeResume_deviceId_v3";
+    let id = localStorage.getItem(k);
+    if(!id){
+      id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36)));
+      localStorage.setItem(k, id);
+    }
+    return id;
+  }
+  function getDeviceLabel(){ return (localStorage.getItem("device_label") || "").trim(); }
+  function setDeviceLabel(label){
+    const v = String(label||"").trim();
+    if(v) localStorage.setItem("device_label", v);
+    else localStorage.removeItem("device_label");
+  }
+
+  // ============================================================
+  // ✅ A) 免重新登入：localStorage
+  // ============================================================
+  const LOGIN_KEY = "player_login_v1";
+  function saveLogin(pid, name){
+    localStorage.setItem(LOGIN_KEY, JSON.stringify({ pid:String(pid), name:String(name||""), ts:Date.now() }));
+  }
+  function loadLogin(){
+    try{
+      const raw = localStorage.getItem(LOGIN_KEY);
+      if(!raw) return null;
+      const o = JSON.parse(raw);
+      if(!o || !o.pid || !o.name) return null;
+      return o;
+    }catch(e){ return null; }
+  }
+  function clearLogin(){ localStorage.removeItem(LOGIN_KEY); }
+
+  // ============================================================
+  // ✅ 強制登出（Super/Admin 寫入 devices/{devId}/forceLogoutAt）
+  // ============================================================
+  const LOGIN_AT_KEY = "player_loginAtMs_v1";
+  function setLoginAtMs(ms){ try{ localStorage.setItem(LOGIN_AT_KEY, String(ms||Date.now())); }catch(e){} }
+  function getLoginAtMs(){ try{ return Number(localStorage.getItem(LOGIN_AT_KEY)||0)||0; }catch(e){ return 0; } }
+  function clearLoginAtMs(){ try{ localStorage.removeItem(LOGIN_AT_KEY); }catch(e){} }
+
+  let _forceLogoutRef = null;
+  function detachForceLogoutListener(){
+    try{ _forceLogoutRef?.off?.(); }catch(e){}
+    _forceLogoutRef = null;
+  }
+
+  function showLogin(){ document.getElementById('game').classList.add('hide'); document.getElementById('login').classList.remove('hide'); }
+  function showGame(){ document.getElementById('login').classList.add('hide'); document.getElementById('game').classList.remove('hide'); }
+
+  function doLogoutToLogin(msg){
+    if(msg) alert(msg);
+    detachForceLogoutListener();
+    clearLoginAtMs();
+    clearLogin();
+    showLogin();
+  }
+
+  function attachForceLogoutListener(devId){
+    if(!devId) return;
+    const loginAtMs = getLoginAtMs();
+    _forceLogoutRef = db.ref(`devices/${devId}/forceLogoutAt`);
+    _forceLogoutRef.on("value", (snap)=>{
+      const kickAt = snap.val();
+      if(!kickAt) return;
+      if(loginAtMs && Number(kickAt) <= Number(loginAtMs)) return; // 防止舊值誤踢
+      doLogoutToLogin("你已被管理員強制登出。");
+    });
+  }
+
+  // ============================================================
+  // ✅ 背景（不閃 + 快取秒套）
+  // ============================================================
+  const UIREF = db.ref("system/uiConfig");
+  const BG_DIR = "./images/backgrounds";
+  const FIXED_FILE = "bg-player.jpg";
+  const BG_CACHE_KEY = "bg_cache_player_v1";
+
+  function toAbs(url){
+    try{ return new URL(url, document.baseURI).href; }catch(_){ return url; }
+  }
+
+  (function applyCachedBgInstant(){
+    try{
+      const cached = localStorage.getItem(BG_CACHE_KEY);
+      if(cached){
+        document.body.style.setProperty("--bg-image", `url("${cached}")`);
+        document.body.classList.add("bg-ready");
+      }
+    }catch(e){}
+  })();
+
+  async function imgExists(url){
+    return await new Promise((resolve)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(true);
+      img.onerror = ()=>resolve(false);
+      img.src = url;
+    });
+  }
+
+  function setBg(url){
+    const abs = toAbs(url);
+    const img = new Image();
+    img.onload = ()=>{
+      document.body.style.setProperty("--bg-image", `url("${abs}")`);
+      document.body.classList.add("bg-ready");
+      try{ localStorage.setItem(BG_CACHE_KEY, abs); }catch(e){}
+    };
+    img.onerror = ()=>{ document.body.classList.remove("bg-ready"); };
+    img.src = abs;
+  }
+
+  async function applyBgFromUiConfig(cfg){
+    const d = cfg?.defaults || {};
+    const overrideMap = cfg?.bgOverride || {};
+
+    const bgOpacity = clamp01(d.bgOpacity ?? 0.18);
+    const bgBlurPx  = clampNum(d.bgBlurPx ?? 0, 0, 40);
+    document.body.style.setProperty("--bg-opacity", String(bgOpacity));
+    document.body.style.setProperty("--bg-blur", bgBlurPx>0 ? `blur(${bgBlurPx}px)` : "none");
+
+    const enabled = (d.bgEnabled ?? true) !== false;
+    document.body.classList.toggle("bg-off", !enabled);
+    if(!enabled){
+      document.body.classList.remove("bg-ready");
+      return;
+    }
+
+    const overrideFile = String(overrideMap.player || "").trim();
+    if(overrideFile){
+      const u1 = `${BG_DIR}/${overrideFile}`;
+      if(await imgExists(toAbs(u1))){ setBg(u1); return; }
+    }
+
+    const u2 = `${BG_DIR}/${FIXED_FILE}`;
+    if(await imgExists(toAbs(u2))){ setBg(u2); return; }
+
+    document.body.classList.remove("bg-ready");
+  }
+  UIREF.on("value", (s)=>{ applyBgFromUiConfig(s.val()||{}).catch(()=>{}); });
+
+  // ============================================================
+  // ✅ 跑馬燈（公告）：只讀 /marquee
+  // ============================================================
+  const marqueeRef = db.ref("marquee");
+  const noticeBar  = document.getElementById("notice-bar");
+  const noticeText = document.getElementById("notice-text");
+  let lastMarqueeText = "";
+
+  marqueeRef.on("value", (snap) => {
+    const v = snap.val() || {};
+    const enabled   = v.enabled ?? true;
+    const text      = v.text ?? "";
+    const speedSec  = Math.max(3, Number(v.speedSec ?? 10));
+    const direction = (v.direction === "right") ? "right" : "left";
+    const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
+
+    noticeBar.style.display = (enabled && String(text).trim()) ? "block" : "none";
+    if (!(enabled && String(text).trim())) return;
+
+    noticeText.textContent = text;
+    noticeText.style.fontSize = fontSize + "px";
+    noticeText.style.setProperty("--mq-sec", `${speedSec}s`);
+    noticeText.style.setProperty("--mq-anim", `marquee-${direction}`);
+
+    if (v.bgColor) noticeBar.style.background = v.bgColor;
+    if (v.textColor) noticeBar.style.color = v.textColor;
+
+    noticeText.style.animation = "none";
+    void noticeText.offsetWidth;
+    noticeText.style.animation = `var(--mq-anim) var(--mq-sec) linear infinite`;
+
+    if(String(text).trim() && text !== lastMarqueeText){
+      lastMarqueeText = text;
+      SFXplay("notify");
+    }
+  });
+
+  // ============================================================
+  // ✅ 玩家登入資訊（位子/暱稱/裝置名）給 Super：寫到 players/p{pid}
+  //   - join()：寫 seat/name/deviceLabel/deviceId/page/lastLogin/lastSeen
+  //   - heartbeat()：只更新 deviceLabel/deviceId/lastSeen（不碰 lastLogin）
+  // ============================================================
+  async function heartbeat(){
+    try{
+      const deviceId = getDeviceId();
+      const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+
+      await db.ref("devicesSeen/" + deviceId).update({
+        label,
+        kind: "player",
+        page: "player.html",
+        lastSeen: Date.now()
+      });
+
+      const saved = loadLogin();
+      if(saved?.pid){
+        await db.ref(`players/p${saved.pid}`).update({
+          seat: Number(saved.pid),
+          name: saved.name || "",
+          deviceId,
+          deviceLabel: label,
+          page: "player.html",
+          lastSeen: Date.now()
+        });
+      }
+    }catch(e){}
+  }
+  heartbeat();
+  setInterval(heartbeat, 15000);
+
+  // ============================================================
+  // seatLocks：玩家可自救
+  // ============================================================
+  function hardLogout(msg){
+    doLogoutToLogin(msg);
+  }
+
+  async function tryUnlockSeat(pid){
+    try{
+      await db.ref(`seatLocks/p${pid}`).remove();
+      return true;
+    }catch(e){
+      alert("解除鎖定失敗（可能 permission_denied）：\n" + (e?.message || e));
+      return false;
+    }
+  }
+
+  async function enforceSeatLockOrMaybeSelfUnlock(pid, playerName){
+    const deviceId = getDeviceId();
+    const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+    const lockRef = db.ref(`seatLocks/p${pid}`);
+
+    let snap;
+    try{ snap = await lockRef.get(); }
+    catch(err){ hardLogout("系統無法確認位子鎖定狀態，已中止登入。"); return false; }
+
+    const lock = snap.val();
+    if(lock && lock.deviceId && lock.deviceId !== deviceId){
+      const ok = confirm(
+        `此玩家位子（p${pid}）已被其他裝置使用：\n` +
+        `${lock.label || lock.deviceId}\n\n` +
+        `如果那台是你之前的手機/平板或已經當機，你可以按「確定」解除舊鎖並重新登入。\n` +
+        `如果不是你，請按「取消」。`
+      );
+      if(!ok){ hardLogout("已取消登入。"); return false; }
+      const unlocked = await tryUnlockSeat(pid);
+      if(!unlocked){ hardLogout("解除舊鎖失敗，已回到登入頁。"); return false; }
+      return await enforceSeatLockOrMaybeSelfUnlock(pid, playerName);
+    }
+
+    if(!lock || !lock.deviceId){
+      try{ await lockRef.set({ deviceId, name: playerName || "", label, ts: Date.now() }); }
+      catch(err){ hardLogout("位子鎖定寫入失敗，已中止登入。"); return false; }
+    }else{
+      try{ await lockRef.update({ name: playerName || lock.name || "", label, ts: Date.now() }); }catch(e){}
+    }
+    return true;
+  }
+
+  // ============================================================
+  // 遊戲資料
+  // ============================================================
+  const resNames = { time:'時間', money:'金錢', health:'健康', knowledge:'知識', social:'人際', score:'分數' };
+  const RES_KEYS = ['time','money','health','knowledge','social','score'];
+
+  let myId = null, myName = "", myRes = {}, radarChart = null;
+
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
+
+  function normalizeImgSrc(raw){
+    const s = String(raw||"").trim();
+    if(!s) return "";
+    if(/^https?:\/\//i.test(s)) return s;
+    if(s.startsWith("./") || s.startsWith("/")) return s;
+    if(s.startsWith("images/")) return "./" + s;
+    return "./images/shop/" + s;
+  }
+
+  // ============================================================
+  // ✅ 監聽只綁一次
+  // ============================================================
+  let _inited = false;
+
+  // ============================================================
+  // join / auto-join
+  // ============================================================
+  async function join(){
+    const pid = document.getElementById('pid').value;
+    const name = document.getElementById('pname').value.trim();
+    if(!name) return alert("請輸入暱稱");
+
+    myId = String(pid);
+    myName = name;
+
+    const labelInput = document.getElementById('deviceLabel');
+    if (labelInput) setDeviceLabel(labelInput.value || "");
+    await heartbeat();
+
+    const ok = await enforceSeatLockOrMaybeSelfUnlock(myId, myName);
+    if(!ok) return;
+
+    saveLogin(myId, myName);
+
+    const deviceId = getDeviceId();
+    const deviceLabel = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+
+    // ✅ 本次登入時間（用來比對 forceLogoutAt）
+    const loginAtMs = Date.now();
+    setLoginAtMs(loginAtMs);
+
+    // ✅ 登入資訊（給 Super 玩家列表看的重點）
+    await db.ref(`players/p${myId}`).update({
+      seat: Number(myId),
+      name: myName,
+      deviceId,
+      deviceLabel,
+      page: "player.html",
+      lastLogin: loginAtMs,
+      lastSeen: Date.now()
+    });
+
+    // ✅ 強制登出監聽
+    detachForceLogoutListener();
+    attachForceLogoutListener(deviceId);
+
+    showGame();
+    document.getElementById('me').innerText = myName;
+
+    bindPlayerRes();
+    SFXplay("join");
+
+    if(!_inited){
+      _inited = true;
+      initRadar();
+      syncData();
+      bindShopDelegation();
+    }
+  }
+
+  document.getElementById('join-btn').addEventListener('click', join);
+
+  // ✅ 裝置名稱改了就同步到 Super
+  document.getElementById('deviceLabel').addEventListener('change', async (e) => {
+    const v = (e.target.value || "").trim();
+    setDeviceLabel(v);
+    await heartbeat();
+
+    if(myId){
+      const deviceId = getDeviceId();
+      const deviceLabel = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+      try{
+        await db.ref(`players/p${myId}`).update({
+          deviceId,
+          deviceLabel,
+          lastSeen: Date.now()
+        });
+      }catch(e){}
+    }
+  });
+
+  // login actions
+  document.getElementById("btnForget").addEventListener("click", ()=>{
+    clearLogin();
+    clearLoginAtMs();
+    detachForceLogoutListener();
+    alert("已清除記住的登入。");
+  });
+  document.getElementById("btnRelog").addEventListener("click", async ()=>{
+    const saved = loadLogin();
+    if(!saved) return alert("沒有找到自動登入資料。");
+    document.getElementById('pid').value = saved.pid;
+    document.getElementById('pname').value = saved.name;
+    await join();
+  });
+
+  // game actions
+  document.getElementById("btnLogoutLocal").addEventListener("click", ()=>{
+    doLogoutToLogin();
+  });
+  document.getElementById("btnUnlockSeat").addEventListener("click", async ()=>{
+    if(!myId) return;
+    if(!confirm(`確定要解除 p${myId} 的位子鎖定？\n解除後你會回到登入頁。`)) return;
+    const ok = await tryUnlockSeat(myId);
+    if(ok){
+      doLogoutToLogin("已解除鎖定。");
+    }
+  });
+
+  // ============================================================
+  // Radar chart
+  // ============================================================
+  function initRadar() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['時間', '金錢', '健康', '知識', '人際'],
+        datasets: [{
+          data: [0,0,0,0,0],
+          backgroundColor: 'rgba(108, 92, 231, 0.2)',
+          borderColor: '#6c5ce7',
+          pointBackgroundColor: '#ff7675'
+        }]
+      },
+      options: {
+        scales: { r: { beginAtZero: true, ticks: { display: false } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // ============================================================
+  // Data sync
+  // ============================================================
+  function bindPlayerRes(){
+    if(!myId) return;
+
+    // 資源
+    RES_KEYS.forEach(k => {
+      db.ref(`players/p${myId}/res/${k}`).on('value', s => {
+        myRes[k] = s.val() || 0;
+        const el = document.getElementById(k);
+        if(el) el.innerText = myRes[k];
+
+        if (radarChart) {
+          radarChart.data.datasets[0].data = [
+            myRes.time||0, myRes.money||0, myRes.health||0, myRes.knowledge||0, myRes.social||0
+          ];
+          radarChart.update();
+        }
+      });
+    });
+
+    // 背包
+    db.ref(`players/p${myId}/inventory`).on('value', s => {
+      const list = document.getElementById('inventory-list');
+      if(!list) return;
+      list.innerHTML = "";
+      const data = s.val();
+
+      if(!data) {
+        list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>";
+        return;
+      }
+      for(let key in data){
+        list.innerHTML += `<div class="inv-item">✨ ${escapeHtml(data[key].name)}</div>`;
+      }
+    });
+
+    // 突發事件
+    db.ref('currentEvent').on('value', s => {
+      const d = s.val();
+      if(d && d.target == myId) {
+        document.getElementById('event-text').innerText = d.message;
+        document.getElementById('event-overlay').classList.remove('hide');
+        SFXplay("event");
+      }
+    });
+  }
+
+  function syncData(){
+    // timer
+    db.ref('timerSync').on('value', s => {
+      const d = s.val();
+      if (!d) return;
+      const m = Math.floor((d.timeLeft||0) / 60).toString().padStart(2, '0');
+      const sc = ((d.timeLeft||0) % 60).toString().padStart(2, '0');
+      const timerDisp = document.getElementById('timer-display');
+      if(!timerDisp) return;
+      timerDisp.innerText = `${m}:${sc}`;
+      timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
+    });
+
+    // shop open
+    db.ref('shopSettings/isOpen').on('value', s => {
+      const isOpen = s.val() || false;
+      const display = document.getElementById('shop-display');
+      const msg = document.getElementById('shop-msg');
+      if(!display || !msg) return;
+
+      if(!isOpen) {
+        display.style.opacity = "0.3";
+        display.style.pointerEvents = "none";
+        msg.style.color = "#e67e22";
+        msg.innerText = "🏪 商店盤點中...";
+      } else {
+        display.style.opacity = "1";
+        display.style.pointerEvents = "auto";
+        msg.innerText = "";
+      }
+    });
+
+    // shop items
+    db.ref('shop/items').on('value', s => {
+      const list = document.getElementById('shop-display');
+      if(!list) return;
+      list.innerHTML = "";
+      const data = s.val() || {};
+
+      for(let key in data) {
+        const item = data[key];
+        const cost = item.cost || {};
+        const costText = Object.keys(resNames)
+          .map(k => (cost && cost[k]>0)?`${resNames[k]}:${cost[k]}`:'')
+          .filter(t=>t!=='').join(' ');
+
+        const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || "");
+        const bonus = Number(item.bonus||0);
+
+        const card = document.createElement("div");
+        card.className = "shop-card";
+        card.innerHTML = `
+          <div style="display:flex; gap:12px; align-items:center;">
+            ${imgSrc
+              ? `<img src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.name||'')}" style="width:56px;height:56px;object-fit:cover;border-radius:14px;border:2px solid #eee;"/>`
+              : `<div style="width:56px;height:56px;border-radius:14px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;">🛍️</div>`
+            }
+            <div style="flex:1;">
+              <strong>${escapeHtml(item.name || "未命名")}</strong>
+              ${bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${bonus}</span>` : ''}
+              <br><small>代價: ${escapeHtml(costText||'免費')}</small>
+            </div>
+          </div>
+          <button class="shop-btn buy-btn"
+            data-name="${escapeAttr(String(item.name||"未命名"))}"
+            data-bonus="${String(bonus)}"
+            data-image="${escapeAttr(imgSrc||'')}"
+            data-cost='${escapeAttr(JSON.stringify(cost||{}))}'
+          >確認達成</button>
+        `;
+        list.appendChild(card);
+      }
+    });
+  }
+
+  function bindShopDelegation(){
+    const list = document.getElementById("shop-display");
+    if(!list) return;
+    list.addEventListener("click", (e)=>{
+      const btn = e.target.closest(".buy-btn");
+      if(!btn) return;
+      const name = btn.dataset.name || "未命名";
+      const bonus = Number(btn.dataset.bonus||0);
+      const imageUrl = btn.dataset.image || "";
+      let cost = {};
+      try{ cost = JSON.parse(btn.dataset.cost || "{}"); }catch(_){ cost = {}; }
+      processBuy({ name, bonus, imageUrl, cost });
+    });
+  }
+
+  // ============================================================
+  // Buy（保留 purchaseFeed 給 Super/Display 用）
+  // ============================================================
+  function processBuy(item) {
+    if(!myId) return alert("請先登入玩家。");
+
+    const name = item.name;
+    const cost = item.cost || {};
+    const bonus = Number(item.bonus || 0);
+    const imageUrl = String(item.imageUrl || "").trim();
+
+    for(let k in cost) {
+      if((myRes[k]||0) < cost[k]) return alert(`❌ 你的「${resNames[k]}」不足！`);
+    }
+
+    if(confirm(`準備好達成「${name}」了嗎？`)) {
+      for(let k in cost) db.ref(`players/p${myId}/res/${k}`).set((myRes[k]||0) - cost[k]);
+
+      db.ref(`players/p${myId}/inventory`).push({ name, imageUrl, time: Date.now() });
+
+      db.ref('purchaseFeed').push({
+        playerId: myId,
+        playerName: myName || `玩家${myId}`,
+        itemName: name,
+        imageUrl,
+        ts: Date.now()
+      });
+
+      if(bonus > 0) db.ref(`players/p${myId}/res/score`).transaction(cur => (cur || 0) + bonus);
+
+      SFXplay("buy");
+      alert(`🎉 成功獲得「${name}」！${bonus > 0 ? `並額外獲得 ${bonus} 分！` : ''}`);
+    }
+  }
+  window.processBuy = processBuy;
+
+  // ============================================================
+  // ✅ Auto-join on reload
+  // ============================================================
+  (async function autoJoinIfPossible(){
+    const saved = loadLogin();
+    if(!saved) return;
+
+    document.getElementById('pid').value = saved.pid;
+    document.getElementById('pname').value = saved.name;
+
+    try{
+      await join();
+    }catch(e){
+      detachForceLogoutListener();
+      clearLoginAtMs();
+      clearLogin();
+      showLogin();
+    }
+  })();
+</script>
+
+</body>
+</html>
