@@ -629,10 +629,16 @@ async function applyBgFromUiConfig(cfg){
     });
   }
 
-  // ============================================================
-  // Data sync
-  // ============================================================
-  function escapeHtml(s){
+
+// ============================================================
+// Data sync（乾淨版）
+// 1) bindPlayerRes：登入後才綁（資源/背包/事件）
+// 2) syncData：全域監聽（timer/shop）
+// ============================================================
+
+const RES_KEYS = ['time','money','health','knowledge','social','score'];
+
+function escapeHtml(s){
   return String(s ?? "")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
@@ -640,10 +646,14 @@ async function applyBgFromUiConfig(cfg){
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 }
+function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
 
+// ✅ 登入後綁玩家資料（資源/背包/事件）
+function bindPlayerRes(){
+  if(!myId) return;
 
   // 資源
-  keys.forEach(k => {
+  RES_KEYS.forEach(k => {
     db.ref(`players/p${myId}/res/${k}`).on('value', s => {
       myRes[k] = s.val() || 0;
 
@@ -663,8 +673,10 @@ async function applyBgFromUiConfig(cfg){
   // 背包
   db.ref(`players/p${myId}/inventory`).on('value', s => {
     const list = document.getElementById('inventory-list');
+    if(!list) return;
     list.innerHTML = "";
     const data = s.val();
+
     if(!data) {
       list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>";
       return;
@@ -684,18 +696,28 @@ async function applyBgFromUiConfig(cfg){
     }
   });
 }
-  
-function syncData() {
+
+function normalizeImgSrc(raw){
+  const s = String(raw||"").trim();
+  if(!s) return "";
+  if(/^https?:\/\//i.test(s)) return s;
+  if(s.startsWith("./") || s.startsWith("/")) return s;
+  if(s.startsWith("images/")) return "./" + s;
+  return "./images/shop/" + s;
+}
+
+// ✅ 全域監聽（timer / shop）
+function syncData(){
   // timer
   db.ref('timerSync').on('value', s => {
     const d = s.val();
-    if (d) {
-      const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
-      const sc = (d.timeLeft % 60).toString().padStart(2, '0');
-      const timerDisp = document.getElementById('timer-display');
-      timerDisp.innerText = `${m}:${sc}`;
-      timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
-    }
+    if (!d) return;
+    const m = Math.floor((d.timeLeft||0) / 60).toString().padStart(2, '0');
+    const sc = ((d.timeLeft||0) % 60).toString().padStart(2, '0');
+    const timerDisp = document.getElementById('timer-display');
+    if(!timerDisp) return;
+    timerDisp.innerText = `${m}:${sc}`;
+    timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
   });
 
   // shop open
@@ -703,11 +725,16 @@ function syncData() {
     const isOpen = s.val() || false;
     const display = document.getElementById('shop-display');
     const msg = document.getElementById('shop-msg');
+    if(!display || !msg) return;
+
     if(!isOpen) {
-      display.style.opacity = "0.3"; display.style.pointerEvents = "none";
-      msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
+      display.style.opacity = "0.3";
+      display.style.pointerEvents = "none";
+      msg.style.color = "#e67e22";
+      msg.innerText = "🏪 商店盤點中...";
     } else {
-      display.style.opacity = "1"; display.style.pointerEvents = "auto";
+      display.style.opacity = "1";
+      display.style.pointerEvents = "auto";
       msg.innerText = "";
     }
   });
@@ -715,6 +742,7 @@ function syncData() {
   // shop items
   db.ref('shop/items').on('value', s => {
     const list = document.getElementById('shop-display');
+    if(!list) return;
     list.innerHTML = "";
     const data = s.val() || {};
 
@@ -727,13 +755,6 @@ function syncData() {
 
       const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || "");
       const bonus = Number(item.bonus||0);
-
-      const payload = {
-        name: String(item.name||"未命名"),
-        bonus,
-        imageUrl: imgSrc,
-        cost: cost
-      };
 
       const card = document.createElement("div");
       card.className = "shop-card";
@@ -750,16 +771,16 @@ function syncData() {
           </div>
         </div>
         <button class="shop-btn buy-btn"
-          data-name="${escapeAttr(payload.name)}"
-          data-bonus="${String(payload.bonus)}"
-          data-image="${escapeAttr(payload.imageUrl||'')}"
-          data-cost='${escapeAttr(JSON.stringify(payload.cost||{}))}'
+          data-name="${escapeAttr(String(item.name||"未命名"))}"
+          data-bonus="${String(bonus)}"
+          data-image="${escapeAttr(imgSrc||'')}"
+          data-cost='${escapeAttr(JSON.stringify(cost||{}))}'
         >確認達成</button>
       `;
       list.appendChild(card);
     }
   });
-
+}
   function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
 
   function normalizeImgSrc(raw){
