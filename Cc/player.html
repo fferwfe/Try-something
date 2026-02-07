@@ -554,6 +554,7 @@ async function applyBgFromUiConfig(cfg){
 
     showGame();
     document.getElementById('me').innerText = myName;
+    bindPlayerRes(); // ✅ 關鍵：第一次登入就綁上玩家資源監聽
 
     SFXplay("join");
     dmJoinTs = Date.now();
@@ -631,155 +632,145 @@ async function applyBgFromUiConfig(cfg){
   // ============================================================
   // Data sync
   // ============================================================
-  function syncData() {
-    const keys = ['time','money','health','knowledge','social','score'];
+  function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
-    keys.forEach(k => {
-      db.ref(`players/p${myId || 1}/res/${k}`).on('value', s => {
-        // 注意：myId 可能尚未登入；登入後會更新 myId，但這裡仍需讀實際 p{myId}
-        // 所以我們在 updateDom 時用 myId 再加一層防呆
-      });
+
+  // 資源
+  keys.forEach(k => {
+    db.ref(`players/p${myId}/res/${k}`).on('value', s => {
+      myRes[k] = s.val() || 0;
+
+      const el = document.getElementById(k);
+      if(el) el.innerText = myRes[k];
+
+      // 雷達圖更新（不含 score）
+      if (radarChart) {
+        radarChart.data.datasets[0].data = [
+          myRes.time||0, myRes.money||0, myRes.health||0, myRes.knowledge||0, myRes.social||0
+        ];
+        radarChart.update();
+      }
     });
+  });
 
-    // ✅ 真正以 myId 讀取（登入後才會有 myId）
-    function bindPlayerRes(){
-      if(!myId) return;
-      keys.forEach(k => {
-        db.ref(`players/p${myId}/res/${k}`).on('value', s => {
-          myRes[k] = s.val() || 0;
-          const el = document.getElementById(k);
-          if(el) el.innerText = myRes[k];
+  // 背包
+  db.ref(`players/p${myId}/inventory`).on('value', s => {
+    const list = document.getElementById('inventory-list');
+    list.innerHTML = "";
+    const data = s.val();
+    if(!data) {
+      list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>";
+      return;
+    }
+    for(let key in data){
+      list.innerHTML += `<div class="inv-item">✨ ${escapeHtml(data[key].name)}</div>`;
+    }
+  });
 
-          if (radarChart) {
-            radarChart.data.datasets[0].data = [
-              myRes.time||0, myRes.money||0, myRes.health||0, myRes.knowledge||0, myRes.social||0
-            ];
-            radarChart.update();
+  // 突發事件
+  db.ref('currentEvent').on('value', s => {
+    const d = s.val();
+    if(d && d.target == myId) {
+      document.getElementById('event-text').innerText = d.message;
+      document.getElementById('event-overlay').classList.remove('hide');
+      SFXplay("event");
+    }
+  });
+}
+  
+function syncData() {
+  // timer
+  db.ref('timerSync').on('value', s => {
+    const d = s.val();
+    if (d) {
+      const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
+      const sc = (d.timeLeft % 60).toString().padStart(2, '0');
+      const timerDisp = document.getElementById('timer-display');
+      timerDisp.innerText = `${m}:${sc}`;
+      timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
+    }
+  });
+
+  // shop open
+  db.ref('shopSettings/isOpen').on('value', s => {
+    const isOpen = s.val() || false;
+    const display = document.getElementById('shop-display');
+    const msg = document.getElementById('shop-msg');
+    if(!isOpen) {
+      display.style.opacity = "0.3"; display.style.pointerEvents = "none";
+      msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
+    } else {
+      display.style.opacity = "1"; display.style.pointerEvents = "auto";
+      msg.innerText = "";
+    }
+  });
+
+  // shop items
+  db.ref('shop/items').on('value', s => {
+    const list = document.getElementById('shop-display');
+    list.innerHTML = "";
+    const data = s.val() || {};
+
+    for(let key in data) {
+      const item = data[key];
+      const cost = item.cost || {};
+      let costText = Object.keys(resNames)
+        .map(k => (cost && cost[k]>0)?`${resNames[k]}:${cost[k]}`:'')
+        .filter(t=>t!=='').join(' ');
+
+      const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || "");
+      const bonus = Number(item.bonus||0);
+
+      const payload = {
+        name: String(item.name||"未命名"),
+        bonus,
+        imageUrl: imgSrc,
+        cost: cost
+      };
+
+      const card = document.createElement("div");
+      card.className = "shop-card";
+      card.innerHTML = `
+        <div style="display:flex; gap:12px; align-items:center;">
+          ${imgSrc
+            ? `<img src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.name||'')}" style="width:56px;height:56px;object-fit:cover;border-radius:14px;border:2px solid #eee;"/>`
+            : `<div style="width:56px;height:56px;border-radius:14px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;">🛍️</div>`
           }
-        });
-      });
-
-      db.ref(`players/p${myId}/inventory`).on('value', s => {
-        const list = document.getElementById('inventory-list');
-        list.innerHTML = "";
-        const data = s.val();
-        if(!data) { list.innerHTML = "<p style='color:#aaa; font-size:0.9em;'>尚無任何成就物品</p>"; return; }
-        for(let key in data) list.innerHTML += `<div class="inv-item">✨ ${escapeHtml(data[key].name)}</div>`;
-      });
-
-      db.ref('currentEvent').on('value', s => {
-        const d = s.val();
-        if(d && d.target == myId) {
-          document.getElementById('event-text').innerText = d.message;
-          document.getElementById('event-overlay').classList.remove('hide');
-          SFXplay("event");
-        }
-      });
-    }
-
-    // timer
-    db.ref('timerSync').on('value', s => {
-      const d = s.val();
-      if (d) {
-        const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
-        const sc = (d.timeLeft % 60).toString().padStart(2, '0');
-        const timerDisp = document.getElementById('timer-display');
-        timerDisp.innerText = `${m}:${sc}`;
-        timerDisp.style.opacity = d.isRunning ? "1" : "0.5";
-      }
-    });
-
-    // shop open
-    db.ref('shopSettings/isOpen').on('value', s => {
-      const isOpen = s.val() || false;
-      const display = document.getElementById('shop-display');
-      const msg = document.getElementById('shop-msg');
-      if(!isOpen) {
-        display.style.opacity = "0.3"; display.style.pointerEvents = "none";
-        msg.style.color = "#e67e22"; msg.innerText = "🏪 商店盤點中...";
-      } else {
-        display.style.opacity = "1"; display.style.pointerEvents = "auto";
-        msg.innerText = "";
-      }
-    });
-
-    // shop items
-    db.ref('shop/items').on('value', s => {
-      const list = document.getElementById('shop-display');
-      list.innerHTML = "";
-      const data = s.val() || {};
-
-      for(let key in data) {
-        const item = data[key];
-        const cost = item.cost || {};
-        let costText = Object.keys(resNames)
-          .map(k => (cost && cost[k]>0)?`${resNames[k]}:${cost[k]}`:'')
-          .filter(t=>t!=='').join(' ');
-
-        const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || "");
-        const bonus = Number(item.bonus||0);
-
-        // ✅ data-* 存 payload（避免 JSON.stringify 直接塞 onclick 爆掉）
-        const payload = {
-          name: String(item.name||"未命名"),
-          bonus,
-          imageUrl: imgSrc,
-          cost: cost
-        };
-
-        const card = document.createElement("div");
-        card.className = "shop-card";
-        card.innerHTML = `
-          <div style="display:flex; gap:12px; align-items:center;">
-            ${imgSrc
-              ? `<img src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.name||'')}" style="width:56px;height:56px;object-fit:cover;border-radius:14px;border:2px solid #eee;"/>`
-              : `<div style="width:56px;height:56px;border-radius:14px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;color:#aaa;">🛍️</div>`
-            }
-            <div style="flex:1;">
-              <strong>${escapeHtml(item.name || "未命名")}</strong>
-              ${bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${bonus}</span>` : ''}
-              <br><small>代價: ${escapeHtml(costText||'免費')}</small>
-            </div>
+          <div style="flex:1;">
+            <strong>${escapeHtml(item.name || "未命名")}</strong>
+            ${bonus > 0 ? `<span style="color:#f39c12; font-size:0.8em; margin-left:10px;">🏆 分數 +${bonus}</span>` : ''}
+            <br><small>代價: ${escapeHtml(costText||'免費')}</small>
           </div>
-          <button class="shop-btn buy-btn"
-            data-name="${escapeAttr(payload.name)}"
-            data-bonus="${String(payload.bonus)}"
-            data-image="${escapeAttr(payload.imageUrl||'')}"
-            data-cost='${escapeAttr(JSON.stringify(payload.cost||{}))}'
-          >確認達成</button>
-        `;
-        list.appendChild(card);
-      }
-    });
-
-    // 當登入完成後，補綁玩家資料
-    const _origJoin = join;
-    join = async function(){
-      await _origJoin();
-      bindPlayerRes();
-    };
-
-    // 安全：避免 XSS
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+        </div>
+        <button class="shop-btn buy-btn"
+          data-name="${escapeAttr(payload.name)}"
+          data-bonus="${String(payload.bonus)}"
+          data-image="${escapeAttr(payload.imageUrl||'')}"
+          data-cost='${escapeAttr(JSON.stringify(payload.cost||{}))}'
+        >確認達成</button>
+      `;
+      list.appendChild(card);
     }
-    function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
+  });
 
-    function normalizeImgSrc(raw){
-      const s = String(raw||"").trim();
-      if(!s) return "";
-      if(/^https?:\/\//i.test(s)) return s;
-      if(s.startsWith("./") || s.startsWith("/")) return s;
-      // 你常見資料：images/shop/xxx.jpg 或 shop/xxx.jpg
-      if(s.startsWith("images/")) return "./" + s;
-      return "./images/shop/" + s; // 最常用的相對路徑
-    }
+  function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
+
+  function normalizeImgSrc(raw){
+    const s = String(raw||"").trim();
+    if(!s) return "";
+    if(/^https?:\/\//i.test(s)) return s;
+    if(s.startsWith("./") || s.startsWith("/")) return s;
+    if(s.startsWith("images/")) return "./" + s;
+    return "./images/shop/" + s;
   }
+}
 
   function bindShopDelegation(){
     const list = document.getElementById("shop-display");
