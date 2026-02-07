@@ -9,7 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-  <!-- ✅ Unified Theme + Display Styles (整合後只留一套) -->
   <style>
     :root{
       --bg:#f6f8fb;
@@ -28,7 +27,6 @@
 
       --radius:18px;
 
-      /* danmaku default (會被 /controls 覆蓋) */
       --danmaku-font-size: 22px;
       --danmaku-duration: 10s;
     }
@@ -36,27 +34,23 @@
     html,body{height:100%;}
     body{
       font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
-      background:
-        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
-        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
-        radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
-        var(--bg);
-      color:var(--text);
       margin:0;
-      padding:14px;
+      padding:10px 20px;
       overflow:hidden;
       -webkit-text-size-adjust:100%;
-    }
+      color:var(--text);
 
-    /* ✅ Display page: 不限制寬度（投影/大螢幕需要全寬） */
-    body[data-page="display"]{
-      padding:10px 20px;
+      background:
+        radial-gradient(1200px 600px at 15% 0%, rgba(59,130,246,0.18), transparent 62%),
+        radial-gradient(1000px 520px at 85% 10%, rgba(34,197,94,0.14), transparent 60%),
+        radial-gradient(1200px 700px at 50% 110%, rgba(139,92,246,0.14), transparent 68%),
+        linear-gradient(180deg, #f8fafc 0%, #f2f5fb 60%, #eef2f8 100%);
     }
 
     /* ===== Header ===== */
     #display-header{
       display:flex;
-      gap:15px;
+      gap:12px;
       margin-bottom:12px;
       height:60px;
       position:relative;
@@ -65,104 +59,185 @@
 
     #announcement-bar{
       flex:3;
-      background:var(--blue);
       border-radius:12px;
       display:none;
       overflow:hidden;
       white-space:nowrap;
-      box-shadow:0 10px 26px var(--shadow);
-      border:1px solid rgba(2,6,23,0.08);
+
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border:1px solid rgba(2,6,23,0.10);
+      box-shadow: 0 14px 34px rgba(2,6,23,0.10), 0 1px 0 rgba(255,255,255,0.7) inset;
     }
     #msg-box{
       display:inline-block;
       padding-left:100%;
-      animation: marquee-left 10s linear infinite; /* JS 會覆蓋速度/方向 */
+      animation: marquee-left 10s linear infinite;
       font-size:1.5em;
       font-weight:900;
       color:#fff;
       line-height:60px;
       margin:0;
+      letter-spacing:0.2px;
     }
     @keyframes marquee-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
     @keyframes marquee-right{0%{transform:translateX(0);}100%{transform:translateX(100%);}}
 
     #timer-bar{
       flex:1;
-      background:var(--danger);
       border-radius:12px;
-      text-align:center;
-      color:white;
       display:flex;
       align-items:center;
       justify-content:center;
-      box-shadow:0 10px 26px var(--shadow);
-      border:1px solid rgba(2,6,23,0.08);
+      color:#fff;
+      min-width:170px;
+
+      background: linear-gradient(135deg, #ef4444, #f59e0b);
+      border:1px solid rgba(2,6,23,0.10);
+      box-shadow: 0 14px 34px rgba(2,6,23,0.10), 0 1px 0 rgba(255,255,255,0.7) inset;
     }
     #timer-box{
       margin:0;
-      font-size:2.5em;
+      font-size:2.3em;
       font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-weight:900;
+      letter-spacing:1px;
     }
 
-    /* ===== Layout ===== */
+    /* ===== Main Layout (RWD) ===== */
     #main{
-      display:flex;
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
       gap:16px;
-      height:calc(100vh - 60px - 24px - 20px); /* header + spacing + body padding 大概值 */
+      height:calc(100vh - 60px - 24px);
       position:relative;
       z-index:1;
+      min-height:0;
     }
-    #left{
-      flex:1.2;
-      min-width:520px;
-      overflow:hidden;
-    }
+    #left, #right{min-height:0; overflow:hidden;}
+    #left{min-width:520px;}
     #right{
-      flex:1;
-      overflow:hidden;
-      border-left:1px dashed rgba(2,6,23,0.12);
+      border-left:1px dashed rgba(2,6,23,0.14);
       padding-left:16px;
     }
 
-    /* ===== Scoreboard rows ===== */
-    .p-row{
-      background:var(--card);
-      margin-bottom:6px;
-      padding:6px 15px;
-      border-radius:12px;
-      display:flex;
-      align-items:center;
-      border:1px solid rgba(2,6,23,0.08);
-      box-shadow:0 8px 18px rgba(2,6,23,0.06);
-      height:7vh;
-      min-height:56px;
+    @media (max-width: 1100px){
+      body{padding:10px 14px;}
+      #left{min-width:0;}
+      #timer-bar{min-width:150px;}
+      #msg-box{font-size:1.25em;}
     }
 
-    .rank-1{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.32);border-left:10px solid var(--yellow);}
-    .rank-2{background:rgba(148,163,184,0.12);border-color:rgba(148,163,184,0.32);border-left:10px solid rgba(148,163,184,0.9);}
-    .rank-3{background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.26);border-left:10px solid var(--warn);}
+    @media (max-width: 860px){
+      body{padding:10px;}
+      #display-header{flex-direction:column; height:auto;}
+      #timer-bar{height:60px; min-width:0;}
+      #announcement-bar{height:60px;}
+      #main{
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 0.92fr;
+        height:calc(100vh - 60px - 60px - 28px);
+      }
+      #right{
+        border-left:none;
+        padding-left:0;
+        border-top:1px dashed rgba(2,6,23,0.14);
+        padding-top:12px;
+      }
+    }
 
-    .rank-num{font-size:1.4em;font-weight:900;width:35px;color:rgba(15,23,42,0.45);}
-    .rank-1 .rank-num{color:var(--yellow);}
+    /* ===== Board ===== */
+    #board-list{height:100%; overflow:auto; padding-right:6px;}
+    #board-list::-webkit-scrollbar{width:10px;}
+    #board-list::-webkit-scrollbar-thumb{background:rgba(2,6,23,0.14);border-radius:999px;}
 
-    .player-name{
+    .p-row{
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      user-select:none;
+
+      /* ✅ 卡片亮、乾淨 */
+      background: rgba(255,255,255,0.92);
+      border:1px solid rgba(2,6,23,0.10);
+      border-radius:18px;
+      padding:14px 16px;
+      box-shadow: 0 18px 44px rgba(2,6,23,0.10), 0 1px 0 rgba(255,255,255,0.75) inset;
+      transition: transform .15s ease, box-shadow .15s ease;
+      height:72px;
+    }
+    .p-row:hover{
+      transform:translateY(-2px);
+      box-shadow: 0 26px 60px rgba(2,6,23,0.16), 0 1px 0 rgba(255,255,255,0.8) inset;
+    }
+
+    /* ✅ 只保留粗框，不要底色（你說灰灰暗暗要拿掉） */
+    .rank-1{ border-left:10px solid #fbbf24; }
+    .rank-2{ border-left:10px solid #94a3b8; }
+    .rank-3{ border-left:10px solid #f59e0b; }
+
+    /* Top 1/2/3 名次徽章 */
+    .rank-num{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       font-size:1.2em;
-      font-weight:900;
-      width:140px;
-      color:var(--text);
+      font-weight:1000;
+      background: rgba(2,6,23,0.06);
+      color:#334155;
+      flex:0 0 auto;
+      box-shadow: 0 16px 34px rgba(2,6,23,0.10), 0 1px 0 rgba(255,255,255,0.7) inset;
+      border:1px solid rgba(2,6,23,0.10);
+    }
+    .rank-1 .rank-num{
+      background: linear-gradient(135deg, #fde68a, #fbbf24);
+      color:#92400e;
+      font-size:1.35em;
+      border-color: rgba(245,158,11,0.40);
+    }
+    .rank-2 .rank-num{
+      background: linear-gradient(135deg, #e5e7eb, #94a3b8);
+      color:#1f2937;
+      border-color: rgba(148,163,184,0.45);
+    }
+    .rank-3 .rank-num{
+      background: linear-gradient(135deg, #fed7aa, #f59e0b);
+      color:#7c2d12;
+      border-color: rgba(245,158,11,0.40);
+    }
+
+    /* ✅ 玩家名字：變成「可點擊入口」（你說要放到角色名字上面） */
+    .player-name{
+      font-size:1.15em;
+      font-weight:1000;
+      letter-spacing:0.3px;
+      width:150px;
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
+      flex:0 0 auto;
+
+      cursor:pointer;
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(2,6,23,0.04);
+      border:1px solid rgba(2,6,23,0.08);
+      transition: background .12s ease, transform .12s ease;
     }
+    .player-name:hover{ background: rgba(2,6,23,0.06); }
+    .player-name:active{ transform: translateY(1px); }
 
     .res-summary{
       flex:1;
       display:flex;
       justify-content:space-around;
       font-size:0.95em;
-      padding:0 10px;
+      padding:0 6px;
       gap:10px;
+      min-width:0;
     }
     .res-item{
       display:flex;
@@ -170,25 +245,36 @@
       gap:6px;
       font-weight:800;
       white-space:nowrap;
+
+      background: rgba(2,6,23,0.05);
+      border: 1px solid rgba(2,6,23,0.08);
+      padding:6px 12px;
+      border-radius:999px;
     }
     .res-label{font-size:0.85em;opacity:.9;}
 
     .res-score{
       color:var(--warn);
-      background:rgba(245,158,11,0.14);
-      padding:2px 10px;
-      border-radius:999px;
-      border:1px solid rgba(245,158,11,0.22);
+      background: rgba(245,158,11,0.18);
+      border-color: rgba(245,158,11,0.28);
     }
 
     .total-box{
       width:110px;
       text-align:right;
-      border-left:1px dashed rgba(2,6,23,0.14);
+      border-left:1px dashed rgba(2,6,23,0.18);
       padding-left:10px;
+      flex:0 0 auto;
     }
-    .total-val{font-size:1.6em;font-weight:900;color:var(--blue);}
+    .total-val{font-size:1.7em;font-weight:900;color:var(--blue);}
     .pts{font-size:0.55em;color:rgba(15,23,42,0.55);margin-left:2px;}
+
+    @media (max-width: 860px){
+      .p-row{height:auto; align-items:flex-start; padding:12px;}
+      .player-name{width:auto; max-width:55vw;}
+      .res-summary{flex-wrap:wrap; justify-content:flex-start; gap:10px; padding-top:6px;}
+      .total-box{border-left:none; padding-left:0; width:auto; margin-left:auto;}
+    }
 
     /* ===== Purchases panel ===== */
     #purchases-title{
@@ -196,18 +282,20 @@
       align-items:center;
       gap:10px;
       margin:0 0 10px 0;
-      font-size:1.3em;
+      font-size:1.2em;
       font-weight:900;
-      color:var(--text);
     }
+    #purchases-list{height:calc(100% - 40px); overflow:auto; padding-right:6px;}
+    #purchases-list::-webkit-scrollbar{width:10px;}
+    #purchases-list::-webkit-scrollbar-thumb{background:rgba(2,6,23,0.14);border-radius:999px;}
 
     .buy-card{
-      background:var(--card);
-      border:1px solid rgba(2,6,23,0.08);
-      border-radius:14px;
+      border:1px solid rgba(2,6,23,0.10);
+      border-radius:18px;
       padding:10px 12px;
       margin-bottom:10px;
-      box-shadow:0 10px 24px rgba(2,6,23,0.06);
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 18px 44px rgba(2,6,23,0.10), 0 1px 0 rgba(255,255,255,0.7) inset;
     }
     .buy-head{
       display:flex;
@@ -218,18 +306,17 @@
     }
     .buy-name{
       font-weight:900;
-      color:var(--text);
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
       max-width:70%;
     }
     .buy-count{
-      font-weight:900;
+      font-weight:1000;
       color:var(--warn);
       font-size:0.95em;
-      background:rgba(245,158,11,0.14);
-      border:1px solid rgba(245,158,11,0.22);
+      background:rgba(245,158,11,0.16);
+      border:1px solid rgba(245,158,11,0.24);
       padding:2px 10px;
       border-radius:999px;
       white-space:nowrap;
@@ -251,19 +338,20 @@
       border-radius:999px;
       font-weight:900;
       font-size:0.92em;
-      color:var(--text);
+      box-shadow: 0 10px 22px rgba(2,6,23,0.06);
     }
     .chip img{
       width:22px;
       height:22px;
-      border-radius:8px;
+      border-radius:10px;
       object-fit:cover;
       border:1px solid rgba(2,6,23,0.10);
+      background:#fff;
     }
     .chip .icon{
       width:22px;
       height:22px;
-      border-radius:8px;
+      border-radius:10px;
       border:1px dashed rgba(2,6,23,0.18);
       display:flex;
       align-items:center;
@@ -276,10 +364,8 @@
     /* ===== Danmaku overlay ===== */
     #danmaku-layer{
       position:fixed;
-      left:0;
-      top:0;
-      width:100vw;
-      min-height:100vh;
+      left:0; top:0;
+      width:100vw; min-height:100vh;
       pointer-events:none;
       overflow:hidden;
       z-index:3;
@@ -301,16 +387,154 @@
       animation:fly var(--danmaku-duration) linear forwards;
     }
     .danmaku img{
-      width:28px;
-      height:28px;
-      border-radius:10px;
-      object-fit:cover;
+      width:28px;height:28px;border-radius:10px;object-fit:cover;
       border:2px solid rgba(255,255,255,0.7);
       background:#fff;
     }
-    @keyframes fly{
-      from{transform:translateX(0);}
-      to{transform:translateX(-140vw);}
+    @keyframes fly{from{transform:translateX(0);}to{transform:translateX(-140vw);} }
+
+    /* ===== 個人模式（只顯示某個玩家） ===== */
+    #soloView{
+      display:none;
+      height:calc(100vh - 60px - 24px);
+      min-height:0;
+    }
+    #soloView.show{ display:block; }
+
+    #soloCard{
+      height:100%;
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(12px);
+      border-radius: var(--radius);
+      border:1px solid rgba(2,6,23,0.10);
+      box-shadow: 0 28px 80px rgba(2,6,23,0.30);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .solo-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:14px 14px 10px;
+      border-bottom:1px solid rgba(2,6,23,0.08);
+    }
+    .solo-title{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .solo-title b{
+      font-size:1.35em;
+      font-weight:1000;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .solo-sub{
+      color:var(--muted);
+      font-weight:900;
+      font-size:0.98em;
+    }
+    .solo-back{
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:1000;
+      background: rgba(2,6,23,0.06);
+      color: var(--text);
+      box-shadow: 0 10px 22px rgba(2,6,23,0.10);
+    }
+    .solo-back:hover{ background: rgba(2,6,23,0.10); }
+
+    .solo-body{
+      padding:14px;
+      overflow:auto;
+      min-height:0;
+    }
+    .solo-body::-webkit-scrollbar{width:10px;}
+    .solo-body::-webkit-scrollbar-thumb{background:rgba(2,6,23,0.14);border-radius:999px;}
+
+    .section{
+      background: rgba(2,6,23,0.03);
+      border:1px solid rgba(2,6,23,0.08);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .section h3{
+      margin:0 0 10px 0;
+      font-size:1.05em;
+      font-weight:1000;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    /* ✅ 你要的排版：資源。分數。 / 背包 */
+    .resGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 520px){
+      .resGrid{grid-template-columns:1fr;}
+    }
+    .kv{
+      background:#fff;
+      border:1px solid rgba(2,6,23,0.10);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-weight:1000;
+      box-shadow: 0 12px 26px rgba(2,6,23,0.06);
+    }
+    .kv .k{color:rgba(15,23,42,0.72);display:flex;align-items:center;gap:8px;font-weight:1000;}
+    .kv .v{color:var(--blue);font-size:1.18em;font-weight:1000;}
+    .kv.score .v{color:var(--warn);}
+
+    .invGrid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .invItem{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid rgba(2,6,23,0.10);
+      border-radius:14px;
+      padding:10px 12px;
+      min-width: 240px;
+      max-width: 100%;
+      box-shadow: 0 12px 26px rgba(2,6,23,0.06);
+    }
+    .invItem img{
+      width:44px;height:44px;border-radius:14px;object-fit:cover;
+      border:1px solid rgba(2,6,23,0.10);
+      background:#fff;
+    }
+    .invItem .meta{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .invItem .meta b{
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      font-weight:1000;
+    }
+    .invItem .meta span{
+      color:var(--muted);
+      font-weight:900;
+      font-size:0.9em;
     }
   </style>
 </head>
@@ -323,14 +547,36 @@
     <div id="timer-bar"><h1 id="timer-box">00:00</h1></div>
   </div>
 
+  <!-- ✅ 原本的大螢幕總覽 -->
   <div id="main">
-    <div id="left">
-      <div id="board-list"></div>
-    </div>
-
+    <div id="left"><div id="board-list"></div></div>
     <div id="right">
       <div id="purchases-title"><i class="fas fa-receipt"></i> 玩家達成清單（人生背包）</div>
       <div id="purchases-list"></div>
+    </div>
+  </div>
+
+  <!-- ✅ 新增：個人模式（只顯示某玩家） -->
+  <div id="soloView">
+    <div id="soloCard">
+      <div class="solo-head">
+        <div class="solo-title">
+          <b id="soloName">玩家</b>
+          <div class="solo-sub" id="soloSub">分數・PTS</div>
+        </div>
+        <button class="solo-back" id="soloBack"><i class="fas fa-arrow-left"></i> 返回排行榜</button>
+      </div>
+      <div class="solo-body">
+        <div class="section">
+          <h3><i class="fas fa-chart-pie"></i> 資源・分數</h3>
+          <div class="resGrid" id="soloResGrid"></div>
+        </div>
+
+        <div class="section">
+          <h3><i class="fas fa-bag-shopping"></i> 背包</h3>
+          <div class="invGrid" id="soloInvGrid"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -371,8 +617,6 @@
       const direction = (v.direction === "right") ? "right" : "left";
       const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
 
-      if (!bar || !msgBox) return;
-
       bar.style.display = (enabled && text.trim()) ? "block" : "none";
       if (!(enabled && text.trim())) return;
 
@@ -383,7 +627,7 @@
       if (v.textColor) msgBox.style.color = v.textColor;
 
       msgBox.style.animation = "none";
-      void msgBox.offsetWidth; // reflow
+      void msgBox.offsetWidth;
       msgBox.style.animation = `marquee-${direction} ${speedSec}s linear infinite`;
     });
 
@@ -394,15 +638,96 @@
       const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
       const sc = (d.timeLeft % 60).toString().padStart(2, '0');
       document.getElementById('timer-box').innerText = `${m}:${sc}`;
-      document.getElementById('timer-bar').style.background = (d.timeLeft <= 0) ? "#94a3b8" : "var(--danger)";
+      document.getElementById('timer-bar').style.background = (d.timeLeft <= 0)
+        ? "linear-gradient(135deg, #94a3b8, #cbd5e1)"
+        : "linear-gradient(135deg, #ef4444, #f59e0b)";
     });
 
     function safeVal(v){ return (typeof v === 'number' && isFinite(v)) ? v : (v || 0); }
+
+    // ===== 個人模式（Solo View） =====
+    const mainEl = document.getElementById('main');
+    const soloView = document.getElementById('soloView');
+    const soloBack = document.getElementById('soloBack');
+    const soloName = document.getElementById('soloName');
+    const soloSub  = document.getElementById('soloSub');
+    const soloResGrid = document.getElementById('soloResGrid');
+    const soloInvGrid = document.getElementById('soloInvGrid');
+
+    let playersByPid = {};
+
+    function enterSolo(pid){
+      const p = playersByPid[pid];
+      if(!p) return;
+
+      // 隱藏總覽、顯示個人模式
+      mainEl.style.display = 'none';
+      soloView.classList.add('show');
+
+      soloName.textContent = `${p.name}（玩家 ${pid}）`;
+      soloSub.textContent = `分數：${safeVal(p.res.score)}｜PTS：${p.pts}`;
+
+      // 資源 + 分數（同區）
+      const r = p.res || {};
+      const rows = [
+        {k:'時間',   icon:'fa-clock',     color:'var(--violet)', v:safeVal(r.time)},
+        {k:'金錢',   icon:'fa-wallet',    color:'var(--warn)',   v:safeVal(r.money)},
+        {k:'健康',   icon:'fa-heartbeat', color:'var(--danger)', v:safeVal(r.health)},
+        {k:'知識',   icon:'fa-book',      color:'var(--blue)',   v:safeVal(r.knowledge)},
+        {k:'人脈',   icon:'fa-users',     color:'var(--ok)',     v:safeVal(r.social)},
+        {k:'分數',   icon:'fa-star',      color:'var(--warn)',   v:safeVal(r.score), score:true},
+      ];
+
+      soloResGrid.innerHTML = rows.map(x => `
+        <div class="kv ${x.score ? 'score':''}">
+          <div class="k"><i class="fas ${x.icon}" style="color:${x.color}"></i> ${x.k}</div>
+          <div class="v">${x.v}</div>
+        </div>
+      `).join('');
+
+      // 背包
+      const inv = p.inventory || {};
+      const items = Object.keys(inv).map(k => inv[k]).filter(Boolean);
+      items.sort((a,b)=> (safeVal(b.time) - safeVal(a.time)));
+
+      if(items.length === 0){
+        soloInvGrid.innerHTML = `<div style="color:var(--muted);font-weight:900;">目前沒有背包物品</div>`;
+      }else{
+        soloInvGrid.innerHTML = items.map(it => {
+          const nm = it.name || '未命名';
+          const img = (it.imageUrl || '').trim();
+          const t = it.time ? new Date(it.time).toLocaleString('zh-TW') : '';
+          return `
+            <div class="invItem" title="${nm}">
+              ${img
+                ? `<img src="${img}" alt="${nm}">`
+                : `<img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='100%25' height='100%25' fill='%23ffffff'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' font-size='34'%3E%F0%9F%9B%8D%EF%B8%8F%3C/text%3E%3C/svg%3E" alt="no image">`
+              }
+              <div class="meta">
+                <b>${nm}</b>
+                <span>${t ? `取得：${t}` : ''}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function exitSolo(){
+      soloView.classList.remove('show');
+      mainEl.style.display = '';
+    }
+
+    soloBack.addEventListener('click', exitSolo);
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape' && soloView.classList.contains('show')) exitSolo();
+    });
 
     // ===== 排名監聽：分數第一、PTS 第二 =====
     db.ref('players').on('value', s => {
       const data = s.val() || {};
       const arr = [];
+      playersByPid = {};
 
       for (let i = 1; i <= 10; i++) {
         const pKey = `p${i}`;
@@ -410,29 +735,36 @@
         const r = pData.res || {};
         const pts = safeVal(r.time) + safeVal(r.money) + safeVal(r.health) + safeVal(r.knowledge) + safeVal(r.social);
         const score = safeVal(r.score);
-        arr.push({
+
+        const obj = {
           pid: i,
           name: pData.name || `玩家 ${i}`,
           res: r,
           pts,
           score,
           inventory: pData.inventory || {}
-        });
+        };
+        arr.push(obj);
+        playersByPid[i] = obj;
       }
 
       arr.sort((a,b)=> (b.score !== a.score) ? (b.score - a.score) : (b.pts - a.pts));
 
-      // 1) 左邊排行榜
+      // 1) 左邊排行榜（玩家名字可點進個人模式）
       const list = document.getElementById('board-list');
       list.innerHTML = "";
+
       arr.forEach((p, i) => {
         const rank = i + 1;
         const rClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
 
         list.innerHTML += `
-          <div class="p-row ${rClass}">
-            <div class="rank-num">${rank}</div>
-            <div class="player-name">${p.name}</div>
+          <div class="p-row ${rClass}" data-pid="${p.pid}">
+            <div class="rank-num">${rank === 1 ? '👑' : rank}</div>
+
+            <!-- ✅ 只要點名字就進個人模式 -->
+            <div class="player-name" data-enter="solo">${p.name}</div>
+
             <div class="res-summary">
               <div class="res-item" style="color:var(--violet)"><span class="res-label">時</span><i class="fas fa-clock"></i>${safeVal(p.res.time)}</div>
               <div class="res-item" style="color:var(--warn)"><span class="res-label">金</span><i class="fas fa-wallet"></i>${safeVal(p.res.money)}</div>
@@ -441,9 +773,20 @@
               <div class="res-item" style="color:var(--ok)"><span class="res-label">人</span><i class="fas fa-users"></i>${safeVal(p.res.social)}</div>
               <div class="res-item res-score"><span class="res-label">分</span><i class="fas fa-star"></i>${safeVal(p.res.score)}</div>
             </div>
+
             <div class="total-box"><span class="total-val">${p.pts}</span><span class="pts">PTS</span></div>
           </div>`;
       });
+
+      // ✅ 事件委派：只有點「player-name」才進個人模式
+      list.onclick = (e) => {
+        const nameEl = e.target.closest('.player-name[data-enter="solo"]');
+        if(!nameEl) return;
+        const row = e.target.closest('.p-row');
+        if(!row) return;
+        const pid = Number(row.dataset.pid);
+        if(pid) enterSolo(pid);
+      };
 
       // 2) 右邊達成清單（固定依玩家編號）
       const purchases = document.getElementById('purchases-list');
@@ -484,7 +827,6 @@
       if(!d) return;
 
       const layer = document.getElementById('danmaku-layer');
-
       while (layer.children.length >= MAX_DANMAKU_ONSCREEN) {
         layer.removeChild(layer.firstElementChild);
       }
@@ -492,7 +834,7 @@
       const el = document.createElement('div');
       el.className = 'danmaku';
 
-      const topMin = 80; // 避開 header
+      const topMin = 80;
       const topMax = Math.max(topMin, window.innerHeight - 80);
       const top = topMin + Math.floor(Math.random() * Math.max(1, topMax - topMin));
       el.style.top = `${top}px`;
@@ -511,7 +853,6 @@
     });
   </script>
 
-  <!-- 你原本的外掛 JS 保留 -->
   <script src="./js/site-ui-db.js"></script>
 </body>
 </html>
