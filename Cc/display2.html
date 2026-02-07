@@ -103,7 +103,7 @@
       letter-spacing:1px;
     }
 
-    /* ===== Main Layout (RWD) ===== */
+    /* ===== Main Layout ===== */
     #main{
       display:grid;
       grid-template-columns: 1.2fr 1fr;
@@ -157,7 +157,6 @@
       gap:12px;
       user-select:none;
 
-      /* ✅ 卡片亮、乾淨 */
       background: rgba(255,255,255,0.92);
       border:1px solid rgba(2,6,23,0.10);
       border-radius:18px;
@@ -171,12 +170,11 @@
       box-shadow: 0 26px 60px rgba(2,6,23,0.16), 0 1px 0 rgba(255,255,255,0.8) inset;
     }
 
-    /* ✅ 只保留粗框，不要底色（你說灰灰暗暗要拿掉） */
+    /* ✅ 只保留粗框，不要前三名底色 */
     .rank-1{ border-left:10px solid #fbbf24; }
     .rank-2{ border-left:10px solid #94a3b8; }
     .rank-3{ border-left:10px solid #f59e0b; }
 
-    /* Top 1/2/3 名次徽章 */
     .rank-num{
       width:42px;
       height:42px;
@@ -209,7 +207,7 @@
       border-color: rgba(245,158,11,0.40);
     }
 
-    /* ✅ 玩家名字：變成「可點擊入口」（你說要放到角色名字上面） */
+    /* ✅ 玩家名字當入口：點名字進個人模式 */
     .player-name{
       font-size:1.15em;
       font-weight:1000;
@@ -252,7 +250,6 @@
       border-radius:999px;
     }
     .res-label{font-size:0.85em;opacity:.9;}
-
     .res-score{
       color:var(--warn);
       background: rgba(245,158,11,0.18);
@@ -393,7 +390,9 @@
     }
     @keyframes fly{from{transform:translateX(0);}to{transform:translateX(-140vw);} }
 
-    /* ===== 個人模式（只顯示某個玩家） ===== */
+    /* =========================================================
+       SOLO VIEW upgrade (player-like, horizontal)
+    ========================================================= */
     #soloView{
       display:none;
       height:calc(100vh - 60px - 24px);
@@ -403,101 +402,212 @@
 
     #soloCard{
       height:100%;
-      background: rgba(255,255,255,0.94);
-      backdrop-filter: blur(12px);
-      border-radius: var(--radius);
-      border:1px solid rgba(2,6,23,0.10);
-      box-shadow: 0 28px 80px rgba(2,6,23,0.30);
+      border-radius:22px;
       overflow:hidden;
-      display:flex;
-      flex-direction:column;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(2,6,23,0.10);
+      box-shadow:
+        0 26px 80px rgba(2,6,23,0.22),
+        0 1px 0 rgba(255,255,255,0.75) inset;
+      position:relative;
+    }
+
+    /* decorative blobs */
+    #soloCard::before{
+      content:"";
+      position:absolute;
+      inset:-40px -40px auto auto;
+      width:360px;height:220px;
+      background: radial-gradient(circle at 30% 40%, rgba(59,130,246,0.18), transparent 62%),
+                  radial-gradient(circle at 75% 60%, rgba(139,92,246,0.18), transparent 65%);
+      filter: blur(2px);
+      pointer-events:none;
+    }
+    #soloCard::after{
+      content:"";
+      position:absolute;
+      inset:auto auto -60px -60px;
+      width:420px;height:260px;
+      background: radial-gradient(circle at 35% 45%, rgba(34,197,94,0.14), transparent 62%),
+                  radial-gradient(circle at 70% 55%, rgba(245,158,11,0.12), transparent 65%);
+      filter: blur(2px);
+      pointer-events:none;
     }
 
     .solo-head{
+      position:relative;
+      z-index:1;
+      padding:16px 16px 12px;
+      border-bottom: 1px solid rgba(2,6,23,0.08);
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
-      gap:10px;
-      padding:14px 14px 10px;
-      border-bottom:1px solid rgba(2,6,23,0.08);
+      gap:12px;
     }
     .solo-title{
       display:flex;
       flex-direction:column;
-      gap:2px;
+      gap:4px;
       min-width:0;
     }
     .solo-title b{
-      font-size:1.35em;
+      font-size:1.45em;
       font-weight:1000;
+      letter-spacing:0.2px;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
     .solo-sub{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
       color:var(--muted);
       font-weight:900;
-      font-size:0.98em;
     }
+    .solo-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:1000;
+      background: rgba(2,6,23,0.05);
+      border:1px solid rgba(2,6,23,0.08);
+    }
+
     .solo-back{
       border:none;
       cursor:pointer;
       border-radius:14px;
       padding:10px 14px;
       font-weight:1000;
-      background: rgba(2,6,23,0.06);
+      background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(139,92,246,0.10));
+      border: 1px solid rgba(59,130,246,0.20);
       color: var(--text);
       box-shadow: 0 10px 22px rgba(2,6,23,0.10);
+      white-space:nowrap;
     }
-    .solo-back:hover{ background: rgba(2,6,23,0.10); }
+    .solo-back:hover{ background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(139,92,246,0.12)); }
 
     .solo-body{
-      padding:14px;
+      position:relative;
+      z-index:1;
+      padding:16px;
+      display:grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap:14px;
       overflow:auto;
       min-height:0;
     }
-    .solo-body::-webkit-scrollbar{width:10px;}
-    .solo-body::-webkit-scrollbar-thumb{background:rgba(2,6,23,0.14);border-radius:999px;}
+    @media (max-width: 900px){
+      .solo-body{ grid-template-columns: 1fr; }
+    }
 
     .section{
-      background: rgba(2,6,23,0.03);
-      border:1px solid rgba(2,6,23,0.08);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:12px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(2,6,23,0.08);
+      border-radius:18px;
+      box-shadow:
+        0 16px 44px rgba(2,6,23,0.10),
+        0 1px 0 rgba(255,255,255,0.7) inset;
+      padding:14px;
     }
     .section h3{
       margin:0 0 10px 0;
-      font-size:1.05em;
-      font-weight:1000;
+      font-size:1.08em;
+      font-weight:1100;
       display:flex;
       align-items:center;
-      gap:8px;
+      gap:10px;
     }
 
-    /* ✅ 你要的排版：資源。分數。 / 背包 */
+    /* KPI row */
+    .kpiRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    @media (max-width: 520px){
+      .kpiRow{ grid-template-columns: 1fr; }
+    }
+    .kpi{
+      border-radius:18px;
+      padding:12px 14px;
+      border:1px solid rgba(2,6,23,0.10);
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 16px 40px rgba(2,6,23,0.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .kpi .k{
+      display:flex; align-items:center; gap:10px;
+      font-weight:1100;
+      color: rgba(15,23,42,0.78);
+    }
+    .kpi .v{
+      font-size:1.75em;
+      font-weight:1100;
+      letter-spacing:0.3px;
+    }
+    .kpi.score .v{ color: var(--warn); }
+    .kpi.pts   .v{ color: var(--blue); }
+
+    .kpi .badgeIcon{
+      width:36px;height:36px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      background: rgba(2,6,23,0.05);
+      border:1px solid rgba(2,6,23,0.08);
+    }
+
+    /* resources grid */
     .resGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap:10px;
     }
     @media (max-width: 520px){
-      .resGrid{grid-template-columns:1fr;}
+      .resGrid{ grid-template-columns: 1fr; }
     }
     .kv{
       background:#fff;
       border:1px solid rgba(2,6,23,0.10);
-      border-radius:14px;
-      padding:10px 12px;
+      border-radius:16px;
+      padding:12px 12px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      font-weight:1000;
+      font-weight:1100;
       box-shadow: 0 12px 26px rgba(2,6,23,0.06);
     }
-    .kv .k{color:rgba(15,23,42,0.72);display:flex;align-items:center;gap:8px;font-weight:1000;}
-    .kv .v{color:var(--blue);font-size:1.18em;font-weight:1000;}
+    .kv .k{
+      color:rgba(15,23,42,0.72);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:1100;
+    }
+    .kv .v{color:var(--blue);font-size:1.18em;font-weight:1100;}
     .kv.score .v{color:var(--warn);}
+
+    /* backpack header decorations */
+    .h3-icons{
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      opacity:0.9;
+    }
+    .h3-icons span{
+      width:26px;height:26px;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      background: rgba(2,6,23,0.05);
+      border:1px solid rgba(2,6,23,0.08);
+    }
 
     .invGrid{
       display:flex;
@@ -510,14 +620,23 @@
       gap:10px;
       background:#fff;
       border:1px solid rgba(2,6,23,0.10);
-      border-radius:14px;
+      border-radius:16px;
       padding:10px 12px;
       min-width: 240px;
       max-width: 100%;
       box-shadow: 0 12px 26px rgba(2,6,23,0.06);
+      position:relative;
+    }
+    .invItem::after{
+      content:"🎒";
+      position:absolute;
+      right:10px;
+      top:10px;
+      font-size:16px;
+      opacity:0.25;
     }
     .invItem img{
-      width:44px;height:44px;border-radius:14px;object-fit:cover;
+      width:46px;height:46px;border-radius:16px;object-fit:cover;
       border:1px solid rgba(2,6,23,0.10);
       background:#fff;
     }
@@ -529,13 +648,25 @@
     }
     .invItem .meta b{
       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-      font-weight:1000;
+      font-weight:1100;
     }
     .invItem .meta span{
       color:var(--muted);
       font-weight:900;
       font-size:0.9em;
     }
+    .invEmpty{
+      padding:14px;
+      border-radius:16px;
+      background: rgba(2,6,23,0.04);
+      border:1px dashed rgba(2,6,23,0.18);
+      color: var(--muted);
+      font-weight:1100;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .invEmpty .big{font-size:22px;}
   </style>
 </head>
 
@@ -547,7 +678,7 @@
     <div id="timer-bar"><h1 id="timer-box">00:00</h1></div>
   </div>
 
-  <!-- ✅ 原本的大螢幕總覽 -->
+  <!-- ===== 主畫面：排行榜 + 達成清單 ===== -->
   <div id="main">
     <div id="left"><div id="board-list"></div></div>
     <div id="right">
@@ -556,24 +687,59 @@
     </div>
   </div>
 
-  <!-- ✅ 新增：個人模式（只顯示某玩家） -->
+  <!-- ===== 個人模式：玩家端卡片風（橫式） ===== -->
   <div id="soloView">
     <div id="soloCard">
       <div class="solo-head">
         <div class="solo-title">
           <b id="soloName">玩家</b>
-          <div class="solo-sub" id="soloSub">分數・PTS</div>
+          <div class="solo-sub" id="soloSub">
+            <span class="solo-pill"><i class="fas fa-star"></i> 分數：<span id="soloScoreInline">0</span></span>
+            <span class="solo-pill"><i class="fas fa-bolt"></i> PTS：<span id="soloPtsInline">0</span></span>
+          </div>
         </div>
         <button class="solo-back" id="soloBack"><i class="fas fa-arrow-left"></i> 返回排行榜</button>
       </div>
+
       <div class="solo-body">
-        <div class="section">
-          <h3><i class="fas fa-chart-pie"></i> 資源・分數</h3>
-          <div class="resGrid" id="soloResGrid"></div>
+        <!-- LEFT -->
+        <div>
+          <div class="section">
+            <h3><i class="fas fa-trophy"></i> 分數（上）</h3>
+
+            <div class="kpiRow">
+              <div class="kpi score">
+                <div class="k">
+                  <div class="badgeIcon"><i class="fas fa-star" style="color:var(--warn)"></i></div>
+                  <span>分數</span>
+                </div>
+                <div class="v" id="soloScoreBig">0</div>
+              </div>
+
+              <div class="kpi pts">
+                <div class="k">
+                  <div class="badgeIcon"><i class="fas fa-bolt" style="color:var(--blue)"></i></div>
+                  <span>PTS</span>
+                </div>
+                <div class="v" id="soloPtsBig">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3><i class="fas fa-chart-pie"></i> 資源（下）</h3>
+            <div class="resGrid" id="soloResGrid"></div>
+          </div>
         </div>
 
+        <!-- RIGHT -->
         <div class="section">
-          <h3><i class="fas fa-bag-shopping"></i> 背包</h3>
+          <h3>
+            <i class="fas fa-bag-shopping"></i> 人生背包
+            <div class="h3-icons" aria-hidden="true">
+              <span>✨</span><span>🧩</span><span>🏷️</span>
+            </div>
+          </h3>
           <div class="invGrid" id="soloInvGrid"></div>
         </div>
       </div>
@@ -649,10 +815,16 @@
     const mainEl = document.getElementById('main');
     const soloView = document.getElementById('soloView');
     const soloBack = document.getElementById('soloBack');
+
     const soloName = document.getElementById('soloName');
-    const soloSub  = document.getElementById('soloSub');
     const soloResGrid = document.getElementById('soloResGrid');
     const soloInvGrid = document.getElementById('soloInvGrid');
+
+    // 分數/PTS 兩種顯示（pill + big KPI）
+    const soloScoreInline = document.getElementById('soloScoreInline');
+    const soloPtsInline   = document.getElementById('soloPtsInline');
+    const soloScoreBig    = document.getElementById('soloScoreBig');
+    const soloPtsBig      = document.getElementById('soloPtsBig');
 
     let playersByPid = {};
 
@@ -660,14 +832,18 @@
       const p = playersByPid[pid];
       if(!p) return;
 
-      // 隱藏總覽、顯示個人模式
       mainEl.style.display = 'none';
       soloView.classList.add('show');
 
       soloName.textContent = `${p.name}（玩家 ${pid}）`;
-      soloSub.textContent = `分數：${safeVal(p.res.score)}｜PTS：${p.pts}`;
 
-      // 資源 + 分數（同區）
+      const scoreVal = safeVal(p.res.score);
+      soloScoreInline.textContent = scoreVal;
+      soloPtsInline.textContent = p.pts;
+      soloScoreBig.textContent = scoreVal;
+      soloPtsBig.textContent = p.pts;
+
+      // 資源（分數不放這裡，因為你要分數在資源上面）
       const r = p.res || {};
       const rows = [
         {k:'時間',   icon:'fa-clock',     color:'var(--violet)', v:safeVal(r.time)},
@@ -675,11 +851,10 @@
         {k:'健康',   icon:'fa-heartbeat', color:'var(--danger)', v:safeVal(r.health)},
         {k:'知識',   icon:'fa-book',      color:'var(--blue)',   v:safeVal(r.knowledge)},
         {k:'人脈',   icon:'fa-users',     color:'var(--ok)',     v:safeVal(r.social)},
-        {k:'分數',   icon:'fa-star',      color:'var(--warn)',   v:safeVal(r.score), score:true},
       ];
 
       soloResGrid.innerHTML = rows.map(x => `
-        <div class="kv ${x.score ? 'score':''}">
+        <div class="kv">
           <div class="k"><i class="fas ${x.icon}" style="color:${x.color}"></i> ${x.k}</div>
           <div class="v">${x.v}</div>
         </div>
@@ -691,7 +866,7 @@
       items.sort((a,b)=> (safeVal(b.time) - safeVal(a.time)));
 
       if(items.length === 0){
-        soloInvGrid.innerHTML = `<div style="color:var(--muted);font-weight:900;">目前沒有背包物品</div>`;
+        soloInvGrid.innerHTML = `<div class="invEmpty"><span class="big">🎒</span> 目前沒有背包物品</div>`;
       }else{
         soloInvGrid.innerHTML = items.map(it => {
           const nm = it.name || '未命名';
@@ -750,7 +925,7 @@
 
       arr.sort((a,b)=> (b.score !== a.score) ? (b.score - a.score) : (b.pts - a.pts));
 
-      // 1) 左邊排行榜（玩家名字可點進個人模式）
+      // 1) 左邊排行榜：點名字進個人模式
       const list = document.getElementById('board-list');
       list.innerHTML = "";
 
@@ -762,7 +937,6 @@
           <div class="p-row ${rClass}" data-pid="${p.pid}">
             <div class="rank-num">${rank === 1 ? '👑' : rank}</div>
 
-            <!-- ✅ 只要點名字就進個人模式 -->
             <div class="player-name" data-enter="solo">${p.name}</div>
 
             <div class="res-summary">
@@ -778,7 +952,6 @@
           </div>`;
       });
 
-      // ✅ 事件委派：只有點「player-name」才進個人模式
       list.onclick = (e) => {
         const nameEl = e.target.closest('.player-name[data-enter="solo"]');
         if(!nameEl) return;
