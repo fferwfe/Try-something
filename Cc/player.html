@@ -266,7 +266,7 @@
 
   // ============================================================
   // ✅ 背景（不閃 + 快取秒套）
-  //   - 固定：/images/background/bg-player.jpg
+  //   - 固定：/images/backgrounds/bg-player.jpg
   //   - 覆蓋：/system/uiConfig/bgOverride/player = "any-file.jpg"
   // ============================================================
   const UIREF = db.ref("system/uiConfig");
@@ -368,7 +368,9 @@ async function applyBgFromUiConfig(cfg){
     noticeText.style.setProperty("--mq-sec", `${speedSec}s`);
     noticeText.style.setProperty("--mq-anim", `marquee-${direction}`);
 
-    if (v.bgColor) noticeBar.style.background = v.bgColor;
+    if (v.bgColor) noticeBar.style.background 
+      
+      = v.bgColor;
     if (v.textColor) noticeBar.style.color = v.textColor;
 
     noticeText.style.animation = "none";
