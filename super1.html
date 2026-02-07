@@ -206,14 +206,14 @@
 
         <div class="row">
           <label>跑馬燈速度（秒，越小越快）</label>
-          <input id="ctrlMarquee" type="range" min="3" max="60" step="1" value="10">
-          <div class="hint">目前：<span id="ctrlMarqueeVal">10</span>s</div>
+          <input id="mMarquee" type="range" min="3" max="60" step="1" value="10">
+          <div class="hint">目前：<span id="mMarqueeVal">10</span>s</div>
         </div>
 
         <div class="row">
           <label>跑馬燈字體大小</label>
-          <input id="ctrlMarqueeFont" type="range" min="12" max="64" step="1" value="22">
-          <div class="hint">目前：<span id="ctrlMarqueeFontVal">22</span>px</div>
+          <input id="mMarqueeFont" type="range" min="12" max="64" step="1" value="22">
+          <div class="hint">目前：<span id="mMarqueeFontVal">22</span>px</div>
         </div>
       </div>
 
@@ -233,7 +233,6 @@
       <div class="card" style="border-left-color:#f39c12;">
         <h2 style="margin:0 0 10px 0;"><i class="fa-solid fa-sliders"></i> 大螢幕控制台（Super）</h2>
 
-        <!-- ✅ 彈幕開關（不要再包一個 controls-card） -->
         <div class="res-row" style="background: rgba(231, 76, 60, 0.10); border: 1px solid rgba(231, 76, 60, 0.18);">
           <div class="label-text"><i class="fa-solid fa-toggle-on"></i> 彈幕顯示開關</div>
           <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
@@ -242,19 +241,7 @@
           </label>
         </div>
 
-        
         <div class="row">
-          <label>跑馬燈速度（秒，越小越快）</label>
-          <input id="ctrlMarquee" type="range" min="3" max="60" step="1" value="10">
-          <div class="hint">目前：<span id="ctrlMarqueeVal">10</span>s</div>
-        </div>
-
-        <div class="row">
-          <label>跑馬燈字體大小（px）</label>
-          <input id="ctrlMarqueeFont" type="range" min="12" max="64" step="1" value="22">
-          <div class="hint">目前：<span id="ctrlMarqueeFontVal">22</span>px</div>
-        </div>
-<div class="row">
           <label>彈幕速度（秒，越小越快）</label>
           <input id="ctrlDanmaku" type="range" min="3" max="60" step="1" value="10">
           <div class="hint">目前：<span id="ctrlDanmakuVal">10</span>s</div>
@@ -289,17 +276,18 @@
         <div class="hint">此頁僅由 super 操作：可即時調整玩家資源與背包。</div>
         <div id="player-list" style="margin-top:10px;"></div>
       </div>
-       
+
       <div class="card" style="border-left-color:var(--gray);">
-      <div class="bottom-actions">
-        <button class="global-btn" style="background:var(--warn);" id="btnResetAllRes">
-          <i class="fa-solid fa-broom"></i> 清空所有玩家資源、分數與背包
-        </button>
-        <button class="global-btn" style="background:#c0392b;" id="btnResetTotal">
-          <i class="fa-solid fa-triangle-exclamation"></i> 徹底重置整個遊戲資料庫
-        </button>
+        <div class="bottom-actions">
+          <button class="global-btn" style="background:var(--warn);" id="btnResetAllRes">
+            <i class="fa-solid fa-broom"></i> 清空所有玩家資源、分數與背包
+          </button>
+          <button class="global-btn" style="background:#c0392b;" id="btnResetTotal">
+            <i class="fa-solid fa-triangle-exclamation"></i> 徹底重置整個遊戲資料庫
+          </button>
+        </div>
       </div>
-    </div>
+
     </div>
   </div>
 
@@ -336,7 +324,7 @@
   }
 
   // =========================
-  // [獨立登入門禁]（只留這一套，不要再用 checkSuper）
+  // [獨立登入門禁]
   // =========================
   function renderLogin(){
     return `
@@ -463,16 +451,66 @@
   }
 
   // =========================
-  // 渲染玩家清單（純 super）
+  // 時間/顯示工具
   // =========================
+  function fmtTime(ts){
+    if (!ts) return "-";
+    const d = new Date(ts);
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    return `${yy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  }
+  function shortId(id, n=6){
+    id = String(id||"");
+    if (!id) return "-";
+    if (id.length <= n+4) return id;
+    return id.slice(0,n) + "…" + id.slice(-4);
+  }
+  function ago(ts){
+    if(!ts) return "-";
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s/60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m/60);
+    return `${h}h`;
+  }
+
+  // =========================
+  // 渲染玩家清單（純 super）
+  // ✅ 修正1：避免重複綁 on
+  // =========================
+  let __playerBound = false;
   function renderPlayerList() {
+    if (__playerBound) return;
+    __playerBound = true;
+
     const list = $("player-list");
     list.innerHTML = "";
 
     for (let i=1; i<=10; i++) {
       let h = `<div class="card">
         <button class="clear-single" data-clear="${i}">清除</button>
-        <h3>👤 <span id="p${i}-n"></span> (ID:${i})</h3>`;
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+          <h3 style="margin:0;">
+            👤 <span id="p${i}-n"></span>
+            <span class="badge" id="p${i}-online" style="margin-left:8px;">-</span>
+          </h3>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <span class="pill">Seat：<b id="p${i}-seat">${i}</b></span>
+            <span class="pill">裝置：<b id="p${i}-devLabel">-</b></span>
+            <span class="pill">DevId：<b id="p${i}-devId">-</b></span>
+            <span class="pill">頁面：<b id="p${i}-page">-</b></span>
+            <span class="pill">登入：<b id="p${i}-lastLogin">-</b></span>
+            <span class="pill">心跳：<b id="p${i}-lastSeen">-</b></span>
+          </div>
+        </div>`;
 
       Object.keys(resConfig).forEach(k => {
         h += `<div class="res-row">
@@ -489,7 +527,7 @@
         </div>`;
       });
 
-      h += `<div>
+      h += `<div style="margin-top:10px;">
         人生背包：
         <div id="p${i}-inv-display"></div>
         <input id="p${i}-inv-in" class="inv-input" placeholder="輸入道具名稱">
@@ -498,48 +536,76 @@
 
       list.insertAdjacentHTML("beforeend", h);
 
-      db.ref(`players/p${i}`).on("value", s => {
+      // ✅ 綁玩家資料
+      db.ref(`players/p${i}`).on("value", (s) => {
         const d = s.val() || {};
-        $(`p${i}-n`).innerText = d.name || "空位";
-        Object.keys(resConfig).forEach(k => { $(`p${i}-${k}`).innerText = d.res?.[k] || 0; });
 
-        const inv = $(`p${i}-inv-display`);
-        inv.innerHTML = "";
-        if (d.inventory) Object.entries(d.inventory).forEach(([key, item]) => {
-          inv.insertAdjacentHTML("beforeend",
-            `<span class="inv-tag">${item.name}<i class="fas fa-times" data-delinv="${i}|${key}"></i></span>`
-          );
+        const nameEl = $(`p${i}-n`);
+        if (nameEl) nameEl.innerText = d.name || "空位";
+
+        Object.keys(resConfig).forEach(k => {
+          const el = $(`p${i}-${k}`);
+          if (el) el.innerText = d.res?.[k] ?? 0;
         });
+
+        // ✅ 登入資訊
+        const seat = d.seat ?? i;
+        const devLabel = d.deviceLabel || "-";
+        const devId = d.deviceId || "-";
+        const page = d.page || "-";
+        const lastLogin = d.lastLogin || 0;
+        const lastSeen = d.lastSeen || 0;
+
+        const elSeat = $(`p${i}-seat`);
+        const elDevLabel = $(`p${i}-devLabel`);
+        const elDevId = $(`p${i}-devId`);
+        const elPage = $(`p${i}-page`);
+        const elLastLogin = $(`p${i}-lastLogin`);
+        const elLastSeen = $(`p${i}-lastSeen`);
+        const elOnline = $(`p${i}-online`);
+
+        if(elSeat) elSeat.innerText = seat;
+        if(elDevLabel) elDevLabel.innerText = devLabel;
+        if(elDevId) elDevId.innerText = shortId(devId, 6);
+        if(elPage) elPage.innerText = page;
+        if(elLastLogin) elLastLogin.innerText = lastLogin ? `${fmtTime(lastLogin)} (${ago(lastLogin)})` : "-";
+        if(elLastSeen) elLastSeen.innerText = lastSeen ? `${fmtTime(lastSeen)} (${ago(lastSeen)})` : "-";
+
+        // ✅ 修正2：online 判斷放寬到 60 秒
+        const online = lastSeen && (Date.now() - lastSeen) <= 60000;
+        if(elOnline){
+          elOnline.textContent = online ? "在線" : "離線";
+          elOnline.className = "badge " + (online ? "ok" : "danger");
+        }
+
+        // 背包
+        const inv = $(`p${i}-inv-display`);
+        if(inv){
+          inv.innerHTML = "";
+          if (d.inventory) {
+            Object.entries(d.inventory).forEach(([key, item]) => {
+              inv.insertAdjacentHTML(
+                "beforeend",
+                `<span class="inv-tag">${String(item?.name||"")}<i class="fas fa-times" data-delinv="${i}|${key}"></i></span>`
+              );
+            });
+          }
+        }
       });
     }
   }
 
   // =========================
   // seatLocks
+  // ✅ 修正4：不再 on 觸發後又 once 讀一次
   // =========================
-  function fmtTime(ts){
-    if (!ts) return "-";
-    const d = new Date(ts);
-    const yy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mi = String(d.getMinutes()).padStart(2,'0');
-    const ss = String(d.getSeconds()).padStart(2,'0');
-    return `${yy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
-  }
-
-  async function loadSeatLocksOnce(){
+  function renderSeatLocksFromLocks(locks){
     const list = $("seatLockList");
-    list.innerHTML = `<div class="hint">讀取中…</div>`;
-
-    const snap = await db.ref("seatLocks").once("value");
-    const locks = snap.val() || {};
-
     let html = "";
+
     for (let i=1; i<=10; i++){
       const key = `p${i}`;
-      const d = locks[key] || null;
+      const d = locks?.[key] || null;
       const locked = !!d;
 
       const badge = locked
@@ -565,13 +631,23 @@
         </div>
       `;
     }
+
     list.innerHTML = html || `<div class="hint">沒有 seatLocks 資料。</div>`;
   }
 
   function bindSeatLocks(){
-    db.ref("seatLocks").on("value", () => loadSeatLocksOnce().catch(console.error));
+    const seatRef = db.ref("seatLocks");
 
-    $("btnRefreshSeats").addEventListener("click", () => loadSeatLocksOnce().catch(console.error));
+    seatRef.on("value", (snap) => {
+      const locks = snap.val() || {};
+      renderSeatLocksFromLocks(locks);
+    });
+
+    $("btnRefreshSeats").addEventListener("click", async () => {
+      const snap = await seatRef.once("value");
+      const locks = snap.val() || {};
+      renderSeatLocksFromLocks(locks);
+    });
 
     $("btnUnlockAllSeats").addEventListener("click", async () => {
       if (!confirm("確定要全部解鎖 seatLocks/p1~p10？")) return;
@@ -586,10 +662,28 @@
   // 跑馬燈（marquee）
   // =========================
   function bindMarquee() {
+    const speedEl = $("mMarquee");
+    const speedVal = $("mMarqueeVal");
+    const fontEl = $("mMarqueeFont");
+    const fontVal = $("mMarqueeFontVal");
+
+    function setHint(){
+      if (speedEl && speedVal) speedVal.innerText = speedEl.value;
+      if (fontEl && fontVal) fontVal.innerText = fontEl.value;
+    }
+
     db.ref("marquee").on("value", (s) => {
       const d = s.val() || {};
-      if ($("broadcastMsg") && document.activeElement !== $("broadcastMsg")) $("broadcastMsg").value = d.text || "";
+
+      if ($("broadcastMsg") && document.activeElement !== $("broadcastMsg")) {
+        $("broadcastMsg").value = d.text || "";
+      }
       if ($("broadcastEnable")) $("broadcastEnable").checked = (d.enabled !== false);
+
+      if (speedEl && document.activeElement !== speedEl) speedEl.value = clamp(Number(d.speedSec ?? 10), 3, 60);
+      if (fontEl && document.activeElement !== fontEl) fontEl.value = clamp(Number(d.fontSize ?? 22), 12, 64);
+
+      setHint();
     });
 
     $("btnBroadcast").addEventListener("click", async () => {
@@ -608,18 +702,33 @@
     $("broadcastEnable").addEventListener("change", async () => {
       await db.ref("marquee").update({ enabled: $("broadcastEnable").checked, updatedAt: Date.now() });
     });
+
+    if (speedEl){
+      speedEl.addEventListener("input", setHint);
+      speedEl.addEventListener("change", async () => {
+        await db.ref("marquee").update({
+          speedSec: clamp(Number(speedEl.value), 3, 60),
+          updatedAt: Date.now()
+        });
+      });
+    }
+
+    if (fontEl){
+      fontEl.addEventListener("input", setHint);
+      fontEl.addEventListener("change", async () => {
+        await db.ref("marquee").update({
+          fontSize: clamp(Number(fontEl.value), 12, 64),
+          updatedAt: Date.now()
+        });
+      });
+    }
+
+    setHint();
   }
 
-  
   // =========================
-  // 大螢幕控制（與 admin 同步）
-  // 來源：
-  //   - /controls：彈幕參數（速度/字體/同時上限/開關）
-  //   - /marquee ：跑馬燈參數（速度/字體）
+  // 大螢幕控制（controls）
   // =========================
-  const controlsRef = db.ref("controls");
-  const marqueeRef  = db.ref("marquee");
-
   function syncDanmakuToggleUI() {
     const on = $("ctrlDanmakuEnable").checked;
     $("danmakuStatusText").textContent = on ? "開啟中" : "已關閉";
@@ -627,8 +736,6 @@
   }
 
   function setCtrlHint() {
-    $("ctrlMarqueeVal").innerText = $("ctrlMarquee").value;
-    $("ctrlMarqueeFontVal").innerText = $("ctrlMarqueeFont").value;
     $("ctrlDanmakuVal").innerText = $("ctrlDanmaku").value;
     $("ctrlFontVal").innerText = $("ctrlFont").value;
     $("ctrlMaxOnVal").innerText = $("ctrlMaxOn").value;
@@ -636,101 +743,54 @@
   }
 
   function bindScreenCtrl() {
-    // 即時更新提示
-    ["ctrlMarquee","ctrlMarqueeFont","ctrlDanmaku","ctrlFont","ctrlMaxOn"].forEach(id => {
+    const controlsRef = db.ref("controls");
+
+    ["ctrlDanmaku","ctrlFont","ctrlMaxOn"].forEach(id => {
       $(id).addEventListener("input", setCtrlHint);
     });
     $("ctrlDanmakuEnable").addEventListener("change", setCtrlHint);
 
-    // 反向同步：controls
-    controlsRef.on("value", (snap) => {
+    controlsRef.on("value", snap => {
       const c = snap.val() || {};
-      const danmakuSec = clamp(Number(c.danmakuDurationSec ?? 10), 3, 60);
-      const fontPx     = clamp(Number(c.danmakuFontSizePx ?? 22), 12, 64);
-      const maxOn      = clamp(Number(c.danmakuMaxOnScreen ?? 8), 1, 30);
-      const enabled    = (c.danmakuEnabled !== false);
-
-      if (document.activeElement !== $("ctrlDanmaku")) $("ctrlDanmaku").value = danmakuSec;
-      if (document.activeElement !== $("ctrlFont")) $("ctrlFont").value = fontPx;
-      if (document.activeElement !== $("ctrlMaxOn")) $("ctrlMaxOn").value = maxOn;
-      if (document.activeElement !== $("ctrlDanmakuEnable")) $("ctrlDanmakuEnable").checked = enabled;
-
+      $("ctrlDanmaku").value = clamp(c.danmakuDurationSec ?? 10, 3, 60);
+      $("ctrlFont").value = clamp(c.danmakuFontSizePx ?? 22, 12, 64);
+      $("ctrlMaxOn").value = clamp(c.danmakuMaxOnScreen ?? 8, 1, 30);
+      $("ctrlDanmakuEnable").checked = (c.danmakuEnabled !== false);
       setCtrlHint();
     });
 
-    // 反向同步：marquee（只同步速度/字體）
-    marqueeRef.on("value", (snap) => {
-      const v = snap.val() || {};
-      const speedSec = clamp(Number(v.speedSec ?? 10), 3, 60);
-      const fontSize = clamp(Number(v.fontSize ?? 22), 12, 64);
+    $("btnSaveCtrl").onclick = async () => {
+      await controlsRef.update({
+        danmakuEnabled: $("ctrlDanmakuEnable").checked,
+        danmakuDurationSec: Number($("ctrlDanmaku").value),
+        danmakuFontSizePx: Number($("ctrlFont").value),
+        danmakuMaxOnScreen: Number($("ctrlMaxOn").value),
+        updatedAt: Date.now()
+      });
+      alert("已套用彈幕設定");
+    };
 
-      if (document.activeElement !== $("ctrlMarquee")) $("ctrlMarquee").value = speedSec;
-      if (document.activeElement !== $("ctrlMarqueeFont")) $("ctrlMarqueeFont").value = fontSize;
+    $("btnResetCtrl").onclick = async () => {
+      await controlsRef.set({
+        danmakuEnabled: true,
+        danmakuDurationSec: 10,
+        danmakuFontSizePx: 22,
+        danmakuMaxOnScreen: 8,
+        updatedAt: Date.now()
+      });
+      alert("已還原預設");
+    };
 
-      setCtrlHint();
-    });
-
-    // 套用
-    $("btnSaveCtrl").addEventListener("click", async () => {
-      try{
-        await Promise.all([
-          controlsRef.update({
-            danmakuEnabled: !!$("ctrlDanmakuEnable").checked,
-            danmakuDurationSec: clamp(Number($("ctrlDanmaku").value), 3, 60),
-            danmakuFontSizePx: clamp(Number($("ctrlFont").value), 12, 64),
-            danmakuMaxOnScreen: clamp(Number($("ctrlMaxOn").value), 1, 30),
-            updatedAt: Date.now()
-          }),
-          marqueeRef.update({
-            speedSec: clamp(Number($("ctrlMarquee").value), 3, 60),
-            fontSize: clamp(Number($("ctrlMarqueeFont").value), 12, 64),
-            updatedAt: Date.now()
-          })
-        ]);
-        alert("已套用（與 admin 相同控制方式）");
-      }catch(e){
-        alert("套用失敗：" + (e?.message || e));
-      }
-    });
-
-    // 還原預設
-    $("btnResetCtrl").addEventListener("click", async () => {
-      if (!confirm("確定要還原大螢幕控制預設值？")) return;
-      try{
-        await Promise.all([
-          controlsRef.update({
-            danmakuEnabled: true,
-            danmakuDurationSec: 10,
-            danmakuFontSizePx: 22,
-            danmakuMaxOnScreen: 8,
-            updatedAt: Date.now()
-          }),
-          marqueeRef.update({
-            speedSec: 10,
-            fontSize: 22,
-            updatedAt: Date.now()
-          })
-        ]);
-        alert("已還原預設");
-      }catch(e){
-        alert("還原失敗：" + (e?.message || e));
-      }
-    });
-
-    // 清空彈幕：用 purchaseFeed（你的 display / display_purchases 都在聽這個）
-    $("btnClearDanmaku").addEventListener("click", async () => {
-      if (!confirm("確定要清空彈幕（purchaseFeed）？")) return;
-      try{
+    $("btnClearDanmaku").onclick = async () => {
+      if (confirm("確定清空彈幕？")) {
         await db.ref("purchaseFeed").remove();
-        alert("彈幕已清空");
-      }catch(e){
-        alert("清空失敗：" + (e?.message || e));
       }
-    });
+    };
 
     setCtrlHint();
   }
-// =========================
+
+  // =========================
   // 計時器（timerSync）
   // =========================
   function bindTimer() {
@@ -786,7 +846,7 @@
       </div>
     `;
   }
-  // joinRequests（push 清單）相容：admin.html 送出申請會寫到這裡
+
   function renderJoinReqItem(reqKey, r){
     const devId = r.deviceId || '-';
     const label = (r.label || r.deviceLabel || devId).toString();
@@ -860,7 +920,6 @@
       deviceList.innerHTML = html || `<div class="hint">目前沒有已授權設備。</div>`;
     });
 
-    // 申請清單：同時相容 deviceRequests（舊）與 joinRequests（現行）
     let _reqHtmlA = '';
     let _reqHtmlB = '';
     function _updateReqList(){
@@ -886,7 +945,6 @@
       let html = '';
       Object.entries(all).forEach(([reqKey, r])=>{
         if (!r) return;
-        // 若已被標記處理過，就不顯示
         if (r.status && r.status !== 'pending') return;
         const want = (r.want || r.type || 'admin1');
         if (!isAdminReqType(want)) return;
@@ -938,7 +996,6 @@
       return;
     }
 
-    // 設備：核准
     // 設備：核准（joinRequests）
     if (btn.hasAttribute('data-approve-jr')) {
       const [reqKey, devId, role] = btn.getAttribute('data-approve-jr').split('|');
@@ -984,6 +1041,8 @@
       });
       return;
     }
+
+    // 設備：核准（deviceRequests）
     if (btn.hasAttribute('data-approve')) {
       const [devId, role] = btn.getAttribute('data-approve').split('|');
 
@@ -1076,11 +1135,13 @@
     }
 
     // 玩家：清空玩家
+    // ✅ 修正3：清空要連登入資訊一起乾淨
     if(btn.hasAttribute("data-clear")) {
-      const p = btn.getAttribute("data-clear");
-      if(confirm("清空玩家？（包含資源、分數、背包）")) {
+      const p = Number(btn.getAttribute("data-clear"));
+      if(confirm("清空玩家？（包含資源、分數、背包、登入資訊）")) {
         await db.ref(`players/p${p}`).set({
           name:"",
+          seat: p,
           res:{ time:0, money:0, health:0, knowledge:0, social:0, score:0 }
         });
         await db.ref(`players/p${p}/inventory`).remove();
@@ -1120,10 +1181,8 @@
   // 初始化
   // =========================
   document.addEventListener("DOMContentLoaded", () => {
-    // 先啟動登入門禁（會先顯示 cover，登入成功才 showMain）
     initStandaloneLogin();
 
-    // 主功能：先做出 DOM，再綁資料
     renderPlayerList();
     bindSeatLocks();
     bindMarquee();
@@ -1131,17 +1190,11 @@
     bindTimer();
     bindSuperDevices();
     bindPurgeRevoked();
-    loadSeatLocksOnce().catch(console.error);
 
-    // 登出：只 signOut，不跳頁（避免 Cannot GET）
     $("btnLogout").addEventListener("click", async () => {
       await auth.signOut();
-      // 若你要跳轉，請用「正確相對路徑」，例如：
-      // location.href = "./admin.html";  // 同資料夾才這樣寫
-      // location.href = "../admin.html"; // 上一層資料夾才這樣寫
     });
 
-    // 清空所有玩家資源、分數與背包
     $("btnResetAllRes").onclick = async () => {
       if (!confirm("確定清空所有玩家資源、分數與背包？")) return;
       const updates = {};
@@ -1153,7 +1206,6 @@
       alert("已清空。");
     };
 
-    // 徹底重置
     $("btnResetTotal").onclick = async () => {
       if (!confirm("確定徹底重置資料庫？")) return;
       await db.ref().remove();
@@ -1162,6 +1214,6 @@
   });
 </script>
 
-  <script src="./js/site-ui-db.js"></script>
+<script src="./js/site-ui-db.js"></script>
 </body>
 </html>
