@@ -104,25 +104,7 @@
     .mini-btn.danger{ background:#e74c3c; }
     .mini-btn.blue{ background:#3498db; }
 
-    /* 彈幕層 */
-    #danmaku-layer{
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      overflow: hidden;
-    }
-    .dm-item{
-      position: absolute;
-      left: 100%;
-      white-space: nowrap;
-      font-weight: 900;
-      text-shadow: 0 3px 10px rgba(0,0,0,0.25);
-      will-change: transform;
-      opacity: 0.98;
-    }
-    @keyframes dm-left  { 0%{transform:translateX(0)} 100%{transform:translateX(calc(-100vw - 140%))} }
-    @keyframes dm-right { 0%{transform:translateX(calc(-100vw - 140%))} 100%{transform:translateX(0)} }
+  
 
     /* 背景層（不閃） */
     body::before{
@@ -149,7 +131,7 @@
 </head>
 
 <body data-page="player">
-  <div id="danmaku-layer"></div>
+ 
 
   <div id="event-overlay" class="hide">
     <div class="box" style="border: 5px solid #ff7675;">
