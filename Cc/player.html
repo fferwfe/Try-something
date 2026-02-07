@@ -270,71 +270,77 @@
   //   - 覆蓋：/system/uiConfig/bgOverride/player = "any-file.jpg"
   // ============================================================
   const UIREF = db.ref("system/uiConfig");
-  const BG_DIR = "./images/background";
-  const FIXED_FILE = "bg-player.jpg";
-  const BG_CACHE_KEY = "ui_bg_cache_player_v1"; // 存最後成功套用的 url（秒套）
-
-  // 秒套：先套上次成功背景（不等 Firebase）
-  (function applyCachedBgInstant(){
-    try{
-      const cached = localStorage.getItem(BG_CACHE_KEY);
-      if(cached){
-        document.body.style.setProperty("--bg-image", `url("${cached}")`);
-        document.body.classList.add("bg-ready");
-      }
-    }catch(e){}
-  })();
-
-  async function imgExists(url){
-    // 不用 Date.now() 破壞快取；用 HEAD 不行時改 Image 探測
-    return await new Promise((resolve)=>{
-      const img = new Image();
-      img.onload = ()=>resolve(true);
-      img.onerror = ()=>resolve(false);
-      img.src = url;
-    });
-  }
-
-  function setBg(url){
-    const img = new Image();
-    img.onload = ()=>{
-      document.body.style.setProperty("--bg-image", `url("${url}")`);
+const BG_DIR = "./images/backgrounds";   // ✅ 跟 UI 設定台一致
+const FIXED_FILE = "bg-player.jpg";      // ✅ 預設固定背景檔
+(function applyCachedBgInstant(){
+  try{
+    const cached = localStorage.getItem(BG_CACHE_KEY);
+    if(cached){
+      document.body.style.setProperty("--bg-image", `url("${cached}")`);
       document.body.classList.add("bg-ready");
-      try{ localStorage.setItem(BG_CACHE_KEY, url); }catch(e){}
-    };
-    img.onerror = ()=>{ document.body.classList.remove("bg-ready"); };
+    }
+  }catch(e){}
+})();
+
+async function imgExists(url){
+  return await new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(true);
+    img.onerror = ()=>resolve(false);
     img.src = url;
-  }
+  });
+}
 
-  async function applyBgFromUiConfig(cfg){
-    const d = cfg?.defaults || {};
-    const overrideMap = cfg?.bgOverride || {};
+// ✅ 用 baseURI 組網址：不怕子資料夾/ GitHub Pages 路徑變動
+function toAbs(url){
+  try{ return new URL(url, document.baseURI).href; }catch(_){ return url; }
+}
 
-    const bgOpacity = clamp01(d.bgOpacity ?? 0.18);
-    const bgBlurPx  = clampNum(d.bgBlurPx ?? 0, 0, 40);
-    document.body.style.setProperty("--bg-opacity", String(bgOpacity));
-    document.body.style.setProperty("--bg-blur", bgBlurPx>0 ? `blur(${bgBlurPx}px)` : "none");
-
-    const enabled = (d.bgEnabled ?? true) !== false;
-    document.body.classList.toggle("bg-off", !enabled);
-    if(!enabled){
-      document.body.classList.remove("bg-ready");
-      return;
-    }
-
-    const overrideFile = String(overrideMap.player || "").trim();
-    if(overrideFile){
-      const u1 = `${BG_DIR}/${overrideFile}`;
-      if(await imgExists(u1)){ setBg(u1); return; }
-      console.warn(`[BG] 覆蓋背景不存在：${u1}，回退固定背景`);
-    }
-
-    const u2 = `${BG_DIR}/${FIXED_FILE}`;
-    if(await imgExists(u2)){ setBg(u2); return; }
-
-    console.error(`[BG] 找不到固定背景：${u2}。請放到 /images/background/`);
+function setBg(url){
+  const abs = toAbs(url);
+  const img = new Image();
+  img.onload = ()=>{
+    document.body.style.setProperty("--bg-image", `url("${abs}")`);
+    document.body.classList.add("bg-ready");
+    try{ localStorage.setItem(BG_CACHE_KEY, abs); }catch(e){}
+  };
+  img.onerror = ()=>{
     document.body.classList.remove("bg-ready");
+  };
+  img.src = abs;
+}
+
+async function applyBgFromUiConfig(cfg){
+  const d = cfg?.defaults || {};
+  const overrideMap = cfg?.bgOverride || {};
+
+  const bgOpacity = clamp01(d.bgOpacity ?? 0.18);
+  const bgBlurPx  = clampNum(d.bgBlurPx ?? 0, 0, 40);
+  document.body.style.setProperty("--bg-opacity", String(bgOpacity));
+  document.body.style.setProperty("--bg-blur", bgBlurPx>0 ? `blur(${bgBlurPx}px)` : "none");
+
+  const enabled = (d.bgEnabled ?? true) !== false;
+  document.body.classList.toggle("bg-off", !enabled);
+  if(!enabled){
+    document.body.classList.remove("bg-ready");
+    return;
   }
+
+  // UI 設定台：system/uiConfig/bgOverride/player = "xxx.jpg"
+  const overrideFile = String(overrideMap.player || "").trim();
+  if(overrideFile){
+    const u1 = `${BG_DIR}/${overrideFile}`;
+    if(await imgExists(toAbs(u1))){ setBg(u1); return; }
+    console.warn(`[BG] override not found: ${u1}, fallback to fixed`);
+  }
+
+  // 固定背景
+  const u2 = `${BG_DIR}/${FIXED_FILE}`;
+  if(await imgExists(toAbs(u2))){ setBg(u2); return; }
+
+  console.error(`[BG] fixed bg not found: ${u2}`);
+  document.body.classList.remove("bg-ready");
+}
 
   UIREF.on("value", (s)=>{ applyBgFromUiConfig(s.val()||{}).catch(()=>{}); });
 
