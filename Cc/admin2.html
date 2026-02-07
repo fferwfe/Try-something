@@ -214,10 +214,10 @@
         <div class="row">
           <label>管理員等級</label>
           <select id="reqType">
-            <option value="admin1">admin1（管理資源/公告/計時）</option>
-            <option value="admin2">admin2（含大螢幕控制台）</option>
+            <option value="admin1">admin1（管理資源/計時/玩家）</option>
+            <option value="admin2">admin2（含跑馬燈 + 彈幕 + 大螢幕控制）</option>
           </select>
-          <div class="hint">admin2 才能「立即套用」controls；admin1 只能看（會鎖定）。</div>
+          <div class="hint">admin2 才能管理「跑馬燈 / 彈幕 / 大螢幕 controls」。</div>
         </div>
 
         <div class="row">
@@ -252,23 +252,52 @@
         </div>
       </div>
 
-      
-      
-     <!-- 跑馬燈公告 -->
-     <div class="card" style="border-left-color:#3498db;">
-      <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告</h3>
-      <textarea id="broadcastMsg" placeholder="輸入要廣播的公告內容..."></textarea>
-      <div style="display:flex; gap:10px;">
-        <button class="global-btn" style="background:#3498db; flex:2;" id="btnBroadcast">發送公告</button>
-        <button class="global-btn" style="background:#7f8c8d; flex:1;" id="btnBroadcastClear">清除</button>
+      <!-- 跑馬燈公告（admin2 可管；admin1 鎖） -->
+      <div class="card" style="border-left-color:#3498db;">
+        <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告（admin2）</h3>
 
-        <label><input type="checkbox" id="broadcastEnable" checked> 啟用公告</label>
+        <textarea id="broadcastMsg" placeholder="輸入要廣播的公告內容..."></textarea>
 
+        <div class="row">
+          <label>方向</label>
+          <select id="broadcastDir">
+            <option value="left">向左</option>
+            <option value="right">向右</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="global-btn" style="background:#3498db; flex:2;" id="btnBroadcast">
+            <i class="fa-solid fa-paper-plane"></i> 發送公告
+          </button>
+          <button class="global-btn" style="background:#7f8c8d; flex:1;" id="btnBroadcastClear">
+            <i class="fa-solid fa-eraser"></i> 清除
+          </button>
+        </div>
+
+        <div class="row">
+          <label>跑馬燈速度（秒，越小越快）</label>
+          <input id="mMarquee" type="range" min="3" max="60" step="1" value="10">
+          <div class="hint">目前：<span id="mMarqueeVal">10</span>s</div>
+        </div>
+
+        <div class="row">
+          <label>跑馬燈字體大小（px）</label>
+          <input id="mMarqueeFont" type="range" min="12" max="64" step="1" value="22">
+          <div class="hint">目前：<span id="mMarqueeFontVal">22</span>px</div>
+        </div>
+
+        <label class="pill" style="cursor:pointer; margin-top:8px;">
+          <input type="checkbox" id="broadcastEnable" checked style="width:18px;height:18px;margin:0 8px 0 0;">
+          啟用公告
+        </label>
+
+        <div id="marquee-lock-hint" class="hint hide" style="margin-top:10px;">
+          你目前是 <b>admin1</b>：跑馬燈已鎖定（只有 admin2 可用）。
+        </div>
       </div>
-    </div>
 
-
-      <!-- 計時控制 -->
+      <!-- 計時控制（admin1/admin2 都可用） -->
       <div class="card">
         <h3 class="label-text"><i class="fas fa-stopwatch"></i> 計時控制</h3>
         <div id="local-timer">00:00</div>
@@ -284,17 +313,14 @@
       <div id="controls-card" class="card">
         <h2><i class="fa-solid fa-sliders"></i> 大螢幕控制台（admin2）</h2>
 
-        <div class="row">
-          <label>跑馬燈速度（秒，越小越快）</label>
-          <input id="ctrlMarquee" type="range" min="3" max="60" step="1" value="10">
-          <div class="hint">目前：<span id="ctrlMarqueeVal">10</span>s</div>
+        <!-- 彈幕開關 -->
+        <div class="res-row" style="background: rgba(231, 76, 60, 0.10); border: 1px solid rgba(231, 76, 60, 0.18);">
+          <div class="label-text"><i class="fa-solid fa-toggle-on"></i> 彈幕顯示開關</div>
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+            <input type="checkbox" id="ctrlDanmakuEnable" checked style="width:20px;height:20px;margin:0;">
+            <span id="danmakuStatusText" style="font-weight:950; color:var(--ok);">開啟中</span>
+          </label>
         </div>
-
-        <div class="row">
-          <label>跑馬燈字體大小</label>
-          <input id="ctrlMarqueeFont" type="range" min="12" max="64" step="1" value="22">
-          <div class="hint">目前：<span id="ctrlMarqueeFontVal">22</span>px</div>
-       </div>
 
         <div class="row">
           <label>彈幕速度（秒，越小越快）</label>
@@ -361,70 +387,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-const ctrlMarqueeFont = document.getElementById("ctrlMarqueeFont");
-const ctrlMarqueeFontVal = document.getElementById("ctrlMarqueeFontVal");
-
-// 滑動時即時更新顯示
-ctrlMarqueeFont.addEventListener("input", () => {
-  ctrlMarqueeFontVal.textContent = ctrlMarqueeFont.value;
-});
-
-// 放開才寫入 Firebase（統一由滑桿控制）
-ctrlMarqueeFont.addEventListener("change", () => {
-  const fontSize = Number(ctrlMarqueeFont.value);
-  db.ref("marquee").update({
-    fontSize: fontSize,
-    updatedAt: Date.now()
-  });
-});
-
-// 反向同步（重新整理 or 別台改）
-db.ref("marquee").on("value", snap => {
-  if (!snap.exists()) return;
-  const v = snap.val();
-
-  if (typeof v.fontSize === "number") {
-    const isActive = document.activeElement === ctrlMarqueeFont;
-    if (!isActive) {
-      ctrlMarqueeFont.value = v.fontSize;
-      ctrlMarqueeFontVal.textContent = v.fontSize;
+    /***********************
+     * 小工具
+     ***********************/
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
-  }
-});
-
-
-   
-
-    const ctrlMarquee = document.getElementById("ctrlMarquee");
-const ctrlMarqueeVal = document.getElementById("ctrlMarqueeVal");
-
-// 滑動時更新數字顯示
-ctrlMarquee.addEventListener("input", () => {
-  ctrlMarqueeVal.textContent = ctrlMarquee.value;
-});
-
-// 放開才寫入 Firebase（統一用滑桿控制速度）
-ctrlMarquee.addEventListener("change", () => {
-  const speedSec = Number(ctrlMarquee.value);
-  db.ref("marquee").update({
-    speedSec: Math.max(3, speedSec),
-    updatedAt: Date.now()
-  });
-});
-
-// 反向同步：如果 DB 裡速度被改了（或重整頁面），slider 也會跟著更新
-db.ref("marquee").on("value", (snap) => {
-  if (!snap.exists()) return;
-  const v = snap.val();
-  if (typeof v.speedSec === "number") {
-    const isActive = (document.activeElement === ctrlMarquee);
-    if (!isActive) {
-      ctrlMarquee.value = v.speedSec;
-      ctrlMarqueeVal.textContent = v.speedSec;
-    }
-  }
-});
-
 
     /***********************
      * 設定
@@ -452,15 +426,6 @@ db.ref("marquee").on("value", (snap) => {
         localStorage.setItem(KEY, id);
       }
       return id;
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
     }
 
     /***********************
@@ -498,45 +463,134 @@ db.ref("marquee").on("value", (snap) => {
     }
 
     function showAdminUI(role, deviceId){
+      window.__ROLE__ = role; // ✅ 全頁共用角色
+
       document.getElementById("overlay").classList.add("hide");
       document.getElementById("admin-main").classList.remove("hide");
       document.getElementById("whoRole").textContent = role;
       document.getElementById("whoDev").textContent  = deviceId;
 
-      if (role === "admin1") lockControlsForAdmin1();
+      if (role === "admin1") {
+        lockControlsForAdmin1();     // 彈幕 controls 鎖
+        lockMarqueeForAdmin1();      // 跑馬燈整區鎖
+      }
       renderList();
     }
 
     /***********************
-     * 公告
+     * admin2Only 防火牆
      ***********************/
+    function admin2Only(){
+      if (window.__ROLE__ !== "admin2") {
+        throw new Error("admin1 is read-only for display controls");
+      }
+    }
+
+    /***********************
+     * 跑馬燈（marquee）- admin2 可寫；admin1 鎖
+     ***********************/
+    const mSpeed = document.getElementById("mMarquee");
+    const mSpeedVal = document.getElementById("mMarqueeVal");
+    const mFont = document.getElementById("mMarqueeFont");
+    const mFontVal = document.getElementById("mMarqueeFontVal");
+
+    function setMarqueeHint(){
+      if (mSpeed && mSpeedVal) mSpeedVal.textContent = mSpeed.value;
+      if (mFont && mFontVal) mFontVal.textContent = mFont.value;
+    }
+
     function sendTextBroadcast() {
-  const msg = document.getElementById("broadcastMsg").value || "";
-  const enabled   = document.getElementById("broadcastEnable")?.checked ?? true;
-  const direction = document.getElementById("broadcastDir")?.value || "left";
+      admin2Only(); // ✅ admin2 才能送
 
-  // ✅ 公告文字由這裡送；速度/字體大小交給下方滑桿（寫到 /marquee.speedSec、/marquee.fontSize）
-  db.ref("marquee").update({
-    enabled,
-    text: msg,
-    direction: (direction === "right") ? "right" : "left",
-    bgColor: "#6c5ce7",
-    textColor: "#ffffff",
-    updatedAt: Date.now()
-  });
-}
+      const msg = document.getElementById("broadcastMsg").value || "";
+      const enabled = document.getElementById("broadcastEnable")?.checked ?? true;
+      const direction = document.getElementById("broadcastDir")?.value || "left";
 
-function clearBroadcast() {
-  db.ref("marquee").update({
-    enabled: false,
-    text: "",
-    updatedAt: Date.now()
-  });
-  const ta = document.getElementById("broadcastMsg");
-  if (ta) ta.value = "";
-}
+      // ✅ 文字/啟用/方向寫入 marquee
+      db.ref("marquee").update({
+        enabled,
+        text: msg,
+        direction: (direction === "right") ? "right" : "left",
+        bgColor: "#6c5ce7",
+        textColor: "#ffffff",
+        updatedAt: Date.now()
+      });
+    }
 
+    function clearBroadcast() {
+      admin2Only(); // ✅ admin2 才能清
 
+      db.ref("marquee").update({
+        enabled: false,
+        text: "",
+        updatedAt: Date.now()
+      });
+      const ta = document.getElementById("broadcastMsg");
+      if (ta) ta.value = "";
+    }
+
+    function bindMarquee(){
+      // DB -> UI 反向同步
+      db.ref("marquee").on("value", (s)=>{
+        const d = s.val() || {};
+
+        const ta = document.getElementById("broadcastMsg");
+        if (ta && document.activeElement !== ta) ta.value = d.text || "";
+
+        const en = document.getElementById("broadcastEnable");
+        if (en) en.checked = (d.enabled !== false);
+
+        const dir = document.getElementById("broadcastDir");
+        if (dir && document.activeElement !== dir) dir.value = (d.direction === "right") ? "right" : "left";
+
+        if (mSpeed && document.activeElement !== mSpeed) mSpeed.value = clamp(Number(d.speedSec ?? 10), 3, 60);
+        if (mFont && document.activeElement !== mFont) mFont.value = clamp(Number(d.fontSize ?? 22), 12, 64);
+
+        setMarqueeHint();
+      });
+
+      if (mSpeed){
+        mSpeed.addEventListener("input", setMarqueeHint);
+        mSpeed.addEventListener("change", async ()=>{
+          admin2Only();
+          await db.ref("marquee").update({
+            speedSec: clamp(Number(mSpeed.value), 3, 60),
+            updatedAt: Date.now()
+          });
+        });
+      }
+
+      if (mFont){
+        mFont.addEventListener("input", setMarqueeHint);
+        mFont.addEventListener("change", async ()=>{
+          admin2Only();
+          await db.ref("marquee").update({
+            fontSize: clamp(Number(mFont.value), 12, 64),
+            updatedAt: Date.now()
+          });
+        });
+      }
+
+      document.getElementById("broadcastEnable").addEventListener("change", async ()=>{
+        admin2Only();
+        await db.ref("marquee").update({
+          enabled: document.getElementById("broadcastEnable").checked,
+          updatedAt: Date.now()
+        });
+      });
+
+      setMarqueeHint();
+    }
+
+    function lockMarqueeForAdmin1(){
+      document.getElementById("marquee-lock-hint").classList.remove("hide");
+      ["broadcastMsg","btnBroadcast","btnBroadcastClear","broadcastEnable","broadcastDir","mMarquee","mMarqueeFont"].forEach(id=>{
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = true;
+        el.classList.add("gray");
+      });
+    }
 
     /***********************
      * 計時器同步
@@ -678,30 +732,30 @@ function clearBroadcast() {
 
       // 事件委派（只綁一次）
       if (!list.dataset.bound) {
-     list.addEventListener("click", (e) => {
-      const t = e.target;
+        list.addEventListener("click", (e) => {
+          const t = e.target;
 
-      const clearId = t.getAttribute?.("data-clear");
-      if (clearId) return clearP(Number(clearId));
+          const clearId = t.getAttribute?.("data-clear");
+          if (clearId) return clearP(Number(clearId));
 
-       const adjData = t.getAttribute?.("data-adj");
-       if (adjData) {
-      const [pid, key, delta] = adjData.split("|");
-      return adj(Number(pid), key, Number(delta));
-       }
+          const adjData = t.getAttribute?.("data-adj");
+          if (adjData) {
+            const [pid, key, delta] = adjData.split("|");
+            return adj(Number(pid), key, Number(delta));
+          }
 
-       const addInvId = t.getAttribute?.("data-addinv");
-      if (addInvId) return addInv(Number(addInvId));
+          const addInvId = t.getAttribute?.("data-addinv");
+          if (addInvId) return addInv(Number(addInvId));
 
-       const delInvData = t.getAttribute?.("data-delinv");
-      if (delInvData) {
-      const [pid, itemKey] = delInvData.split("|");
-      return delInv(Number(pid), itemKey);
-       }
-      }   );
+          const delInvData = t.getAttribute?.("data-delinv");
+          if (delInvData) {
+            const [pid, itemKey] = delInvData.split("|");
+            return delInv(Number(pid), itemKey);
+          }
+        });
 
-  list.dataset.bound = "1";
-}
+        list.dataset.bound = "1";
+      }
     }
 
     /***********************
@@ -730,43 +784,52 @@ function clearBroadcast() {
     }
 
     /***********************
-     * 大螢幕 controls（admin2 可寫；admin1 鎖定）
+     * 彈幕 controls（admin2 可寫；admin1 鎖定）
      ***********************/
     const ctrlRef = db.ref("controls");
-    const $m = document.getElementById("ctrlMarquee");
     const $d = document.getElementById("ctrlDanmaku");
     const $f = document.getElementById("ctrlFont");
     const $x = document.getElementById("ctrlMaxOn");
+    const $en = document.getElementById("ctrlDanmakuEnable");
 
-    const $mv = document.getElementById("ctrlMarqueeVal");
     const $dv = document.getElementById("ctrlDanmakuVal");
     const $fv = document.getElementById("ctrlFontVal");
     const $xv = document.getElementById("ctrlMaxOnVal");
 
-    function syncVals(){
-      if ($mv && $m) $mv.textContent = $m.value;
+    function syncDanmakuToggleUI(){
+      const on = !!$en.checked;
+      const t = document.getElementById("danmakuStatusText");
+      if (!t) return;
+      t.textContent = on ? "開啟中" : "已關閉";
+      t.style.color = on ? "var(--ok)" : "var(--danger)";
+    }
+
+    function syncCtrlVals(){
       if ($dv && $d) $dv.textContent = $d.value;
       if ($fv && $f) $fv.textContent = $f.value;
       if ($xv && $x) $xv.textContent = $x.value;
+      syncDanmakuToggleUI();
     }
-    [$m,$d,$f,$x].forEach(el => el && el.addEventListener("input", syncVals));
-    function applyControls(payload){ return ctrlRef.update(payload); }
+
+    [$d,$f,$x].forEach(el => el && el.addEventListener("input", syncCtrlVals));
+    $en && $en.addEventListener("change", syncCtrlVals);
 
     ctrlRef.on("value", (snap) => {
       const c = snap.val() || {};
-      if ($m) $m.value = Number(c.marqueeDurationSec ?? 10);
-      if ($d) $d.value = Number(c.danmakuDurationSec ?? 10);
-      if ($f) $f.value = Number(c.danmakuFontSizePx ?? 22);
-      if ($x) $x.value = Number(c.danmakuMaxOnScreen ?? 8);
-      syncVals();
+      if ($d) $d.value = clamp(Number(c.danmakuDurationSec ?? 10), 3, 60);
+      if ($f) $f.value = clamp(Number(c.danmakuFontSizePx ?? 22), 12, 64);
+      if ($x) $x.value = clamp(Number(c.danmakuMaxOnScreen ?? 8), 1, 30);
+      if ($en) $en.checked = (c.danmakuEnabled !== false);
+      syncCtrlVals();
     });
 
     function lockControlsForAdmin1() {
       document.getElementById("controls-lock-hint").classList.remove("hide");
-      [$m,$d,$f,$x].forEach(el => el && (el.disabled = true));
-      ["btnSaveCtrl","btnResetCtrl","btnClearDanmaku"].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) { b.disabled = true; b.classList.add("gray"); }
+      ["ctrlDanmaku","ctrlFont","ctrlMaxOn","ctrlDanmakuEnable","btnSaveCtrl","btnResetCtrl","btnClearDanmaku"].forEach(id=>{
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = true;
+        el.classList.add("gray");
       });
     }
 
@@ -775,50 +838,65 @@ function clearBroadcast() {
      ***********************/
     document.addEventListener("DOMContentLoaded", async () => {
       setTimerDisplay(timeLeft);
-      syncVals();
+      syncCtrlVals();
+      bindMarquee();
 
-      // broadcast
-      document.getElementById("btnBroadcast").addEventListener("click", sendTextBroadcast);
-      document.getElementById("btnBroadcastClear").addEventListener("click", clearBroadcast);
+      // marquee buttons
+      document.getElementById("btnBroadcast").addEventListener("click", () => {
+        try { sendTextBroadcast(); }
+        catch(e){ alert("你目前是 admin1：跑馬燈已鎖定（只有 admin2 可用）。"); }
+      });
+      document.getElementById("btnBroadcastClear").addEventListener("click", () => {
+        try { clearBroadcast(); }
+        catch(e){ alert("你目前是 admin1：跑馬燈已鎖定（只有 admin2 可用）。"); }
+      });
 
       // timer
       document.getElementById("btnTimerStart").addEventListener("click", () => controlTimer("start"));
       document.getElementById("btnTimerPause").addEventListener("click", () => controlTimer("pause"));
       document.getElementById("btnTimerReset").addEventListener("click", () => controlTimer("reset"));
 
-      // controls
+      // controls (danmaku)
       document.getElementById("btnSaveCtrl").addEventListener("click", async () => {
-        const payload = {
-          marqueeDurationSec: Number($m.value),
-          danmakuDurationSec: Number($d.value),
-          danmakuFontSizePx: Number($f.value),
-          danmakuMaxOnScreen: Number($x.value)
-        };
         try {
-          await applyControls(payload);
+          admin2Only();
+          await ctrlRef.update({
+            danmakuEnabled: document.getElementById("ctrlDanmakuEnable").checked,
+            danmakuDurationSec: Number($d.value),
+            danmakuFontSizePx: Number($f.value),
+            danmakuMaxOnScreen: Number($x.value),
+            updatedAt: Date.now()
+          });
           alert("已套用到大螢幕！");
         } catch (e) {
-          alert("套用失敗（可能是 admin1 或 rules 限制）");
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
         }
       });
 
       document.getElementById("btnResetCtrl").addEventListener("click", async () => {
-        const payload = { marqueeDurationSec: 10, danmakuDurationSec: 10, danmakuFontSizePx: 22, danmakuMaxOnScreen: 8 };
         try {
-          await applyControls(payload);
+          admin2Only();
+          await ctrlRef.set({
+            danmakuEnabled: true,
+            danmakuDurationSec: 10,
+            danmakuFontSizePx: 22,
+            danmakuMaxOnScreen: 8,
+            updatedAt: Date.now()
+          });
           alert("已還原預設！");
         } catch (e) {
-          alert("還原失敗（可能是 admin1 或 rules 限制）");
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
         }
       });
 
       document.getElementById("btnClearDanmaku").addEventListener("click", async () => {
         if (!confirm("確定要清空彈幕（purchaseFeed）？")) return;
         try {
+          admin2Only();
           await db.ref("purchaseFeed").remove();
           alert("彈幕已清空！");
         } catch (e) {
-          alert("清空失敗（可能是 admin1 或 rules 限制）");
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
         }
       });
 
@@ -838,13 +916,11 @@ function clearBroadcast() {
         }
 
         try {
-          // 先做「名額提醒」（前端提示；真正限制由 SUPER 核可時再檢查）
           const cnt = await activeAdminCount();
           if (cnt >= ADMIN_LIMIT) {
             alert("管理員設備已滿 10 台，請先請 SUPER 剔除舊設備。");
             return;
           }
-
           await submitJoinRequest(want, label);
           alert("已送出申請！請通知 SUPER 核可後再重新整理。");
         } catch (e) {
@@ -868,6 +944,7 @@ function clearBroadcast() {
       }
     });
   </script>
+
   <script src="./js/site-ui-db.js"></script>
 </body>
 </html>
