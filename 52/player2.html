@@ -681,6 +681,7 @@ const firebaseConfig = {
   measurementId: "G-CG44LW3L84"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+firebase.auth().signInAnonymously();
 
 const auth = firebase.auth();
 const db = firebase.database();
