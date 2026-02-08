@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>隨機事件控制端（最簡單：列表 / 自動分配 / 強制派發 / 審核 B）</title>
+  <title>隨機事件控制端（列表 / 自動分配 / 強制派發 / 審核：refund+reward+bonus）</title>
 
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -24,6 +24,7 @@
       --ok:#22c55e;
       --bad:#ef4444;
       --warn:#f59e0b;
+      --vio:#6366f1;
     }
     *{box-sizing:border-box}
     body{
@@ -123,26 +124,32 @@
     .hr{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
     .hint{color:var(--muted);font-size:12px;line-height:1.4}
     code{background:rgba(0,0,0,.22);padding:2px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.10)}
+    .secTitle{margin:0 0 10px;color:var(--muted);font-size:14px}
   </style>
 </head>
 
 <body>
 <div class="app">
   <div class="card">
-    <h1>🎲 隨機事件控制端（最簡單：事件列表 / 系統自動分配 / 強制派發 / 審核 B）</h1>
+    <h1>🎲 隨機事件控制端（列表 / 自動分配 / 強制派發 / 審核：refund+reward+bonus）</h1>
     <div class="sub">
       事件庫：<span class="pill">events/{eid}</span>
       不重複鎖：<span class="pill">eventClaims/global/{eid}</span>
       發給玩家：<span class="pill">players/p{pid}/activeEvent</span>
       完成申請：<span class="pill">players/p{pid}/activeEvent/finishRequest</span><br>
-      <b>B 模式：</b>管理員同意完成時，會「返還 cost（加回）」+「加 reward」+「加你輸入的 bonus」到 <code>players/pX/res</code>。
+      <b>重要：</b>
+      <span class="pill">cost</span> 派發立即扣（押金）
+      <span class="pill">refund</span> 你事先填好的「完成返還表」
+      <span class="pill">reward</span> 事件獎勵
+      <span class="pill">bonus</span> 審核時額外加成<br>
+      ✅ 同意完成時：只會把 <b>refund + reward + bonus</b> 加到 <code>players/pX/res</code>（不再用 cost 返還，避免翻倍/混亂）
     </div>
   </div>
 
   <div class="grid">
     <!-- LEFT -->
     <div class="card">
-      <h2 style="margin:0 0 10px;color:var(--muted);font-size:14px">① 新增/編輯事件 + 派發</h2>
+      <h2 class="secTitle">① 新增/編輯事件 + 派發</h2>
 
       <div class="row">
         <div>
@@ -173,7 +180,7 @@
       <input id="title" placeholder="例如：突發任務：協助同學">
 
       <label>事件影響（顯示用 impactText，可選）</label>
-      <input id="impactText" placeholder="例如：健康 -4（完成後返還）">
+      <input id="impactText" placeholder="例如：押金：金錢100（完成後返還：金錢60+時間40）">
 
       <label>事件任務 taskHint</label>
       <input id="taskHint" placeholder="例如：完成指定任務後回報管理員">
@@ -183,7 +190,7 @@
 
       <div class="row">
         <div>
-          <label>cost（扣多少：時間/金錢/健康/知識/人際）</label>
+          <label>cost（派發立即扣：時間/金錢/健康/知識/人際）</label>
           <div class="row3">
             <input id="c_time" type="number" placeholder="時間" value="0">
             <input id="c_money" type="number" placeholder="金錢" value="0">
@@ -195,29 +202,45 @@
             <div></div>
           </div>
           <div class="hint" style="margin-top:8px">
-            例：健康 -4 → 這裡填 <b>c_health=4</b>（代表扣 4）。
+            例：扣健康 4 → 填 <b>c_health=4</b>（代表派發立即扣 4）。
           </div>
         </div>
 
         <div>
-          <label>reward（完成獎勵：時間/金錢/健康/知識/人際/分數）</label>
+          <label>refund（完成返還表：你事先定好，完成且同意後加回）</label>
           <div class="row3">
-            <input id="r_time" type="number" placeholder="時間" value="0">
-            <input id="r_money" type="number" placeholder="金錢" value="0">
-            <input id="r_health" type="number" placeholder="健康" value="0">
+            <input id="f_time" type="number" placeholder="時間" value="0">
+            <input id="f_money" type="number" placeholder="金錢" value="0">
+            <input id="f_health" type="number" placeholder="健康" value="0">
           </div>
           <div class="row3" style="margin-top:10px;">
-            <input id="r_knowledge" type="number" placeholder="知識" value="0">
-            <input id="r_social" type="number" placeholder="人際" value="0">
-            <input id="r_score" type="number" placeholder="分數" value="0">
+            <input id="f_knowledge" type="number" placeholder="知識" value="0">
+            <input id="f_social" type="number" placeholder="人際" value="0">
+            <div></div>
           </div>
           <div class="hint" style="margin-top:8px">
-            B 模式同意完成時會把 reward 真的加到 res。
+            例：派發扣金錢100，完成後你要還「金錢60+時間40」→ 這裡填 <b>f_money=60</b>、<b>f_time=40</b><br>
+            ✅ 不用倍率，不用算，完全照你填的數字加回。
           </div>
         </div>
       </div>
 
-      <div class="row">
+      <label>reward（完成獎勵：時間/金錢/健康/知識/人際/分數）</label>
+      <div class="row3">
+        <input id="r_time" type="number" placeholder="時間" value="0">
+        <input id="r_money" type="number" placeholder="金錢" value="0">
+        <input id="r_health" type="number" placeholder="健康" value="0">
+      </div>
+      <div class="row3" style="margin-top:10px;">
+        <input id="r_knowledge" type="number" placeholder="知識" value="0">
+        <input id="r_social" type="number" placeholder="人際" value="0">
+        <input id="r_score" type="number" placeholder="分數" value="0">
+      </div>
+      <div class="hint" style="margin-top:8px">
+        reward 是事件獎勵；同意完成時會與 refund、bonus 一起加到 res。
+      </div>
+
+      <div class="row" style="margin-top:8px">
         <div>
           <label>強制模式（派發時是否覆蓋玩家 pending 任務）</label>
           <select id="forceMode">
@@ -254,10 +277,10 @@
 
     <!-- RIGHT -->
     <div class="card">
-      <h2 style="margin:0 0 10px;color:var(--muted);font-size:14px">② 事件庫清單</h2>
+      <h2 class="secTitle">② 事件庫清單</h2>
       <div class="list" id="eventList"></div>
 
-      <h2 style="margin:14px 0 10px;color:var(--muted);font-size:14px">③ 完成申請（待審核）</h2>
+      <h2 class="secTitle" style="margin-top:14px">③ 完成申請（待審核）</h2>
       <div class="list" id="finishList"></div>
     </div>
   </div>
@@ -308,6 +331,12 @@ function activePath(pid){ return `players/p${pid}/activeEvent`; }
 function resPath(pid){ return `players/p${pid}/res`; }
 function globalClaimsPath(){ return "eventClaims/global"; }
 function claimRef(eid){ return db.ref(`${globalClaimsPath()}/${eid}`); }
+function fmtObj(o){
+  if(!o || typeof o!=="object") return "";
+  const pairs = Object.entries(o).filter(([,v])=>Number(v||0)!==0);
+  if(!pairs.length) return "";
+  return pairs.map(([k,v])=>`${k}:${v}`).join(" ");
+}
 
 /* ========= event form ========= */
 function readEventForm(){
@@ -320,6 +349,7 @@ function readEventForm(){
     confirmText: $("confirmText").value.trim() || "同意（我已收到）",
     desc: $("desc").value.trim() || "",
 
+    // 派發立即扣
     cost: compactObj({
       time: $("c_time").value,
       money: $("c_money").value,
@@ -328,6 +358,16 @@ function readEventForm(){
       social: $("c_social").value
     }),
 
+    // 完成返還表（你事先定好）
+    refund: compactObj({
+      time: $("f_time").value,
+      money: $("f_money").value,
+      health: $("f_health").value,
+      knowledge: $("f_knowledge").value,
+      social: $("f_social").value
+    }),
+
+    // 完成獎勵
     reward: compactObj({
       time: $("r_time").value,
       money: $("r_money").value,
@@ -364,7 +404,9 @@ function renderEventList(){
   list.innerHTML = ids.map(eid=>{
     const ev = eventsCache[eid] || {};
     const cost = fmtObj(ev.cost);
+    const refund = fmtObj(ev.refund);
     const reward = fmtObj(ev.reward);
+
     return `
       <div class="item">
         <div class="itemTop">
@@ -374,8 +416,9 @@ function renderEventList(){
               ${ev.impactText ? `影響：${esc(ev.impactText)}<br>` : ""}
               任務：${esc(ev.taskHint||"")}<br>
               ${ev.desc ? `描述：${esc(ev.desc)}<br>` : ""}
-              ${cost ? `cost：${esc(cost)}<br>` : ""}
-              ${reward ? `reward：${esc(reward)}` : ""}
+              ${cost ? `cost（派發扣）：${esc(cost)}<br>` : "cost（派發扣）：（無）<br>"}
+              ${refund ? `refund（完成返還）：${esc(refund)}<br>` : "refund（完成返還）：（無）<br>"}
+              ${reward ? `reward（完成獎勵）：${esc(reward)}` : "reward（完成獎勵）：（無）"}
             </div>
           </div>
           <span class="tag free">事件庫</span>
@@ -409,6 +452,13 @@ window.loadEventToForm = (eid)=>{
   $("c_knowledge").value = c.knowledge||0;
   $("c_social").value = c.social||0;
 
+  const f = ev.refund || {};
+  $("f_time").value = f.time||0;
+  $("f_money").value = f.money||0;
+  $("f_health").value = f.health||0;
+  $("f_knowledge").value = f.knowledge||0;
+  $("f_social").value = f.social||0;
+
   const r = ev.reward || {};
   $("r_time").value = r.time||0;
   $("r_money").value = r.money||0;
@@ -423,16 +473,8 @@ window.loadEventToForm = (eid)=>{
 window.deleteEvent = async (eid)=>{
   if(!confirm(`確定刪除事件 ${eid}？`)) return;
   await db.ref(`${eventsPath()}/${eid}`).remove();
-  // 也可順便清掉 claim
   await claimRef(eid).remove();
 };
-
-function fmtObj(o){
-  if(!o || typeof o!=="object") return "";
-  const pairs = Object.entries(o).filter(([,v])=>Number(v||0)!==0);
-  if(!pairs.length) return "";
-  return pairs.map(([k,v])=>`${k}:${v}`).join(" ");
-}
 
 /* ========= save / clear ========= */
 $("saveEvent").onclick = async ()=>{
@@ -449,8 +491,11 @@ $("clearForm").onclick = ()=>{
   $("taskHint").value="";
   $("confirmText").value="同意（我已收到）";
   $("desc").value="";
-  ["c_time","c_money","c_health","c_knowledge","c_social","r_time","r_money","r_health","r_knowledge","r_social","r_score"]
-    .forEach(id=>$(id).value=0);
+  [
+    "c_time","c_money","c_health","c_knowledge","c_social",
+    "f_time","f_money","f_health","f_knowledge","f_social",
+    "r_time","r_money","r_health","r_knowledge","r_social","r_score"
+  ].forEach(id=>$(id).value=0);
 };
 
 /* ========= assign logic ========= */
@@ -471,7 +516,6 @@ async function assignEventToPlayer(pid, eid, minutes, force, meta){
   // claim（確保不重複）
   await claimRef(eid).transaction(curr=>{
     if(curr === null) return { claimedBy:`p${pid}`, claimedAt: Date.now(), forced: !!meta?.forced };
-    // 若已有 claim，仍保留原本，必要時可覆蓋 claimedBy（這裡不覆蓋）
     return curr;
   });
 
@@ -480,12 +524,16 @@ async function assignEventToPlayer(pid, eid, minutes, force, meta){
     pool: meta?.pool || "auto",
     status: "pending",
     ack: false,
+
     title: ev.title || "隨機事件",
     desc: ev.desc || "",
     taskHint: ev.taskHint || "完成指定任務後回報管理員",
     confirmText: ev.confirmText || "同意（我已收到）",
     impactText: ev.impactText || "",
+
+    // ✅ 重要：派發扣 cost；完成返還用 refund（由管理端審核時加回）
     cost: ev.cost || {},
+    refund: ev.refund || {},
     reward: ev.reward || {},
 
     createdAt: Date.now(),
@@ -509,7 +557,6 @@ $("assignManual").onclick = async ()=>{
   await db.ref(`${eventsPath()}/${eid}`).set(payload);
   $("eid").value = eid;
 
-  // 手動/強制派發也做 claim（避免自動分配再分到別人）
   await claimRef(eid).transaction(curr=>{
     if(curr === null) return { claimedBy:`p${pid}`, claimedAt: Date.now(), forced:true };
     return { ...curr, claimedBy: curr.claimedBy || `p${pid}`, claimedAt: curr.claimedAt || Date.now(), forced:true };
@@ -564,7 +611,6 @@ $("autoAssignAll").onclick = async ()=>{
       continue;
     }
 
-    // 把 claimedBy 補上（不覆蓋已存在）
     await claimRef(picked).transaction(curr=>{
       if(curr && !curr.claimedBy) return { ...curr, claimedBy:`p${pid}` };
       return curr;
@@ -618,7 +664,9 @@ function renderFinishList(arr){
     const title = ev.title || "隨機事件";
     const eid = ev.eid || "";
     const when = ev.finishRequest?.requestedAt ? new Date(ev.finishRequest.requestedAt).toLocaleString() : "";
+
     const cost = fmtObj(ev.cost);
+    const refund = fmtObj(ev.refund);
     const reward = fmtObj(ev.reward);
 
     return `
@@ -628,8 +676,9 @@ function renderFinishList(arr){
             <div class="title">p${pid}｜${esc(title)}</div>
             <div class="meta">
               事件：${esc(eid)}｜申請：${esc(when)}<br>
-              ${cost ? `cost（返還）：${esc(cost)}<br>` : "cost（返還）：（無）<br>"}
-              ${reward ? `reward（發放）：${esc(reward)}<br>` : "reward（發放）：（無）<br>"}
+              ${cost ? `cost（派發扣）：${esc(cost)}<br>` : "cost（派發扣）：（無）<br>"}
+              ${refund ? `refund（完成返還）：${esc(refund)}<br>` : "refund（完成返還）：（無）<br>"}
+              ${reward ? `reward（完成獎勵）：${esc(reward)}<br>` : "reward（完成獎勵）：（無）<br>"}
               <span class="tag pending">待審核</span>
             </div>
           </div>
@@ -649,7 +698,7 @@ function renderFinishList(arr){
         </div>
 
         <div class="actions">
-          <button class="smallBtn ok" onclick="approveFinish(${pid})">同意（返還cost+加reward+加bonus）</button>
+          <button class="smallBtn ok" onclick="approveFinish(${pid})">同意（加 refund + reward + bonus）</button>
           <button class="smallBtn bad" onclick="rejectFinish(${pid})">駁回</button>
         </div>
       </div>
@@ -668,7 +717,7 @@ function readBonus(pid){
   });
 }
 
-/* B 模式：同意 = 返還 cost + 加 reward + 加 bonus（全加到 res） */
+/* ✅ 同意完成：只加 refund + reward + bonus（不再用 cost 返還） */
 window.approveFinish = async (pid)=>{
   const evRef = db.ref(activePath(pid));
   const snap = await evRef.get();
@@ -678,32 +727,27 @@ window.approveFinish = async (pid)=>{
     return alert("這筆已不存在或不是待審核狀態。");
   }
 
-  const cost = ev.cost || {};
+  const refund = ev.refund || {};
   const reward = ev.reward || {};
   const bonus = readBonus(pid);
 
-  // 返還 cost：cost 代表扣多少，所以返還時「+cost」
-  // B：再加 reward + bonus
-  const delta = {};
   const keys = ["time","money","health","knowledge","social","score"];
+  const delta = {};
   keys.forEach(k=>{
-    const add = num(cost[k]) + num(reward[k]) + num(bonus[k]);
+    const add = num(refund[k]) + num(reward[k]) + num(bonus[k]);
     if(add !== 0) delta[k] = add;
   });
 
-  // 用 transaction 一次改 res 物件（避免多次更新）
+  // 一次 transaction 改 res（避免多次 update）
   await db.ref(resPath(pid)).transaction(curr=>{
     const base = curr && typeof curr==="object" ? curr : {};
     const out = { ...base };
     keys.forEach(k=>{
-      const now = num(out[k]);
-      const add = num(delta[k]);
-      out[k] = now + add;
+      out[k] = num(out[k]) + num(delta[k]);
     });
     return out;
   });
 
-  // 更新事件狀態
   await evRef.update({
     status: "success",
     finishRequest: {
@@ -716,7 +760,7 @@ window.approveFinish = async (pid)=>{
     appliedAt: Date.now()
   });
 
-  alert(`✅ 已同意 p${pid} 完成（已返還/發放/加成）\n${fmtObj(delta) ? "加成："+fmtObj(delta) : ""}`);
+  alert(`✅ 已同意 p${pid} 完成（已加 refund+reward+bonus）\n${fmtObj(delta) ? "加成："+fmtObj(delta) : ""}`);
 };
 
 window.rejectFinish = async (pid)=>{
