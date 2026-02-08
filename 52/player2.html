@@ -737,6 +737,55 @@ function setDeviceLabel(v){
   if(v) localStorage.setItem(DEVICE_LABEL_KEY, v);
   else localStorage.removeItem(DEVICE_LABEL_KEY);
 }
+
+async function uploadPhoto(file, playerId, playerName) {
+  // ① 先產生一個 uploadId（資料庫用）
+  const uploadId = firebase.database().ref("uploadsIndex").push().key;
+
+  // ② 設定 Storage 路徑
+  const storagePath = `uploads/p${playerId}/${uploadId}_${file.name}`;
+
+  // ③ 先在 RTDB 建一筆 pending（Super 才看得到）
+  await firebase.database().ref(`uploadsIndex/${uploadId}`).set({
+    playerId: String(playerId),
+    playerName: playerName || "",
+    kind: "照片",
+    fileName: file.name,
+    size: file.size,
+    contentType: file.type,
+    storagePath: storagePath,
+    status: "pending",
+    createdAt: Date.now()
+  });
+
+  try {
+    // ④ 上傳檔案到 Storage
+    const storageRef = firebase.storage().ref(storagePath);
+    const snapshot = await storageRef.put(file);
+
+    // ⑤ 🔥【關鍵】拿到 downloadURL
+    const url = await snapshot.ref.getDownloadURL();
+
+    // ⑥ 把 url 寫回 uploadsIndex（Super 才能顯示縮圖）
+    await firebase.database().ref(`uploadsIndex/${uploadId}`).update({
+      url: url,
+      uploadedAt: Date.now()
+    });
+
+    alert("照片上傳成功！");
+
+  } catch (err) {
+    // ⑦ 如果失敗，記錄錯誤（你之前看到的 failed 就在這）
+    await firebase.database().ref(`uploadsIndex/${uploadId}`).update({
+      status: "failed",
+      error: String(err),
+      failedAt: Date.now()
+    });
+
+    alert("上傳失敗：" + err.message);
+  }
+}
+
 function saveLogin(pid, name){
   localStorage.setItem(LOGIN_KEY, JSON.stringify({ pid:String(pid), name:String(name||""), ts:Date.now() }));
 }
