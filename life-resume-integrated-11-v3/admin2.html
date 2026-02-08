@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷｜管理主控台</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --row:rgba(2,6,23,0.05);
+      --text:#0f172a;
+      --muted:rgba(15,23,42,0.72);
+      --shadow:rgba(2,6,23,0.12);
+
+      --blue:#3b82f6;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --violet:#8b5cf6;
+      --yellow:#fbbf24;
+      --gray:#64748b;
+
+      --radius:18px;
+    }
+
+    html,body{height:100%;}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+        radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+        var(--bg);
+      color:var(--text);
+      margin:0;
+      padding:14px;
+      -webkit-text-size-adjust:100%;
+      text-align:center;
+    }
+
+    .wrap{width:100%;max-width:980px;margin:0 auto;}
+    h1{font-size:1.55rem;margin:10px 0 12px;}
+    h2{font-size:1.2rem;margin:0 0 8px;}
+    h3{font-size:1.05rem;margin:0 0 8px;}
+    .hint{color:var(--muted);font-size:.95em;margin-top:6px;line-height:1.4;}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 10px 26px var(--shadow);
+      border:1px solid rgba(2,6,23,0.08);
+      padding:14px 16px;
+      margin:12px auto;
+      text-align:left;
+      position:relative;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(2,6,23,0.06);
+      font-weight:900;
+      font-size:0.95em;
+      color:var(--text);
+      white-space:nowrap;
+    }
+    .pill b{color:var(--blue);}
+
+    .row{margin:10px 0;}
+    .row label{display:block;font-weight:900;margin-bottom:6px;}
+    input,textarea,select{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      font-size:16px;
+      background:#fff;
+      color:var(--text);
+      border:1px solid rgba(2,6,23,0.14);
+      box-shadow:0 6px 16px rgba(2,6,23,0.06);
+      box-sizing:border-box;
+    }
+    textarea{min-height:90px;resize:vertical;}
+
+    .res-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:var(--row);
+      padding:10px 12px;
+      border-radius:14px;
+      margin:8px 0;
+      flex-wrap:wrap;
+    }
+
+    .label-text{
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:1.02em;
+    }
+
+    .val{
+      font-size:1.35em;
+      font-weight:1000;
+      color:var(--blue);
+      min-width:56px;
+      text-align:center;
+    }
+
+    .btn, .global-btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:1000;
+      color:#fff;
+      transition:transform .12s, filter .12s;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+    .btn:hover,.global-btn:hover{filter:brightness(1.06);}
+    .btn:active,.global-btn:active{transform:scale(0.98);}
+
+    .global-btn{width:100%;padding:14px;font-size:1.05em;}
+    .btn.blue{background:var(--blue);}
+    .btn.warn{background:var(--warn);color:#1b1203;}
+    .btn.danger{background:var(--danger);}
+    .btn.gray{background:var(--gray);}
+
+    .btn.plus{background:var(--ok);}
+    .btn.plus10{background:rgba(34,197,94,0.92);}
+    .btn.minus{background:rgba(239,68,68,0.75);}
+    .btn.minus10{background:var(--danger);}
+
+    .bottom-actions{margin:20px auto;display:flex;flex-direction:column;gap:12px;max-width:980px;}
+
+    .clear-single{
+      position:absolute;top:12px;right:12px;
+      background:var(--violet);
+      font-size:13px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:none;color:#fff;
+      cursor:pointer;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+
+    .inv-tag{
+      background:var(--violet);
+      color:#fff;
+      padding:4px 12px;
+      border-radius:999px;
+      margin:4px;
+      display:inline-block;
+      font-size:14px;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+    .inv-tag i{cursor:pointer;margin-left:8px;color:#ffe0e0;}
+    .inv-input{width:60% !important;display:inline-block !important;padding:10px !important;margin:0 !important;}
+
+    .hide{display:none !important;}
+    #local-timer{
+      font-size:2.4em;font-weight:1000;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+      color:var(--yellow);text-align:center;margin:8px 0;
+    }
+
+    /* overlay */
+    #overlay{
+      position:fixed;inset:0;
+      background:rgba(15,23,42,0.55);
+      backdrop-filter: blur(6px);
+      display:flex;align-items:center;justify-content:center;
+      z-index:999;
+      padding:14px;
+    }
+    #overlay > .card{width:100%;max-width:420px;}
+
+    /* Event panel */
+    .grid2{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media (min-width: 980px){ .grid2{grid-template-columns: 1fr 1fr;} }
+    .mini{font-size:12px;color:var(--muted);}
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+      max-height: 520px;
+      overflow:auto;
+      padding-right: 4px;
+    }
+    .item{
+      border:1px solid rgba(2,6,23,.10);
+      background: rgba(2,6,23,.03);
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align:left;
+    }
+    .itemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .tag{
+      font-size:12px;font-weight:900;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(2,6,23,.10);
+      color:rgba(15,23,42,.72);
+      white-space:nowrap;
+      height: fit-content;
+      background:#fff;
+    }
+    .tag.pending{background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.25); color:#92400e}
+    .tag.free{background:rgba(34,197,94,.10); border-color:rgba(34,197,94,.20); color:#166534}
+    .smallBtn{padding:8px 10px;border-radius:12px;font-weight:1000;font-size:12px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .row6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .row6 input{padding:9px 10px;border-radius:12px;font-size:12px}
+  </style>
+</head>
+
+<body data-page="admin">
+  <div class="wrap">
+
+    <!-- 未核可 / 申請面板 -->
+    <div id="overlay" class="hide">
+      <div class="card">
+        <h2 style="margin:0 0 10px;"><i class="fas fa-user-shield"></i> 管理員申請</h2>
+        <div class="hint">
+          本頁採「申請制」：<b>輸入設備名稱 + 申請密碼</b> → 送出申請 → 等 SUPER 核可後即可使用。
+        </div>
+
+        <div class="row">
+          <label>設備名稱（label）</label>
+          <input id="deviceLabel" type="text" placeholder="例如：管理員手機1 / 平板2 / 教室筆電A">
+        </div>
+
+        <div class="row">
+          <label>管理員等級</label>
+          <select id="reqType">
+            <option value="admin1">admin1（管理資源/計時/玩家/事件）</option>
+            <option value="admin2">admin2（含跑馬燈 + 彈幕 + 大螢幕控制）</option>
+          </select>
+          <div class="hint">admin2 才能管理「跑馬燈 / 彈幕 / 大螢幕 controls」。</div>
+        </div>
+
+        <div class="row">
+          <label>申請密碼</label>
+          <input id="reqPass" type="password" placeholder="輸入 345721">
+          <div class="hint">密碼錯誤無法送出申請。</div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button class="btn warn" id="btnSubmitReq"><i class="fa-solid fa-paper-plane"></i> 送出申請</button>
+          <button class="btn danger" id="btnResetDevice"><i class="fa-solid fa-rotate"></i> 重設本機裝置</button>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          本機 deviceId：<b id="deviceIdText">-</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主內容 -->
+    <div id="admin-main" class="hide">
+      <h1>🎮 人生履歷 控制中心</h1>
+<div class="card">
+  <h2 style="margin:0 0 8px;">玩家資料（稱號 / 頭像 / 狀態）</h2>
+  <div class="hint">稱號可由管理員輸入；頭像可由玩家或管理員上傳（相簿/檔案）；這裡/超級/大螢幕都會同步看到。</div>
+  <div id="profileGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:10px;"></div>
+</div>
+
+      <!-- 狀態列 -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="pill"><i class="fa-solid fa-key"></i> role：<b id="whoRole">-</b></div>
+          <div class="pill"><i class="fa-solid fa-fingerprint"></i> device：<b id="whoDev">-</b></div>
+        </div>
+        <div class="hint" style="margin-top:10px;">
+          ※ 本頁不需要登入。是否可進入由 <b>SUPER 核可的裝置白名單</b>決定。
+        </div>
+      </div>
+
+      <!-- 跑馬燈公告（admin2 可管；admin1 鎖） -->
+      <div class="card" style="border-left:6px solid #3498db;">
+        <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告（admin2）</h3>
+
+        <textarea id="broadcastMsg" placeholder="輸入要廣播的公告內容..."></textarea>
+
+        <div class="row">
+          <label>方向</label>
+          <select id="broadcastDir">
+            <option value="left">向左</option>
+            <option value="right">向右</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="global-btn" style="background:#3498db; flex:2;" id="btnBroadcast">
+            <i class="fa-solid fa-paper-plane"></i> 發送公告
+          </button>
+          <button class="global-btn" style="background:#7f8c8d; flex:1;" id="btnBroadcastClear">
+            <i class="fa-solid fa-eraser"></i> 清除
+          </button>
+        </div>
+
+        <div class="row">
+          <label>跑馬燈速度（秒，越小越快）</label>
+          <input id="mMarquee" type="range" min="3" max="60" step="1" value="10">
+          <div class="hint">目前：<span id="mMarqueeVal">10</span>s</div>
+        </div>
+
+        <div class="row">
+          <label>跑馬燈字體大小（px）</label>
+          <input id="mMarqueeFont" type="range" min="12" max="64" step="1" value="22">
+          <div class="hint">目前：<span id="mMarqueeFontVal">22</span>px</div>
+        </div>
+
+        <label class="pill" style="cursor:pointer; margin-top:8px;">
+          <input type="checkbox" id="broadcastEnable" checked style="width:18px;height:18px;margin:0 8px 0 0;">
+          啟用公告
+        </label>
+
+        <div id="marquee-lock-hint" class="hint hide" style="margin-top:10px;">
+          你目前是 <b>admin1</b>：跑馬燈已鎖定（只有 admin2 可用）。
+        </div>
+      </div>
+
+      <!-- 計時控制（admin1/admin2 都可用） -->
+      <div class="card">
+        <h3 class="label-text"><i class="fas fa-stopwatch"></i> 計時控制</h3>
+        <div id="local-timer">00:00</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <input type="number" id="setTimerSec" value="60" style="flex:1; min-width:140px;">
+          <button class="btn plus" style="flex:1;" id="btnTimerStart">▶️ 開始</button>
+          <button class="btn warn" style="flex:1;" id="btnTimerPause">⏸️ 暫停</button>
+        </div>
+        <button class="global-btn" style="background:var(--danger);" id="btnTimerReset">🔄 重製時間</button>
+      </div>
+
+      <!-- 大螢幕控制台（admin2 可寫、admin1 只讀） -->
+      <div id="controls-card" class="card">
+        <h2><i class="fa-solid fa-sliders"></i> 大螢幕控制台（admin2）</h2>
+
+        <!-- 彈幕開關 -->
+        <div class="res-row" style="background: rgba(231, 76, 60, 0.10); border: 1px solid rgba(231, 76, 60, 0.18);">
+          <div class="label-text"><i class="fa-solid fa-toggle-on"></i> 彈幕顯示開關</div>
+          <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+            <input type="checkbox" id="ctrlDanmakuEnable" checked style="width:20px;height:20px;margin:0;">
+            <span id="danmakuStatusText" style="font-weight:950; color:var(--ok);">開啟中</span>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>彈幕速度（秒，越小越快）</label>
+          <input id="ctrlDanmaku" type="range" min="3" max="60" step="1" value="10">
+          <div class="hint">目前：<span id="ctrlDanmakuVal">10</span>s</div>
+        </div>
+
+        <div class="row">
+          <label>彈幕字體大小（px）</label>
+          <input id="ctrlFont" type="range" min="12" max="64" step="1" value="22">
+          <div class="hint">目前：<span id="ctrlFontVal">22</span>px</div>
+        </div>
+
+        <div class="row">
+          <label>同時彈幕數量上限</label>
+          <input id="ctrlMaxOn" type="range" min="1" max="30" step="1" value="8">
+          <div class="hint">目前：<span id="ctrlMaxOnVal">8</span> 條</div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button class="btn blue" id="btnSaveCtrl"><i class="fa-solid fa-floppy-disk"></i> 立即套用</button>
+          <button class="btn warn" id="btnResetCtrl"><i class="fa-solid fa-rotate-left"></i> 還原預設</button>
+          <button class="btn danger" id="btnClearDanmaku"><i class="fa-solid fa-broom"></i> 清空彈幕</button>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          套用後：<b>display.html</b>、<b>display_purchases.html</b> 會即時更新。
+        </div>
+
+        <div id="controls-lock-hint" class="hint hide" style="margin-top:10px;">
+          你目前是 <b>admin1</b>：大螢幕控制台已鎖定（只有 admin2 可用）。
+        </div>
+      </div>
+
+      <!-- ✅ 隨機事件整合（同一頁管理：事件庫 / 派發 / 自動分配 / 審核） -->
+      <div class="card">
+        <h2 class="label-text"><i class="fa-solid fa-dice"></i> 隨機事件（押金 cost / 返還 refund / 獎勵 reward / 追加 bonus）</h2>
+        <div class="hint">
+          - <b>cost</b>：派發當下扣（押金）<br>
+          - <b>refund</b>：你自訂「要還多少、怎麼還」（可拆金錢60+時間40）<br>
+          - <b>同意完成</b>：加 <b>refund + reward + bonus</b> 到玩家 res（不再用倍率/不會翻倍）
+        </div>
+
+        <div class="grid2" style="margin-top:12px;">
+          <!-- LEFT: form -->
+          <div class="card" style="margin:0;">
+            <h3 style="margin:0 0 8px;">① 新增/編輯事件 + 派發</h3>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>玩家 pid（1~11）</label>
+                <select id="ev_pid">
+                  <option value="1">p1</option><option value="2">p2</option><option value="3">p3</option><option value="4">p4</option><option value="5">p5</option>
+                  <option value="6">p6</option><option value="7">p7</option><option value="8">p8</option><option value="9">p9</option><option value="10">p10</option><option value="11">p11</option>
+                </select>
+              </div>
+              <div>
+                <label>倒數（分鐘）</label>
+                <input id="ev_minutes" type="number" min="1" value="5">
+              </div>
+            </div>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>事件 eid（留空自動）</label>
+                <input id="ev_eid" placeholder="例如 e001（留空會自動產生）">
+              </div>
+              <div>
+                <label>確認按鈕文字（玩家端）</label>
+                <input id="ev_confirmText" value="同意（我已收到）">
+              </div>
+            </div>
+
+            <div class="row">
+              <label>事件名稱 title</label>
+              <input id="ev_title" placeholder="例如：突發任務：協助同學">
+            </div>
+
+            <div class="row">
+              <label>事件影響（顯示用 impactText，可選）</label>
+              <input id="ev_impactText" placeholder="例如：押金金錢-100（完成後返還60+時間40）">
+            </div>
+
+            <div class="row">
+              <label>事件任務 taskHint</label>
+              <input id="ev_taskHint" placeholder="例如：完成指定任務後回報管理員">
+            </div>
+
+            <div class="row">
+              <label>事件描述 desc（可選）</label>
+              <textarea id="ev_desc" placeholder="簡短描述事件內容…"></textarea>
+            </div>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr;gap:10px;">
+              <div class="card" style="margin:0;">
+                <div style="font-weight:1000;margin-bottom:8px;">押金 cost（派發即扣）</div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+                  <input id="c_time" type="number" placeholder="時間" value="0">
+                  <input id="c_money" type="number" placeholder="金錢" value="0">
+                  <input id="c_health" type="number" placeholder="健康" value="0">
+                  <input id="c_knowledge" type="number" placeholder="知識" value="0">
+                  <input id="c_social" type="number" placeholder="人際" value="0">
+                </div>
+                <div class="mini" style="margin-top:8px;">填 100 表示扣 100（系統自己會扣成 -100）。</div>
+              </div>
+
+              <div class="card" style="margin:0;">
+                <div style="font-weight:1000;margin-bottom:8px;">返還 refund（管理員同意完成時加回，可自由拆分）</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+                  <input id="f_time" type="number" placeholder="+時間" value="0">
+                  <input id="f_money" type="number" placeholder="+金錢" value="0">
+                  <input id="f_health" type="number" placeholder="+健康" value="0">
+                  <input id="f_knowledge" type="number" placeholder="+知識" value="0">
+                  <input id="f_social" type="number" placeholder="+人際" value="0">
+                  <input id="f_score" type="number" placeholder="+分數" value="0">
+                </div>
+                <div class="mini" style="margin-top:8px;">例：扣金錢100，但完成只返還金錢60+時間40，就這裡填。</div>
+              </div>
+
+              <div class="card" style="margin:0;">
+                <div style="font-weight:1000;margin-bottom:8px;">完成獎勵 reward（同意完成時發放）</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+                  <input id="r_time" type="number" placeholder="+時間" value="0">
+                  <input id="r_money" type="number" placeholder="+金錢" value="0">
+                  <input id="r_health" type="number" placeholder="+健康" value="0">
+                  <input id="r_knowledge" type="number" placeholder="+知識" value="0">
+                  <input id="r_social" type="number" placeholder="+人際" value="0">
+                  <input id="r_score" type="number" placeholder="+分數" value="0">
+                </div>
+              </div>
+            </div>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>強制模式（派發時覆蓋玩家 pending？）</label>
+                <select id="ev_forceMode">
+                  <option value="0">否（已有 pending 就不覆蓋）</option>
+                  <option value="1">是（強制覆蓋）</option>
+                </select>
+              </div>
+              <div>
+                <label>自動分配：是否強制覆蓋</label>
+                <select id="ev_forceModeAuto">
+                  <option value="0">否（已有 pending 就跳過）</option>
+                  <option value="1">是（強制覆蓋）</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <button class="btn blue" id="btnSaveEvent"><i class="fa-solid fa-floppy-disk"></i> 存到事件庫</button>
+              <button class="btn gray" id="btnClearEvent"><i class="fa-solid fa-eraser"></i> 清空表單</button>
+              <button class="btn warn" id="btnAssignEvent"><i class="fa-solid fa-paper-plane"></i> 強制/手動派發</button>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <button class="btn warn" id="btnAutoAssign"><i class="fa-solid fa-shuffle"></i> 系統自動分配（p1~p11 不重複）</button>
+              <button class="btn gray" id="btnResetClaims"><i class="fa-solid fa-rotate"></i> 重置不重複鎖（eventClaims/global）</button>
+            </div>
+          </div>
+
+          <!-- RIGHT: lists -->
+          <div class="card" style="margin:0;">
+            <h3 style="margin:0 0 8px;">② 事件庫清單</h3>
+            <div class="list" id="eventList"></div>
+
+            <h3 style="margin:14px 0 8px;">③ 完成申請（待審核）</h3>
+            <div class="list" id="finishList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 玩家清單容器 -->
+      <div id="player-list"></div>
+
+      <!-- 底部重置 -->
+      <div class="bottom-actions">
+        <button class="global-btn" style="background:var(--warn); color:#1b1203;" id="btnResetAllRes">
+          <i class="fas fa-eraser"></i> 清空資源、分數與背包（不刪玩家名字）
+        </button>
+        <button class="global-btn" style="background:#c0392b;" id="btnResetTotal">
+          <i class="fas fa-trash-alt"></i> 徹底重置遊戲（清空所有資料）
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /***********************
+     * Firebase init
+     ***********************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+      authDomain: "try-something-ddd1e.firebaseapp.com",
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "try-something-ddd1e",
+      storageBucket: "try-something-ddd1e.firebasestorage.app",
+      messagingSenderId: "245905464126",
+      appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+    };
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    /***********************
+     * 小工具
+     ***********************/
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function num(v){ return Number(v||0)||0; }
+    function compactObj(o){
+      const out={};
+      Object.keys(o).forEach(k=>{
+        const n=num(o[k]);
+        if(n!==0) out[k]=n;
+      });
+      return out;
+    }
+    function autoEid(){ return "e" + Math.random().toString(16).slice(2,8); }
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      return arr;
+    }
+    function fmtObj(o){
+      if(!o || typeof o!=="object") return "";
+      const pairs = Object.entries(o).filter(([,v])=>Number(v||0)!==0);
+      if(!pairs.length) return "";
+      return pairs.map(([k,v])=>`${k}:${v}`).join(" ");
+    }
+
+    /***********************
+     * 設定
+     ***********************/
+    const ADMIN_REQUEST_PASSWORD = "345721"; // ✅ 申請密碼
+    const ADMIN_LIMIT = 10;                  // ✅ admin 上限 10 台
+    const MAX_P = 11;
+
+    const resConfig = {
+      time:      { name: '時間', icon: 'fa-clock',     color: '#8b5cf6' },
+      money:     { name: '金錢', icon: 'fa-wallet',    color: '#fbbf24' },
+      health:    { name: '健康', icon: 'fa-heartbeat', color: '#ef4444' },
+      knowledge: { name: '知識', icon: 'fa-book',      color: '#3b82f6' },
+      social:    { name: '人際', icon: 'fa-users',     color: '#22c55e' },
+      score:     { name: '分數', icon: 'fa-star',      color: '#f59e0b' }
+    };
+
+    /***********************
+     * deviceId（localStorage）
+     ***********************/
+    function getDeviceId() {
+      const KEY = "device_id";
+      let id = localStorage.getItem(KEY);
+      if (!id) {
+        id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(16).slice(2) + Date.now()));
+        localStorage.setItem(KEY, id);
+      }
+      return id;
+    }
+
+    /***********************
+     * Gate：裝置是否已核可（adminDevices/{deviceId}）
+     ***********************/
+    async function getAllowedAdminRole(deviceId) {
+      const s = await db.ref("adminDevices/" + deviceId).get();
+      if (!s.exists()) return null;
+      const v = s.val();
+      if (!v || v.revoked === true) return null;
+      return (v.role === "admin2") ? "admin2" : "admin1";
+    }
+
+    async function activeAdminCount() {
+      const snap = await db.ref("adminDevices").get();
+      const all = snap.val() || {};
+      return Object.values(all).filter(d => d && d.revoked !== true).length;
+    }
+
+    async function submitJoinRequest(want, label) {
+      const deviceId = getDeviceId();
+      await db.ref("joinRequests").push({
+        deviceId,
+        label: (label || "").trim() || ("設備-" + deviceId.slice(0,6)),
+        want, // "admin1" | "admin2"
+        createdAt: Date.now(),
+        byPage: "admin.html"
+      });
+    }
+
+    function showRequestUI(deviceId){
+      document.getElementById("deviceIdText").textContent = deviceId;
+      document.getElementById("overlay").classList.remove("hide");
+      document.getElementById("admin-main").classList.add("hide");
+    }
+
+    function showAdminUI(role, deviceId){
+      window.__ROLE__ = role; // ✅ 全頁共用角色
+
+      document.getElementById("overlay").classList.add("hide");
+      document.getElementById("admin-main").classList.remove("hide");
+      document.getElementById("whoRole").textContent = role;
+      document.getElementById("whoDev").textContent  = deviceId;
+
+      if (role === "admin1") {
+        lockControlsForAdmin1();
+        lockMarqueeForAdmin1();
+      }
+      renderList();
+
+      // ✅ 事件功能啟動
+      watchEvents();
+      watchFinishRequests();
+    }
+
+    /***********************
+     * admin2Only 防火牆
+     ***********************/
+    function admin2Only(){
+      if (window.__ROLE__ !== "admin2") {
+        throw new Error("admin1 is read-only for display controls");
+      }
+    }
+
+    /***********************
+     * 跑馬燈（marquee）- admin2 可寫；admin1 鎖
+     ***********************/
+    const mSpeed = document.getElementById("mMarquee");
+    const mSpeedVal = document.getElementById("mMarqueeVal");
+    const mFont = document.getElementById("mMarqueeFont");
+    const mFontVal = document.getElementById("mMarqueeFontVal");
+
+    function setMarqueeHint(){
+      if (mSpeed && mSpeedVal) mSpeedVal.textContent = mSpeed.value;
+      if (mFont && mFontVal) mFontVal.textContent = mFont.value;
+    }
+
+    function sendTextBroadcast() {
+      admin2Only();
+
+      const msg = document.getElementById("broadcastMsg").value || "";
+      const enabled = document.getElementById("broadcastEnable")?.checked ?? true;
+      const direction = document.getElementById("broadcastDir")?.value || "left";
+
+      db.ref("marquee").update({
+        enabled,
+        text: msg,
+        direction: (direction === "right") ? "right" : "left",
+        bgColor: "#6c5ce7",
+        textColor: "#ffffff",
+        updatedAt: Date.now()
+      });
+    }
+
+    function clearBroadcast() {
+      admin2Only();
+
+      db.ref("marquee").update({
+        enabled: false,
+        text: "",
+        updatedAt: Date.now()
+      });
+      const ta = document.getElementById("broadcastMsg");
+      if (ta) ta.value = "";
+    }
+
+    function bindMarquee(){
+      db.ref("marquee").on("value", (s)=>{
+        const d = s.val() || {};
+
+        const ta = document.getElementById("broadcastMsg");
+        if (ta && document.activeElement !== ta) ta.value = d.text || "";
+
+        const en = document.getElementById("broadcastEnable");
+        if (en) en.checked = (d.enabled !== false);
+
+        const dir = document.getElementById("broadcastDir");
+        if (dir && document.activeElement !== dir) dir.value = (d.direction === "right") ? "right" : "left";
+
+        if (mSpeed && document.activeElement !== mSpeed) mSpeed.value = clamp(Number(d.speedSec ?? 10), 3, 60);
+        if (mFont && document.activeElement !== mFont) mFont.value = clamp(Number(d.fontSize ?? 22), 12, 64);
+
+        setMarqueeHint();
+      });
+
+      if (mSpeed){
+        mSpeed.addEventListener("input", setMarqueeHint);
+        mSpeed.addEventListener("change", async ()=>{
+          admin2Only();
+          await db.ref("marquee").update({
+            speedSec: clamp(Number(mSpeed.value), 3, 60),
+            updatedAt: Date.now()
+          });
+        });
+      }
+
+      if (mFont){
+        mFont.addEventListener("input", setMarqueeHint);
+        mFont.addEventListener("change", async ()=>{
+          admin2Only();
+          await db.ref("marquee").update({
+            fontSize: clamp(Number(mFont.value), 12, 64),
+            updatedAt: Date.now()
+          });
+        });
+      }
+
+      document.getElementById("broadcastEnable").addEventListener("change", async ()=>{
+        admin2Only();
+        await db.ref("marquee").update({
+          enabled: document.getElementById("broadcastEnable").checked,
+          updatedAt: Date.now()
+        });
+      });
+
+      setMarqueeHint();
+    }
+
+    function lockMarqueeForAdmin1(){
+      document.getElementById("marquee-lock-hint").classList.remove("hide");
+      ["broadcastMsg","btnBroadcast","btnBroadcastClear","broadcastEnable","broadcastDir","mMarquee","mMarqueeFont"].forEach(id=>{
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = true;
+        el.classList.add("gray");
+      });
+    }
+
+    /***********************
+     * 計時器同步
+     ***********************/
+    let timeLeft = 60;
+    let isRunning = false;
+
+    function syncTimer() {
+      db.ref("timerSync").set({ timeLeft, isRunning, lastUpdate: Date.now() });
+    }
+    function setTimerDisplay(sec) {
+      const m = Math.floor(sec/60).toString().padStart(2, '0');
+      const s = (sec%60).toString().padStart(2, '0');
+      document.getElementById("local-timer").innerText = `${m}:${s}`;
+    }
+    function controlTimer(action) {
+      if (action === "start") isRunning = true;
+      if (action === "pause") isRunning = false;
+      if (action === "reset") {
+        isRunning = false;
+        const n = parseInt(document.getElementById("setTimerSec").value, 10);
+        timeLeft = Number.isFinite(n) ? n : 60;
+      }
+      syncTimer();
+    }
+
+    setInterval(() => {
+      if (isRunning && timeLeft > 0) {
+        timeLeft--;
+        syncTimer();
+      }
+    }, 1000);
+
+    db.ref("timerSync").on("value", (s) => {
+      const d = s.val();
+      if (!d) return;
+      timeLeft = d.timeLeft ?? timeLeft;
+      isRunning = d.isRunning ?? isRunning;
+      setTimerDisplay(timeLeft);
+    });
+
+    /***********************
+     * 玩家操作
+     ***********************/
+    function adj(playerId, key, delta) {
+      db.ref(`players/p${playerId}/res/${key}`).transaction(cur => Math.max(0, (cur || 0) + delta));
+    }
+
+    function addInv(playerId) {
+      const input = document.getElementById(`p${playerId}-inv-in`);
+      const name = (input?.value || "").trim();
+      if (!name) return;
+      db.ref(`players/p${playerId}/inventory`).push({ name });
+      input.value = "";
+    }
+
+    function delInv(playerId, itemKey) {
+      if (!confirm("確定移除此清單物品？")) return;
+      db.ref(`players/p${playerId}/inventory/${itemKey}`).remove();
+    }
+
+    function clearP(playerId) {
+      if (!confirm("確定清空此玩家名字與數據？")) return;
+      db.ref(`players/p${playerId}`).set({
+        name: "",
+        res: { time:0, money:0, health:0, knowledge:0, social:0, score:0 }
+      });
+    }
+
+    function renderList() {
+      const list = document.getElementById("player-list");
+      list.innerHTML = "";
+
+      for (let i=1; i<=10; i++) {
+        let h = `
+          <div class="card">
+            <button class="clear-single" data-clear="${i}">清除玩家</button>
+            <h3 class="label-text"><i class="fas fa-user"></i> <span id="p${i}-n"></span> (ID:${i})</h3>
+        `;
+
+        Object.keys(resConfig).forEach(k => {
+          const isScore = (k === "score");
+          h += `
+            <div class="res-row">
+              <span class="label-text" style="color:${resConfig[k].color}">
+                <i class="fas ${resConfig[k].icon}"></i> ${resConfig[k].name}
+              </span>
+
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                ${!isScore ? `<button class="btn minus10" data-adj="${i}|${k}|-10">-10</button>` : ""}
+                <button class="btn minus" data-adj="${i}|${k}|-1">-1</button>
+                <span class="val" id="p${i}-${k}">0</span>
+                <button class="btn plus" data-adj="${i}|${k}|1">+1</button>
+                ${!isScore ? `<button class="btn plus10" data-adj="${i}|${k}|10">+10</button>` : ""}
+              </div>
+            </div>
+          `;
+        });
+
+        h += `
+          <div style="border-top:1px solid rgba(2,6,23,0.12); margin-top:14px; padding-top:12px;">
+            <span class="label-text"><i class="fas fa-briefcase"></i> 人生背包管理</span>
+            <div id="p${i}-inv-display" style="margin:8px 0; min-height:30px;"></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <input type="text" id="p${i}-inv-in" class="inv-input" placeholder="手動增加物品名稱...">
+              <button class="btn plus" data-addinv="${i}">新增</button>
+            </div>
+          </div>
+          </div>
+        `;
+
+        list.insertAdjacentHTML("beforeend", h);
+
+        db.ref(`players/p${i}`).on("value", s => {
+          const d = s.val() || {};
+          const nameEl = document.getElementById(`p${i}-n`);
+          if (nameEl) nameEl.innerText = d.name || "空位";
+
+          Object.keys(resConfig).forEach(k => {
+            const el = document.getElementById(`p${i}-${k}`);
+            if (el) el.innerText = (d.res && d.res[k]) || 0;
+          });
+
+          const invDiv = document.getElementById(`p${i}-inv-display`);
+          if (!invDiv) return;
+          invDiv.innerHTML = "";
+          if (d.inventory) {
+            for (let key in d.inventory) {
+              const item = d.inventory[key];
+              invDiv.insertAdjacentHTML("beforeend",
+                `<span class="inv-tag">${escapeHtml(item.name)}
+                   <i class="fas fa-times" data-delinv="${i}|${key}"></i>
+                 </span>`
+              );
+            }
+          }
+        });
+      }
+
+      if (!list.dataset.bound) {
+        list.addEventListener("click", (e) => {
+          const t = e.target;
+
+          const clearId = t.getAttribute?.("data-clear");
+          if (clearId) return clearP(Number(clearId));
+
+          const adjData = t.getAttribute?.("data-adj");
+          if (adjData) {
+            const [pid, key, delta] = adjData.split("|");
+            return adj(Number(pid), key, Number(delta));
+          }
+
+          const addInvId = t.getAttribute?.("data-addinv");
+          if (addInvId) return addInv(Number(addInvId));
+
+          const delInvData = t.getAttribute?.("data-delinv");
+          if (delInvData) {
+            const [pid, itemKey] = delInvData.split("|");
+            return delInv(Number(pid), itemKey);
+          }
+        });
+
+        list.dataset.bound = "1";
+      }
+    }
+
+    /***********************
+     * 重置
+     ***********************/
+    function resetAllRes() {
+      if (!confirm("確定清空所有人的資源、分數與背包？")) return;
+      for (let i=1; i<=10; i++) {
+        db.ref(`players/p${i}`).update({
+          res: { time:0, money:0, health:0, knowledge:0, social:0, score:0 },
+          inventory: null
+        });
+      }
+    }
+
+    function resetTotal() {
+      if (!confirm("重置將清空整個資料庫（含名字與公告），確定？")) return;
+      db.ref("players").remove();
+      db.ref("marquee").remove();
+      db.ref("broadcast").remove();
+
+      db.ref("timerSync").remove();
+      db.ref("controls").remove();
+      db.ref("purchaseFeed").remove();
+      db.ref("events").remove();
+      db.ref("eventClaims").remove();
+
+      location.reload();
+    }
+
+    /***********************
+     * 彈幕 controls（admin2 可寫；admin1 鎖定）
+     ***********************/
+    const ctrlRef = db.ref("controls");
+    const $d = document.getElementById("ctrlDanmaku");
+    const $f = document.getElementById("ctrlFont");
+    const $x = document.getElementById("ctrlMaxOn");
+    const $en = document.getElementById("ctrlDanmakuEnable");
+
+    const $dv = document.getElementById("ctrlDanmakuVal");
+    const $fv = document.getElementById("ctrlFontVal");
+    const $xv = document.getElementById("ctrlMaxOnVal");
+
+    function syncDanmakuToggleUI(){
+      const on = !!$en.checked;
+      const t = document.getElementById("danmakuStatusText");
+      if (!t) return;
+      t.textContent = on ? "開啟中" : "已關閉";
+      t.style.color = on ? "var(--ok)" : "var(--danger)";
+    }
+
+    function syncCtrlVals(){
+      if ($dv && $d) $dv.textContent = $d.value;
+      if ($fv && $f) $fv.textContent = $f.value;
+      if ($xv && $x) $xv.textContent = $x.value;
+      syncDanmakuToggleUI();
+    }
+
+    [$d,$f,$x].forEach(el => el && el.addEventListener("input", syncCtrlVals));
+    $en && $en.addEventListener("change", syncCtrlVals);
+
+    ctrlRef.on("value", (snap) => {
+      const c = snap.val() || {};
+      if ($d) $d.value = clamp(Number(c.danmakuDurationSec ?? 10), 3, 60);
+      if ($f) $f.value = clamp(Number(c.danmakuFontSizePx ?? 22), 12, 64);
+      if ($x) $x.value = clamp(Number(c.danmakuMaxOnScreen ?? 8), 1, 30);
+      if ($en) $en.checked = (c.danmakuEnabled !== false);
+      syncCtrlVals();
+    });
+
+    function lockControlsForAdmin1() {
+      document.getElementById("controls-lock-hint").classList.remove("hide");
+      ["ctrlDanmaku","ctrlFont","ctrlMaxOn","ctrlDanmakuEnable","btnSaveCtrl","btnResetCtrl","btnClearDanmaku"].forEach(id=>{
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = true;
+        el.classList.add("gray");
+      });
+    }
+
+    /***********************
+     * ✅ 事件系統（整合版）
+     ***********************/
+    const eventsPath = ()=>"events";
+    const globalClaimsPath = ()=>"eventClaims/global";
+    const claimRef = (eid)=>db.ref(`${globalClaimsPath()}/${eid}`);
+    const activePath = (pid)=>`players/p${pid}/activeEvent`;
+    const resPath = (pid)=>`players/p${pid}/res`;
+
+    let eventsCache = {};
+
+    function readEventForm(){
+      const eid = (document.getElementById("ev_eid").value || "").trim() || autoEid();
+      const payload = {
+        title: (document.getElementById("ev_title").value || "").trim() || "隨機事件",
+        impactText: (document.getElementById("ev_impactText").value || "").trim(),
+        taskHint: (document.getElementById("ev_taskHint").value || "").trim() || "完成指定任務後回報管理員",
+        confirmText: (document.getElementById("ev_confirmText").value || "").trim() || "同意（我已收到）",
+        desc: (document.getElementById("ev_desc").value || "").trim(),
+
+        cost: compactObj({
+          time: document.getElementById("c_time").value,
+          money: document.getElementById("c_money").value,
+          health: document.getElementById("c_health").value,
+          knowledge: document.getElementById("c_knowledge").value,
+          social: document.getElementById("c_social").value
+        }),
+
+        // ✅ NEW：refund（返還）可獨立於 cost
+        refund: compactObj({
+          time: document.getElementById("f_time").value,
+          money: document.getElementById("f_money").value,
+          health: document.getElementById("f_health").value,
+          knowledge: document.getElementById("f_knowledge").value,
+          social: document.getElementById("f_social").value,
+          score: document.getElementById("f_score").value
+        }),
+
+        reward: compactObj({
+          time: document.getElementById("r_time").value,
+          money: document.getElementById("r_money").value,
+          health: document.getElementById("r_health").value,
+          knowledge: document.getElementById("r_knowledge").value,
+          social: document.getElementById("r_social").value,
+          score: document.getElementById("r_score").value
+        }),
+
+        updatedAt: Date.now()
+      };
+      return {eid, payload};
+    }
+
+    function clearEventForm(){
+      document.getElementById("ev_eid").value="";
+      document.getElementById("ev_title").value="";
+      document.getElementById("ev_impactText").value="";
+      document.getElementById("ev_taskHint").value="";
+      document.getElementById("ev_confirmText").value="同意（我已收到）";
+      document.getElementById("ev_desc").value="";
+      ["c_time","c_money","c_health","c_knowledge","c_social","f_time","f_money","f_health","f_knowledge","f_social","f_score","r_time","r_money","r_health","r_knowledge","r_social","r_score"]
+        .forEach(id=>document.getElementById(id).value=0);
+    }
+
+    function watchEvents(){
+      db.ref(eventsPath()).on("value", s=>{
+        eventsCache = s.val() || {};
+        renderEventList();
+      });
+    }
+
+    function renderEventList(){
+      const list = document.getElementById("eventList");
+      const ids = Object.keys(eventsCache || {});
+      if(!ids.length){
+        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（尚無事件）</div><div class="hint">請在左側新增並存到事件庫。</div></div>`;
+        return;
+      }
+      ids.sort((a,b)=>a.localeCompare(b));
+      list.innerHTML = ids.map(eid=>{
+        const ev = eventsCache[eid] || {};
+        return `
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:1000;">${escapeHtml(eid)}｜${escapeHtml(ev.title||"（無標題）")}</div>
+                <div class="hint" style="margin-top:6px;">
+                  ${ev.impactText ? `影響：${escapeHtml(ev.impactText)}<br>` : ""}
+                  任務：${escapeHtml(ev.taskHint||"")}<br>
+                  ${ev.desc ? `描述：${escapeHtml(ev.desc)}<br>` : ""}
+                  ${fmtObj(ev.cost) ? `cost：${escapeHtml(fmtObj(ev.cost))}<br>` : ""}
+                  ${fmtObj(ev.refund) ? `refund：${escapeHtml(fmtObj(ev.refund))}<br>` : ""}
+                  ${fmtObj(ev.reward) ? `reward：${escapeHtml(fmtObj(ev.reward))}` : ""}
+                </div>
+              </div>
+              <span class="tag free">事件庫</span>
+            </div>
+            <div class="actions">
+              <button class="btn gray smallBtn" onclick="loadEventToForm('${escapeHtml(eid)}')">載入</button>
+              <button class="btn warn smallBtn" onclick="assignThis('${escapeHtml(eid)}')">派發給選的玩家</button>
+              <button class="btn danger smallBtn" onclick="deleteEvent('${escapeHtml(eid)}')">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.loadEventToForm = (eid)=>{
+      const ev = eventsCache[eid];
+      if(!ev) return;
+      document.getElementById("ev_eid").value = eid;
+      document.getElementById("ev_title").value = ev.title || "";
+      document.getElementById("ev_impactText").value = ev.impactText || "";
+      document.getElementById("ev_taskHint").value = ev.taskHint || "";
+      document.getElementById("ev_confirmText").value = ev.confirmText || "同意（我已收到）";
+      document.getElementById("ev_desc").value = ev.desc || "";
+
+      const c = ev.cost || {};
+      document.getElementById("c_time").value = c.time||0;
+      document.getElementById("c_money").value = c.money||0;
+      document.getElementById("c_health").value = c.health||0;
+      document.getElementById("c_knowledge").value = c.knowledge||0;
+      document.getElementById("c_social").value = c.social||0;
+
+      const f = ev.refund || {};
+      document.getElementById("f_time").value = f.time||0;
+      document.getElementById("f_money").value = f.money||0;
+      document.getElementById("f_health").value = f.health||0;
+      document.getElementById("f_knowledge").value = f.knowledge||0;
+      document.getElementById("f_social").value = f.social||0;
+      document.getElementById("f_score").value = f.score||0;
+
+      const r = ev.reward || {};
+      document.getElementById("r_time").value = r.time||0;
+      document.getElementById("r_money").value = r.money||0;
+      document.getElementById("r_health").value = r.health||0;
+      document.getElementById("r_knowledge").value = r.knowledge||0;
+      document.getElementById("r_social").value = r.social||0;
+      document.getElementById("r_score").value = r.score||0;
+
+      alert(`已載入 ${eid}`);
+    };
+
+    window.deleteEvent = async (eid)=>{
+      if(!confirm(`確定刪除事件 ${eid}？`)) return;
+      await db.ref(`${eventsPath()}/${eid}`).remove();
+      await claimRef(eid).remove();
+    };
+
+    async function assignEventToPlayer(pid, eid, minutes, force, meta){
+      const evSnap = await db.ref(`${eventsPath()}/${eid}`).get();
+      const ev = evSnap.val();
+      if(!ev) throw new Error(`事件不存在：${eid}`);
+
+      const activeRef = db.ref(activePath(pid));
+
+      if(!force){
+        const cur = (await activeRef.get()).val();
+        if(cur && cur.status==="pending"){
+          return {ok:false, reason:"player_has_pending"};
+        }
+      }
+
+      // claim（確保不重複）
+      await claimRef(eid).transaction(curr=>{
+        if(curr === null) return { claimedBy:`p${pid}`, claimedAt: Date.now(), forced: !!meta?.forced };
+        return curr;
+      });
+
+      const payload = {
+        eid,
+        pool: meta?.pool || "manual",
+        status: "pending",
+        ack: false,
+
+        title: ev.title || "隨機事件",
+        desc: ev.desc || "",
+        taskHint: ev.taskHint || "完成指定任務後回報管理員",
+        confirmText: ev.confirmText || "同意（我已收到）",
+        impactText: ev.impactText || "",
+
+        cost: ev.cost || {},
+        refund: ev.refund || {},   // ✅ NEW
+        reward: ev.reward || {},
+
+        createdAt: Date.now(),
+        deadlineTs: Date.now() + minutes*60*1000,
+
+        assignedBy: meta?.assignedBy || "admin",
+        assignedMode: meta?.assignedMode || (force ? "force" : "manual")
+      };
+
+      await activeRef.set(payload);
+      return {ok:true};
+    }
+
+    window.assignThis = async (eid)=>{
+      document.getElementById("ev_eid").value = eid;
+      const pid = document.getElementById("ev_pid").value;
+      const minutes = Math.max(1, num(document.getElementById("ev_minutes").value));
+      const force = document.getElementById("ev_forceMode").value === "1";
+
+      const r = await assignEventToPlayer(pid, eid, minutes, force, {assignedBy:"admin", assignedMode: force?"force-manual":"manual", forced:force});
+      if(r.ok) alert(`✅ 已派發：p${pid} ← ${eid}${force?"（強制覆蓋）":""}`);
+      else alert("⚠️ 玩家已有 pending 任務（未覆蓋）。把「強制模式」改成是即可覆蓋。");
+    };
+
+    async function claimOneEventRandomly(ids){
+      for(const eid of ids){
+        const tx = await claimRef(eid).transaction(curr=>{
+          if(curr === null){
+            return { claimedAt: Date.now() };
+          }
+          return;
+        });
+        if(tx.committed) return eid;
+      }
+      return null;
+    }
+
+    async function autoAssignAll(){
+      const minutes = Math.max(1, num(document.getElementById("ev_minutes").value));
+      const force = document.getElementById("ev_forceModeAuto").value === "1";
+      const ids = Object.keys(eventsCache || {});
+      if(!ids.length) return alert("events 裡沒有事件，先新增。");
+      shuffle(ids);
+
+      const results = [];
+      for(let pid=1; pid<=MAX_P; pid++){
+        const picked = await claimOneEventRandomly(ids);
+        if(!picked){
+          results.push(`p${pid}:（沒有可用事件）`);
+          continue;
+        }
+
+        await claimRef(picked).transaction(curr=>{
+          if(curr && !curr.claimedBy) return { ...curr, claimedBy:`p${pid}` };
+          return curr;
+        });
+
+        const r = await assignEventToPlayer(pid, picked, minutes, force, {assignedBy:"system", assignedMode: force?"force-auto":"auto"});
+        if(r.ok) results.push(`p${pid}: ${picked}`);
+        else results.push(`p${pid}:（跳過：已有 pending）`);
+      }
+      alert("自動分配完成：\n" + results.join("\n"));
+    }
+
+    async function resetClaims(){
+      if(!confirm("確定要重置 eventClaims/global？（所有事件可再次分配）")) return;
+      await db.ref(globalClaimsPath()).remove();
+      alert("✅ 已重置 eventClaims/global");
+    }
+
+    function renderFinishList(arr){
+      const el = document.getElementById("finishList");
+      if(!arr.length){
+        el.innerHTML = `<div class="item"><div style="font-weight:1000;">（目前沒有待審核）</div><div class="hint">玩家按「我完成了」後會出現在這裡。</div></div>`;
+        return;
+      }
+
+      el.innerHTML = arr.map(({pid,ev})=>{
+        const when = ev.finishRequest?.requestedAt ? new Date(ev.finishRequest.requestedAt).toLocaleString() : "";
+        const cost = fmtObj(ev.cost);
+        const refund = fmtObj(ev.refund);
+        const reward = fmtObj(ev.reward);
+
+        return `
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:1000;">p${pid}｜${escapeHtml(ev.title||"隨機事件")}</div>
+                <div class="hint" style="margin-top:6px;">
+                  事件：${escapeHtml(ev.eid||"")}｜申請：${escapeHtml(when)}<br>
+                  ${cost ? `cost（已扣）：${escapeHtml(cost)}<br>` : "cost（已扣）：（無）<br>"}
+                  ${refund ? `refund（同意加回）：${escapeHtml(refund)}<br>` : "refund（同意加回）：（無）<br>"}
+                  ${reward ? `reward（同意發放）：${escapeHtml(reward)}<br>` : "reward（同意發放）：（無）<br>"}
+                  <span class="tag pending">待審核</span>
+                </div>
+              </div>
+              <span class="tag">finishRequest</span>
+            </div>
+
+            <div class="hint" style="margin-top:10px;font-weight:1000;">Bonus（額外加成）</div>
+            <div class="row6" style="margin-top:8px">
+              <input id="b_time_${pid}" type="number" placeholder="+時間" value="0">
+              <input id="b_money_${pid}" type="number" placeholder="+金錢" value="0">
+              <input id="b_health_${pid}" type="number" placeholder="+健康" value="0">
+              <input id="b_knowledge_${pid}" type="number" placeholder="+知識" value="0">
+              <input id="b_social_${pid}" type="number" placeholder="+人際" value="0">
+              <input id="b_score_${pid}" type="number" placeholder="+分數" value="0">
+            </div>
+
+            <div class="actions">
+              <button class="btn plus smallBtn" onclick="approveFinish(${pid})">同意（加 refund + reward + bonus）</button>
+              <button class="btn danger smallBtn" onclick="rejectFinish(${pid})">駁回</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function readBonus(pid){
+      return compactObj({
+        time: document.getElementById(`b_time_${pid}`)?.value,
+        money: document.getElementById(`b_money_${pid}`)?.value,
+        health: document.getElementById(`b_health_${pid}`)?.value,
+        knowledge: document.getElementById(`b_knowledge_${pid}`)?.value,
+        social: document.getElementById(`b_social_${pid}`)?.value,
+        score: document.getElementById(`b_score_${pid}`)?.value
+      });
+    }
+
+    window.approveFinish = async (pid)=>{
+      const evRef = db.ref(activePath(pid));
+      const snap = await evRef.get();
+      const ev = snap.val();
+
+      if(!ev || !ev.finishRequest || ev.finishRequest.status!=="pending"){
+        return alert("這筆已不存在或不是待審核狀態。");
+      }
+
+      const refund = ev.refund || {};   // ✅ 用 refund，不用 cost
+      const reward = ev.reward || {};
+      const bonus  = readBonus(pid);
+
+      const delta = {};
+      const keys = ["time","money","health","knowledge","social","score"];
+      keys.forEach(k=>{
+        const add = num(refund[k]) + num(reward[k]) + num(bonus[k]);
+        if(add !== 0) delta[k] = add;
+      });
+
+      await db.ref(resPath(pid)).transaction(curr=>{
+        const base = curr && typeof curr==="object" ? curr : {};
+        const out = { ...base };
+        keys.forEach(k=>{
+          out[k] = num(out[k]) + num(delta[k]);
+        });
+        return out;
+      });
+
+      await evRef.update({
+        status: "success",
+        finishRequest: {
+          ...(ev.finishRequest || {}),
+          status: "approved",
+          approvedAt: Date.now(),
+          approvedBy: "admin"
+        },
+        appliedDelta: delta,
+        appliedAt: Date.now()
+      });
+
+      alert(`✅ 已同意 p${pid} 完成\n${fmtObj(delta) ? "加成："+fmtObj(delta) : ""}`);
+    };
+
+    window.rejectFinish = async (pid)=>{
+      const evRef = db.ref(activePath(pid));
+      const snap = await evRef.get();
+      const ev = snap.val();
+
+      if(!ev || !ev.finishRequest || ev.finishRequest.status!=="pending"){
+        return alert("這筆已不存在或不是待審核狀態。");
+      }
+
+      await evRef.update({
+        finishRequest: {
+          ...(ev.finishRequest || {}),
+          status: "rejected",
+          rejectedAt: Date.now(),
+          rejectedBy: "admin"
+        }
+      });
+
+      alert(`已駁回 p${pid} 完成申請`);
+    };
+
+    function watchFinishRequests(){
+      db.ref("players").on("value", snap=>{
+        const players = snap.val() || {};
+        const pendings = [];
+
+        for(let i=1;i<=MAX_P;i++){
+          const p = players[`p${i}`] || {};
+          const ev = p.activeEvent || null;
+          if(!ev) continue;
+
+          const fr = ev.finishRequest || null;
+          if(fr && fr.status==="pending"){
+            pendings.push({ pid:i, ev });
+          }
+        }
+        renderFinishList(pendings);
+      });
+    }
+
+    /***********************
+     * DOM Ready
+     ***********************/
+    /* ===== 玩家資料面板（admin可輸入稱號；顯示頭像/狀態） ===== */
+function esc(s){
+  return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+}
+function renderProfileGrid(players){
+  const grid = document.getElementById("profileGrid");
+  if(!grid) return;
+  let html = "";
+  for(let i=1;i<=MAX_P;i++){
+    const p = players[`p${i}`] || {};
+    const name = (p.name || `玩家${i}`).trim();
+    const avatar = p.avatar || "";
+    const title = (p.titleCustom || "").trim();
+    const autoTitle = (p.roleLabelAuto || p.roleLabel || "").trim();
+    const res = p.res || {};
+    html += `
+      <div class="card" style="margin:0; padding:12px 12px;">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div style="width:52px;height:52px;border-radius:16px;overflow:hidden;background:rgba(2,6,23,0.06);border:1px solid rgba(2,6,23,0.10);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+            ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;display:block;">` : `<span style="font-weight:900;opacity:.75;">${esc(name.slice(0,1)||String(i))}</span>`}
+          </div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-weight:900;">p${i}｜${esc(name)}</div>
+            <div style="opacity:.8; font-size:.92rem; margin-top:2px;">自動稱號：${autoTitle ? esc(autoTitle) : "（尚未產生）"}</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div style="font-weight:900; margin-bottom:6px;">管理員自訂稱號</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="t_in_${i}" class="input" placeholder="例如：年度 MVP / 學習王" value="${esc(title)}" style="flex:1;">
+            <button class="btn" data-savett="${i}">儲存</button>
+          </div>
+          <div class="hint" style="margin-top:6px;">目前顯示：<b>${esc((title||autoTitle)||"（未設定）")}</b></div>
+          <div style="margin-top:10px;">
+            <div style="font-weight:900; margin-bottom:6px;">玩家頭像（可上傳/更換）</div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input id="av_in_${i}" type="file" accept="image/*" class="input" style="flex:1; min-width:180px; padding:10px 12px;">
+              <button class="btn" data-saveav="${i}" type="button">上傳</button>
+              <button class="btn danger" data-clearav="${i}" type="button">清除</button>
+            </div>
+            <div class="hint" style="margin-top:6px;">會寫入 <span class="kbd">players/p${i}/avatar</span>（dataURL）。</div>
+          </div>
+
+
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+            <span class="pill" style="background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.22);">⭐ ${Number(res.score||0)}</span>
+            <span class="pill">⏳ ${Number(res.time||0)}</span>
+            <span class="pill">💰 ${Number(res.money||0)}</span>
+            <span class="pill">❤️ ${Number(res.health||0)}</span>
+            <span class="pill">📚 ${Number(res.knowledge||0)}</span>
+            <span class="pill">🤝 ${Number(res.social||0)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+}
+function bindProfileGrid(){
+  db.ref("players").on("value", s=>{
+    renderProfileGrid(s.val() || {});
+  });
+}
+async function saveTitleCustom(pid){
+  const v = (document.getElementById(`t_in_${pid}`)?.value || "").trim();
+  await db.ref(`players/p${pid}`).update({ titleCustom: v || null, titleUpdatedAt: Date.now(), titleUpdatedBy: "admin" });
+  alert(`已更新 p${pid} 稱號`);
+}
+
+
+/* ========= 玩家資料面板：事件委派（稱號/頭像） ========= */
+function readAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=()=>resolve(String(fr.result||""));
+    fr.onerror=()=>reject(fr.error||new Error("file read error"));
+    fr.readAsDataURL(file);
+  });
+}
+
+// 簡易壓縮：限制寬高 <= 320，品質 0.85（避免 RTDB 太大）
+async function compressImageDataURL(dataUrl, max=320, quality=0.85){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const w=img.width, h=img.height;
+      const scale=Math.min(1, max/Math.max(w,h));
+      const cw=Math.round(w*scale), ch=Math.round(h*scale);
+      const c=document.createElement("canvas");
+      c.width=cw; c.height=ch;
+      const ctx=c.getContext("2d");
+      ctx.drawImage(img,0,0,cw,ch);
+      try{
+        resolve(c.toDataURL("image/jpeg", quality));
+      }catch(e){
+        resolve(dataUrl);
+      }
+    };
+    img.onerror=()=>resolve(dataUrl);
+    img.src=dataUrl;
+  });
+}
+
+function bindProfileActions(){
+  const grid=document.getElementById("profileGrid");
+  if(!grid || grid.__bound) return;
+  grid.__bound=true;
+
+  grid.addEventListener("click", async (e)=>{
+    const btn=e.target.closest("button");
+    if(!btn) return;
+
+    const pid = btn.dataset.savett || btn.dataset.saveav || btn.dataset.clearav;
+    if(!pid) return;
+
+    try{
+      if(btn.dataset.savett){
+        await saveTitleCustom(pid);
+        return;
+      }
+
+      if(btn.dataset.clearav){
+        if(!confirm(`確定清除 p${pid} 頭像？`)) return;
+        await db.ref(`players/p${pid}`).update({ avatar:null, avatarType:null, avatarUpdatedAt:Date.now(), avatarUpdatedBy:"admin" });
+        alert(`已清除 p${pid} 頭像`);
+        return;
+      }
+
+      if(btn.dataset.saveav){
+        const input=document.getElementById(`av_in_${pid}`);
+        const file=input?.files?.[0];
+        if(!file) return alert("請先選擇一張照片");
+        const raw=await readAsDataURL(file);
+        const dataUrl=await compressImageDataURL(raw, 360, 0.86);
+        await db.ref(`players/p${pid}`).update({
+          avatar: dataUrl,
+          avatarType: "dataurl",
+          avatarUpdatedAt: Date.now(),
+          avatarUpdatedBy: "admin"
+        });
+        alert(`已更新 p${pid} 頭像`);
+        input.value="";
+        return;
+      }
+    }catch(err){
+      console.error(err);
+      alert("操作失敗：" + (err?.message || err));
+    }
+  });
+}
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+      bindProfileGrid();
+      bindProfileActions();
+      setTimerDisplay(timeLeft);
+      syncCtrlVals();
+      bindMarquee();
+
+      // marquee buttons
+      document.getElementById("btnBroadcast").addEventListener("click", () => {
+        try { sendTextBroadcast(); }
+        catch(e){ alert("你目前是 admin1：跑馬燈已鎖定（只有 admin2 可用）。"); }
+      });
+      document.getElementById("btnBroadcastClear").addEventListener("click", () => {
+        try { clearBroadcast(); }
+        catch(e){ alert("你目前是 admin1：跑馬燈已鎖定（只有 admin2 可用）。"); }
+      });
+
+      // timer
+      document.getElementById("btnTimerStart").addEventListener("click", () => controlTimer("start"));
+      document.getElementById("btnTimerPause").addEventListener("click", () => controlTimer("pause"));
+      document.getElementById("btnTimerReset").addEventListener("click", () => controlTimer("reset"));
+
+      // controls (danmaku)
+      document.getElementById("btnSaveCtrl").addEventListener("click", async () => {
+        try {
+          admin2Only();
+          await ctrlRef.update({
+            danmakuEnabled: document.getElementById("ctrlDanmakuEnable").checked,
+            danmakuDurationSec: Number($d.value),
+            danmakuFontSizePx: Number($f.value),
+            danmakuMaxOnScreen: Number($x.value),
+            updatedAt: Date.now()
+          });
+          alert("已套用到大螢幕！");
+        } catch (e) {
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
+        }
+      });
+
+      document.getElementById("btnResetCtrl").addEventListener("click", async () => {
+        try {
+          admin2Only();
+          await ctrlRef.set({
+            danmakuEnabled: true,
+            danmakuDurationSec: 10,
+            danmakuFontSizePx: 22,
+            danmakuMaxOnScreen: 8,
+            updatedAt: Date.now()
+          });
+          alert("已還原預設！");
+        } catch (e) {
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
+        }
+      });
+
+      document.getElementById("btnClearDanmaku").addEventListener("click", async () => {
+        if (!confirm("確定要清空彈幕（purchaseFeed）？")) return;
+        try {
+          admin2Only();
+          await db.ref("purchaseFeed").remove();
+          alert("彈幕已清空！");
+        } catch (e) {
+          alert("你目前是 admin1：彈幕控制已鎖定（只有 admin2 可用）。");
+        }
+      });
+
+      // reset
+      document.getElementById("btnResetAllRes").addEventListener("click", resetAllRes);
+      document.getElementById("btnResetTotal").addEventListener("click", resetTotal);
+
+      // request actions
+      document.getElementById("btnSubmitReq").addEventListener("click", async () => {
+        const label = document.getElementById("deviceLabel").value || "";
+        const want  = document.getElementById("reqType").value || "admin1";
+        const pass  = (document.getElementById("reqPass").value || "").trim();
+
+        if (pass !== ADMIN_REQUEST_PASSWORD) {
+          alert("申請密碼錯誤");
+          return;
+        }
+
+        try {
+          const cnt = await activeAdminCount();
+          if (cnt >= ADMIN_LIMIT) {
+            alert("管理員設備已滿 10 台，請先請 SUPER 剔除舊設備。");
+            return;
+          }
+          await submitJoinRequest(want, label);
+          alert("已送出申請！請通知 SUPER 核可後再重新整理。");
+        } catch (e) {
+          alert(e.message || "送出失敗");
+        }
+      });
+
+      document.getElementById("btnResetDevice").addEventListener("click", () => {
+        if (!confirm("確定重設本機 deviceId？（會被視為新裝置，需要重新申請）")) return;
+        localStorage.removeItem("device_id");
+        location.reload();
+      });
+
+      // ✅ event buttons
+      document.getElementById("btnSaveEvent").addEventListener("click", async ()=>{
+        const {eid, payload} = readEventForm();
+        await db.ref(`${eventsPath()}/${eid}`).set(payload);
+        document.getElementById("ev_eid").value = eid;
+        alert(`✅ 已存到事件庫：${eid}`);
+      });
+      document.getElementById("btnClearEvent").addEventListener("click", clearEventForm);
+      document.getElementById("btnAssignEvent").addEventListener("click", async ()=>{
+        const pid = document.getElementById("ev_pid").value;
+        const minutes = Math.max(1, num(document.getElementById("ev_minutes").value));
+        const force = document.getElementById("ev_forceMode").value === "1";
+
+        // 先確保事件已寫入
+        const {eid, payload} = readEventForm();
+        await db.ref(`${eventsPath()}/${eid}`).set(payload);
+        document.getElementById("ev_eid").value = eid;
+
+        const r = await assignEventToPlayer(pid, eid, minutes, force, {assignedBy:"admin", assignedMode: force?"force-manual":"manual", forced:force});
+        if(r.ok) alert(`✅ 已派發：p${pid} ← ${eid}${force?"（強制覆蓋）":""}`);
+        else alert("⚠️ 玩家已有 pending 任務（未覆蓋）。把「強制模式」改成是即可覆蓋。");
+      });
+      document.getElementById("btnAutoAssign").addEventListener("click", autoAssignAll);
+      document.getElementById("btnResetClaims").addEventListener("click", resetClaims);
+
+      // Gate now
+      const deviceId = getDeviceId();
+      const role = await getAllowedAdminRole(deviceId);
+      if (!role) {
+        showRequestUI(deviceId);
+      } else {
+        showAdminUI(role, deviceId);
+      }
+    });
+  </script>
+
+  <!-- 你原本保留的外部檔（若確定沒用可刪） -->
+  <script src="./js/site-ui-db.js"></script>
+</body>
+</html>
