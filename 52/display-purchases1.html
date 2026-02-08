@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大螢幕 - 排行榜 + 達成清單</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    /* ====== 大螢幕不裁切：基底 ====== */
+    html, body{
+      width:100%;
+      height:100%;
+      margin:0;
+    }
+
+    body{
+      background:#ffffff;
+      color:#2c3e50;
+      font-family:'PingFang TC','Microsoft JhengHei',sans-serif;
+
+      /* 用 min-height + svh 避免投影/全螢幕 vh 算錯 */
+      min-height:100vh;
+      min-height:100svh;
+
+      box-sizing:border-box;
+      padding:10px 20px;
+
+      /* ✅ 不要 hidden，避免裁切 */
+      overflow-x:hidden;
+      overflow-y:auto;
+
+      /* ✅ 用 column：header 固定，main 吃剩下 */
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Header */
+    #display-header{
+      display:flex;
+      gap:15px;
+      margin-bottom:12px;
+      height:60px;
+      position:relative;
+      z-index:2;
+      flex:0 0 auto;
+    }
+    #announcement-bar{
+      flex:3;
+      background:#3498db;
+      border-radius:12px;
+      display:none;
+      overflow:hidden;
+      white-space:nowrap;
+    }
+    #msg-box{
+      display:inline-block;
+      padding-left:100%;
+      animation: marquee-left 10s linear infinite; /* JS 會覆蓋速度/方向 */
+      font-size:1.5em;
+      font-weight:900;
+      color:white;
+      line-height:60px;
+      margin:0;
+    }
+    @keyframes marquee-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+    @keyframes marquee-right{0%{transform:translateX(0);}100%{transform:translateX(100%);}}
+
+    #timer-bar{
+      flex:1;
+      background:#e74c3c;
+      border-radius:12px;
+      text-align:center;
+      color:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    #timer-box{margin:0;font-size:2.5em;font-family:monospace;font-weight:900;}
+
+    /* Layout */
+    #main{
+      flex:1 1 auto;      /* ✅ 吃剩餘高度 */
+      display:flex;
+      gap:16px;
+      min-height:0;       /* ✅ 關鍵：避免內層被裁/無法滾動 */
+      position:relative;
+      z-index:1;
+      height:auto;        /* ✅ 不用 calc(100vh - ...) */
+    }
+    #left{
+      flex:1.2;
+      min-width:520px;
+      overflow:auto;      /* ✅ 不裁切 */
+      min-height:0;
+    }
+    #right{
+      flex:1;
+      overflow:auto;      /* ✅ 不裁切 */
+      min-height:0;
+      border-left:1px dashed #e5e5e5;
+      padding-left:16px;
+    }
+
+    /* Scoreboard rows (copy from display.html) */
+    .p-row{
+      background:#fdfdfd;
+      margin-bottom:5px;
+      padding:5px 15px;
+      border-radius:8px;
+      display:flex;
+      align-items:center;
+      border:1px solid #eee;
+
+      /* 原本 height:7vh 在大螢幕縮放時可能過高/過低；
+         改成 clamp 更穩定（仍保有大螢幕比例感） */
+      height:clamp(44px, 7vh, 92px);
+      box-sizing:border-box;
+    }
+    .rank-1{background:#fffcf0;border-color:#ffd700;border-left:10px solid #ffd700;}
+    .rank-2{background:#fafdff;border-color:#bdc3c7;border-left:10px solid #bdc3c7;}
+    .rank-3{background:#fff9f5;border-color:#e67e22;border-left:10px solid #e67e22;}
+
+    .rank-num{font-size:1.4em;font-weight:900;width:35px;color:#95a5a6;}
+    .rank-1 .rank-num{color:#f1c40f;}
+
+    .player-name{font-size:1.05em;font-weight:900;width:190px;color:#34495e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .player-link{appearance:none;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;}
+    .player-link:hover{background:rgba(52,73,94,0.06)}
+    .player-link .ava{width:34px;height:34px;border-radius:12px;object-fit:cover;border:1px solid rgba(0,0,0,0.08)}
+    .player-link .nm{display:block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    .res-summary{flex:1;display:flex;justify-content:space-around;font-size:0.95em;padding:0 10px;gap:10px;}
+    .res-item{display:flex;align-items:center;gap:4px;font-weight:700;white-space:nowrap;}
+    .res-label{font-size:0.85em;}
+
+    .res-score{color:#e67e22;background:rgba(230,126,34,0.1);padding:2px 10px;border-radius:6px;border:1px solid rgba(230,126,34,0.2);}
+
+    .total-box{width:100px;text-align:right;border-left:1px dashed #ddd;padding-left:10px;}
+    .total-val{font-size:1.6em;font-weight:900;color:#2980b9;}
+    .pts{font-size:0.5em;color:#7f8c8d;margin-left:2px;}
+
+    /* Purchases panel */
+    #purchases-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0 0 10px 0;
+      font-size:1.3em;
+      font-weight:900;
+      color:#2c3e50;
+      position:sticky;   /* ✅ 右欄滾動時標題不亂跑 */
+      top:0;
+      background:rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      padding:6px 0;
+      z-index:2;
+    }
+
+    .buy-card{
+      background:#fafafa;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:10px 12px;
+      margin-bottom:10px;
+    }
+    .buy-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .buy-name{
+      font-weight:900;
+      color:#34495e;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width:70%;
+    }
+    .buy-count{
+      font-weight:800;
+      color:#f39c12;
+      font-size:0.95em;
+      background:rgba(243,156,18,0.12);
+      border:1px solid rgba(243,156,18,0.25);
+      padding:2px 8px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+    .buy-items{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      max-height:18vh;
+      overflow:auto;     /* ✅ 原本 hidden 會裁切 */
+      padding-bottom:2px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:#ffffff;
+      border:1px solid #eaeaea;
+      padding:4px 8px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:0.92em;
+      color:#2c3e50;
+    }
+    .chip img{
+      width:22px;
+      height:22px;
+      border-radius:6px;
+      object-fit:cover;
+      border:1px solid #eee;
+    }
+    .chip .icon{
+      width:22px;
+      height:22px;
+      border-radius:6px;
+      border:1px dashed #ddd;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#aaa;
+      font-size:0.95em;
+    }
+
+    /* Danmaku overlay */
+    #danmaku-layer{
+      position:fixed;
+      left:0;
+      top:0;
+      width:100vw;
+      min-height:100vh;
+      min-height:100svh;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:3;
+    }
+    .danmaku{
+      font-size: var(--danmaku-font-size, 22px);
+      position:absolute;
+      right:-40vw;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:6px 12px;
+      border-radius:999px;
+      font-weight:900;
+      color:#ffffff;
+      background:rgba(243,156,18,0.95); /* 橙色彈幕 */
+      box-shadow:0 6px 18px rgba(0,0,0,0.14);
+      will-change:transform;
+      animation:fly var(--danmaku-duration, 10s) linear forwards;
+      max-width:78vw;
+    }
+    .danmaku span{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width:70vw;
+    }
+    .danmaku img{
+      width:28px;
+      height:28px;
+      border-radius:8px;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,0.7);
+    }
+    @keyframes fly{
+      from{transform:translateX(0);} to{transform:translateX(-140vw);}
+    }
+  </style>
+
+  <!-- ==== Unified Mobile Theme v3 (light + lively) ==== -->
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --row:rgba(2,6,23,0.05);
+      --text:#0f172a;
+      --muted:rgba(15,23,42,0.72);
+      --shadow:rgba(2,6,23,0.12);
+
+      --blue:#3b82f6;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --violet:#8b5cf6;
+      --yellow:#fbbf24;
+
+      --radius:18px;
+    }
+
+    html,body{height:100%;}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif !important;
+      background:
+        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+        radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+        var(--bg) !important;
+      color:var(--text) !important;
+      margin:0 !important;
+
+      /* ✅ 重要：不要讓 theme 改掉 padding 導致裁切 */
+      padding:10px 20px !important;
+
+      -webkit-text-size-adjust:100%;
+    }
+
+    /* mobile-first container */
+    .wrap,.menu,.container,.main,.app{
+      width:100%;
+      max-width:720px;
+      margin:0 auto;
+    }
+
+    /* common card look */
+    .card,.box,.config-card,#auth-overlay>div{
+      background:var(--card) !important;
+      color:var(--text) !important;
+      border-radius:var(--radius) !important;
+      box-shadow:0 10px 26px var(--shadow) !important;
+      border:1px solid rgba(2,6,23,0.08) !important;
+    }
+
+    /* tighten text */
+    p,.hint,.sub,.small{color:var(--muted) !important;}
+
+    h1{font-size:1.6rem;margin:10px 0 12px;}
+    h2{font-size:1.25rem;}
+    h3{font-size:1.1rem;}
+
+    /* buttons */
+    .btn,.global-btn,.menu .btn,a.btn{
+      border-radius:14px !important;
+      font-weight:900 !important;
+      letter-spacing:0.2px;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+    .btn.plus{background:var(--ok) !important;}
+    .btn.plus10{background:rgba(34,197,94,0.92) !important;}
+    .btn.minus{background:rgba(239,68,68,0.75) !important;}
+    .btn.minus10{background:var(--danger) !important;}
+    .btn.warn{background:var(--warn) !important; color:#1b1203 !important;}
+    .btn.danger{background:var(--danger) !important;}
+    .btn.blue{background:var(--blue) !important;}
+    .btn.purple{background:var(--violet) !important;}
+
+    /* inputs */
+    input,select,textarea{
+      border-radius:12px !important;
+      font-size:16px !important;
+      background:#ffffff !important;
+      color:var(--text) !important;
+      border:1px solid rgba(2,6,23,0.14) !important;
+      box-shadow:0 6px 16px rgba(2,6,23,0.06);
+    }
+
+    /* rows */
+    .res-row,.row{flex-wrap:wrap;}
+    .res-row{background:var(--row) !important;}
+
+    /* values */
+    .val{color:var(--blue) !important;}
+
+    /* bottom actions */
+    .bottom-actions{width:100%;max-width:720px;margin:24px auto !important;}
+
+    /* overlay */
+    #auth-overlay{background:rgba(15,23,42,0.55) !important; backdrop-filter: blur(6px);}
+  </style>
+
+</head>
+<body data-page="display">
+  <div id="danmaku-layer"></div>
+
+  <div id="display-header">
+    <div id="announcement-bar"><p id="msg-box"></p></div>
+    <div id="timer-bar"><h1 id="timer-box">00:00</h1></div>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div id="board-list"></div>
+    </div>
+    <div id="right">
+      <div id="purchases-title"><i class="fas fa-receipt"></i> 玩家達成清單（人生背包）</div>
+      <div id="purchases-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = { databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ===== 控制台參數（從 /controls 讀取）=====
+    let MAX_DANMAKU_ONSCREEN = 8;
+    let DANMAKU_ENABLED = true;
+    const controlsRef = db.ref("controls");
+    controlsRef.on("value", (snap) => {
+      const c = snap.val() || {};
+      const danmakuSec = Number(c.danmakuDurationSec ?? 10);
+      const fontPx = Number(c.danmakuFontSizePx ?? 22);
+      const maxOn = Number(c.danmakuMaxOnScreen ?? 8);
+
+      document.documentElement.style.setProperty("--danmaku-duration", `${Math.max(3, Math.min(60, danmakuSec))}s`);
+      document.documentElement.style.setProperty("--danmaku-font-size", `${Math.max(12, Math.min(64, fontPx))}px`);
+      MAX_DANMAKU_ONSCREEN = Math.max(1, Math.min(30, maxOn));
+      DANMAKU_ENABLED = (c.danmakuEnabled !== false);
+    });
+
+    // ===== 跑馬燈公告（從 /marquee 讀取）=====
+    const marqueeRef = db.ref("marquee");
+    const bar = document.getElementById("announcement-bar");
+    const msgBox = document.getElementById("msg-box");
+
+    marqueeRef.on("value", (snap) => {
+      const v = snap.val() || {};
+      const enabled   = v.enabled ?? true;
+      const text      = (v.text ?? "").toString();
+      const speedSec  = Math.max(3, Number(v.speedSec ?? 10));
+      const direction = (v.direction === "right") ? "right" : "left";
+      const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
+
+      if (!bar || !msgBox) return;
+
+      bar.style.display = (enabled && text.trim()) ? "block" : "none";
+      if (!(enabled && text.trim())) return;
+
+      msgBox.textContent = "📢 " + text;
+      msgBox.style.fontSize = fontSize + "px";
+
+      if (v.bgColor) bar.style.background = v.bgColor;
+      if (v.textColor) bar.style.color = v.textColor;
+
+      msgBox.style.animation = "none";
+      void msgBox.offsetWidth;
+      msgBox.style.animation = `marquee-${direction} ${speedSec}s linear infinite`;
+    });
+
+    // 計時器同步
+    db.ref('timerSync').on('value', s => {
+      const d = s.val();
+      if (d) {
+        const m = Math.floor(d.timeLeft / 60).toString().padStart(2, '0');
+        const sc = (d.timeLeft % 60).toString().padStart(2, '0');
+        document.getElementById('timer-box').innerText = `${m}:${sc}`;
+        document.getElementById('timer-bar').style.background = (d.timeLeft <= 0) ? "#95a5a6" : "#e74c3c";
+      }
+    });
+
+    
+    function openCert(pid){
+      try{
+        window.open(`certificate.html?pid=${pid}`, "_blank");
+      }catch(e){
+        location.href = `certificate.html?pid=${pid}`;
+      }
+    }
+function safeVal(v){ return (typeof v === 'number' && isFinite(v)) ? v : (v || 0); }
+
+    // 排名監聽：分數第一、PTS 第二
+    db.ref('players').on('value', s => {
+      const data = s.val() || {};
+      const arr = [];
+      for (let i = 1; i <= 11; i++) {
+        const pKey = `p${i}`;
+        const pData = data[pKey] || {};
+        const r = pData.res || {};
+        const pts = safeVal(r.time) + safeVal(r.money) + safeVal(r.health) + safeVal(r.knowledge) + safeVal(r.social);
+        const score = safeVal(r.score);
+        arr.push({
+          pid: i,
+          name: pData.name || `玩家 ${i}`,
+          title: (pData.title || pData.nickname || '').trim(),
+          avatar: pData.avatar || '',
+          res: r,
+          pts,
+          score,
+          inventory: pData.inventory || {}
+        });
+      }
+
+      arr.sort((a,b)=> (b.score !== a.score) ? (b.score - a.score) : (b.pts - a.pts));
+
+      // 1) 左邊排行榜
+      const list = document.getElementById('board-list');
+      list.innerHTML = "";
+      arr.forEach((p, i) => {
+        const rank = i + 1;
+        const rClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+        list.innerHTML += `
+          <div class="p-row ${rClass}">
+            <div class="rank-num">${rank}</div>
+            <button class="player-name player-link" onclick="openCert(${p.pid})" title="開啟獎狀">${p.avatar?`<img class=\"ava\" src=\"${p.avatar}\" alt=\"\">`:``}<span class=\"nm\">${p.name}</span></button>
+            <div class="res-summary">
+              <div class="res-item" style="color:#8e44ad"><span class="res-label">時</span><i class="fas fa-clock"></i>${safeVal(p.res.time)}</div>
+              <div class="res-item" style="color:#f39c12"><span class="res-label">金</span><i class="fas fa-wallet"></i>${safeVal(p.res.money)}</div>
+              <div class="res-item" style="color:#c0392b"><span class="res-label">健</span><i class="fas fa-heartbeat"></i>${safeVal(p.res.health)}</div>
+              <div class="res-item" style="color:#2980b9"><span class="res-label">知</span><i class="fas fa-book"></i>${safeVal(p.res.knowledge)}</div>
+              <div class="res-item" style="color:#27ae60"><span class="res-label">人</span><i class="fas fa-users"></i>${safeVal(p.res.social)}</div>
+              <div class="res-item res-score"><span class="res-label">分</span><i class="fas fa-star"></i>${safeVal(p.res.score)}</div>
+            </div>
+            <div class="total-box"><span class="total-val">${p.pts}</span><span class="pts">PTS</span></div>
+          </div>`;
+      });
+
+      // 2) 右邊達成清單（依玩家編號固定順序）
+      const purchases = document.getElementById('purchases-list');
+      purchases.innerHTML = "";
+
+      const fixed = [...arr].sort((a,b)=>a.pid-b.pid);
+      fixed.forEach(p => {
+        const inv = p.inventory || {};
+        const items = Object.keys(inv).map(k => inv[k]).filter(Boolean);
+        items.sort((a,b)=> (safeVal(b.time) - safeVal(a.time)));
+
+        purchases.innerHTML += `
+          <div class="buy-card">
+            <div class="buy-head">
+              <div class="buy-name"><i class="fas fa-user"></i> ${p.name}</div>
+              <div class="buy-count">${items.length} 件</div>
+            </div>
+            <div class="buy-items">
+              ${items.slice(0, 12).map(it => {
+                const nm = it.name || '未命名';
+                const img = (it.imageUrl || '').trim();
+                return `
+                  <div class="chip" title="${nm}">
+                    ${img ? `<img src="${img}" alt="${nm}" />` : `<div class="icon">🛍️</div>`}
+                    <span>${nm}</span>
+                  </div>`;
+              }).join('')}
+              ${items.length > 12 ? `<div class="chip"><div class="icon">…</div><span>+${items.length-12}</span></div>` : ''}
+            </div>
+          </div>`;
+      });
+    });
+
+    // 橙色彈幕：監聽 purchaseFeed 的新增
+    db.ref('purchaseFeed').limitToLast(20).on('child_added', s => {
+      if (!DANMAKU_ENABLED) return;
+      const d = s.val();
+      if(!d) return;
+
+      const layer = document.getElementById('danmaku-layer');
+
+      // 同時彈幕數量上限：超過就先移除最舊的
+      while (layer.children.length >= MAX_DANMAKU_ONSCREEN) {
+        layer.removeChild(layer.firstElementChild);
+      }
+      const el = document.createElement('div');
+      el.className = 'danmaku';
+
+      // 隨機高度：避開 header
+      const topMin = 80;
+      const topMax = Math.max(topMin, window.innerHeight - 80);
+      const top = topMin + Math.floor(Math.random() * Math.max(1, topMax - topMin));
+      el.style.top = `${top}px`;
+
+      const who = d.playerName || `玩家${d.playerId || ''}`;
+      const what = d.itemName || '物品';
+      const img = (d.imageUrl || '').trim();
+
+      el.innerHTML = `
+        ${img ? `<img src="${img}" alt="${what}" />` : ''}
+        <span>${who} 達成了（${what}）</span>
+      `;
+
+      layer.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    });
+  </script>
+
+  <script src="./js/site-ui-db.js"></script>
+</body>
+</html>
