@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷｜Player（測試版：任務上傳）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --row:rgba(2,6,23,.05); --text:#0f172a; --muted:rgba(15,23,42,.72);
+      --blue:#3b82f6; --ok:#22c55e; --danger:#ef4444; --r:16px;
+    }
+    body{margin:0; font-family:'Segoe UI','Microsoft JhengHei',sans-serif; background:var(--bg); color:var(--text); padding:16px;}
+    .wrap{max-width:900px;margin:0 auto;}
+    .card{
+      background:var(--card); border:1px solid rgba(2,6,23,.08); border-radius:var(--r);
+      box-shadow:0 14px 40px rgba(2,6,23,.08); padding:14px; margin:12px 0;
+    }
+    h1{margin:8px 0 0; font-size:22px;}
+    .hint{color:var(--muted); font-size:13px; line-height:1.5;}
+    input,select,textarea{
+      width:100%; padding:12px; border-radius:12px; border:1px solid rgba(2,6,23,.10);
+      box-sizing:border-box; font-size:16px; outline:none;
+      background:#fff; color:var(--text);
+    }
+    textarea{min-height:90px; resize:vertical;}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .row > *{flex:1; min-width:220px;}
+    .btn{
+      border:none; border-radius:12px; padding:10px 12px; cursor:pointer;
+      font-weight:900; color:#fff; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn.blue{background:var(--blue)}
+    .btn.ok{background:var(--ok)}
+    .btn.danger{background:var(--danger)}
+    .progress{
+      height:12px; border-radius:999px; overflow:hidden; background:rgba(2,6,23,.08);
+      border:1px solid rgba(2,6,23,.08);
+    }
+    .bar{height:100%; width:0%; background:var(--blue); transition:width .15s;}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px; background:rgba(2,6,23,.04); border:1px solid rgba(2,6,23,.08);
+      font-weight:900; font-size:13px;
+    }
+    .hide{display:none !important;}
+    .img{
+      width:240px; max-width:100%; border-radius:12px; margin-top:10px;
+      border:1px solid rgba(2,6,23,.10);
+      background:rgba(2,6,23,.04);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📤 Player（測試版）｜任務上傳</h1>
+  <div class="hint">流程：選圖 → Storage（uploads/p{pid}/…）→ RTDB（uploadsIndex + players/pX/uploads）→ 100% 顯示完成並自動收起</div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="hint">玩家</div>
+        <select id="pid">
+          <option value="1">p1</option><option value="2">p2</option><option value="3">p3</option>
+          <option value="4">p4</option><option value="5">p5</option><option value="6">p6</option>
+          <option value="7">p7</option><option value="8">p8</option><option value="9">p9</option>
+          <option value="10">p10</option><option value="11">p11</option>
+        </select>
+      </div>
+      <div>
+        <div class="hint">任務標題（可空）</div>
+        <input id="taskTitle" placeholder="例如：打卡照片 / 任務完成截圖">
+      </div>
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <div class="row">
+      <div>
+        <div class="hint">備註（可空）</div>
+        <textarea id="note" placeholder="例如：我已完成某某任務…"></textarea>
+      </div>
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <div class="row">
+      <div>
+        <div class="hint">選擇圖片（可相簿/相機）</div>
+        <!-- capture 不會阻止相簿，手機通常會提供「相機/相簿」選項 -->
+        <input id="file" type="file" accept="image/*" capture="environment" />
+      </div>
+      <div style="flex:0; min-width:160px;">
+        <button class="btn blue" id="btnUpload" style="width:100%;">開始上傳</button>
+      </div>
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div class="hint" id="statusText" style="margin-top:8px;">等待上傳</div>
+
+    <img id="preview" class="img hide" alt="preview">
+
+    <div id="doneBox" class="hide" style="margin-top:10px;">
+      <div class="pill" style="color:var(--ok); border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.10);">
+        ✅ 完成（等待管理員查看）
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="hint" style="margin-bottom:8px;">最近 10 筆上傳（本玩家）</div>
+    <div id="recent"></div>
+  </div>
+</div>
+
+<script>
+  // =========================
+  // Firebase 初始化
+  // =========================
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+  const st = firebase.storage();
+
+  const $ = (id)=>document.getElementById(id);
+
+  // 匿名登入（測試用：避免你還沒做玩家登入流程也能測上傳）
+  auth.signInAnonymously().catch(console.warn);
+
+  function resetUI(){
+    $("bar").style.width = "0%";
+    $("statusText").textContent = "等待上傳";
+    $("doneBox").classList.add("hide");
+  }
+
+  $("file").addEventListener("change", ()=>{
+    const f = $("file").files[0];
+    if(!f){ $("preview").classList.add("hide"); return; }
+    const url = URL.createObjectURL(f);
+    $("preview").src = url;
+    $("preview").classList.remove("hide");
+    resetUI();
+  });
+
+  function fmtTime(ts){
+    if(!ts) return "-";
+    try{ return new Date(ts).toLocaleString(); }catch(e){ return String(ts); }
+  }
+
+  async function loadRecent(){
+    const pid = $("pid").value;
+    const snap = await db.ref(`players/p${pid}/uploads`).limitToLast(10).once("value");
+    const all = snap.val() || {};
+    const arr = Object.entries(all).map(([id,d])=>({id, ...(d||{})}));
+    arr.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+    const html = arr.map(x=>{
+      const stt = x.status || "pending";
+      const msg = x.msg || (stt==="done" ? "管理員已看過" : "等待管理員查看");
+      return `
+        <div style="padding:10px;border:1px solid rgba(2,6,23,.08);border-radius:12px;margin:8px 0;background:#fff;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="pill">狀態：<b>${stt}</b></span>
+            <span class="pill">時間：<b>${fmtTime(x.createdAt)}</b></span>
+          </div>
+          <div style="margin-top:6px;font-weight:900;">${x.taskTitle||"-"}</div>
+          <div class="hint">${msg}</div>
+          ${x.url ? `<a href="${x.url}" target="_blank" rel="noreferrer">開啟圖片</a>` : ``}
+        </div>
+      `;
+    }).join("");
+
+    $("recent").innerHTML = html || `<div class="hint">尚無上傳紀錄</div>`;
+  }
+
+  $("pid").addEventListener("change", loadRecent);
+  loadRecent();
+
+  async function upload(){
+    const pid = $("pid").value;
+    const file = $("file").files[0];
+    if(!file) return alert("請先選擇圖片");
+
+    $("btnUpload").disabled = true;
+    $("btnUpload").style.opacity = ".6";
+    $("doneBox").classList.add("hide");
+
+    const uploadId = db.ref().push().key;
+    const safeName = (file.name || "img").replace(/[^\w.\-]+/g, "_");
+    const storagePath = `uploads/p${pid}/${uploadId}_${safeName}`;
+    const ref = st.ref(storagePath);
+
+    const taskTitle = $("taskTitle").value.trim();
+    const note = $("note").value.trim();
+
+    try{
+      const task = ref.put(file);
+      task.on("state_changed", (s)=>{
+        const p = Math.round((s.bytesTransferred/s.totalBytes)*100);
+        $("bar").style.width = p + "%";
+        $("statusText").textContent = `上傳中 ${p}%`;
+      });
+
+      await task;
+      const url = await ref.getDownloadURL();
+
+      const now = Date.now();
+
+      // 全域索引
+      await db.ref(`uploadsIndex/${uploadId}`).set({
+        playerId: pid,
+        url,
+        storagePath,
+        fileName: file.name || safeName,
+        size: file.size || 0,
+        contentType: file.type || "",
+        taskTitle: taskTitle || "",
+        note: note || "",
+        status: "pending",
+        createdAt: now
+      });
+
+      // 玩家端記錄
+      await db.ref(`players/p${pid}/uploads/${uploadId}`).set({
+        url,
+        storagePath,
+        fileName: file.name || safeName,
+        size: file.size || 0,
+        taskTitle: taskTitle || "",
+        note: note || "",
+        status: "pending",
+        msg: "等待管理員查看",
+        createdAt: now
+      });
+
+      // 100% 完成：顯示完成並自動收起（這裡用 UI 收起，不會關頁）
+      $("bar").style.width = "100%";
+      $("statusText").textContent = "✅ 上傳完成";
+      $("doneBox").classList.remove("hide");
+
+      // 自動「收起上傳區」（把按鈕/欄位淡出）
+      setTimeout(()=>{
+        $("statusText").textContent = "✅ 完成（等待管理員查看）";
+      }, 250);
+
+      // 清空選檔（避免重複）
+      $("file").value = "";
+      $("taskTitle").value = "";
+      $("note").value = "";
+      $("preview").classList.add("hide");
+
+      await loadRecent();
+
+    }catch(err){
+      console.error(err);
+      alert("上傳失敗：" + (err?.message || String(err)));
+      $("statusText").textContent = "❌ 上傳失敗";
+    }finally{
+      $("btnUpload").disabled = false;
+      $("btnUpload").style.opacity = "1";
+    }
+  }
+
+  $("btnUpload").addEventListener("click", upload);
+</script>
+</body>
+</html>
