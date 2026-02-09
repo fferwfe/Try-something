@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷｜SUPER（測試版：任務上傳審核）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111c2e; --row:rgba(255,255,255,.06);
+      --text:#e5e7eb; --muted:#94a3b8; --ok:#22c55e; --danger:#ef4444; --blue:#3b82f6;
+      --r:16px;
+    }
+    body{
+      margin:0; font-family:'Segoe UI','Microsoft JhengHei',sans-serif;
+      background: radial-gradient(900px 600px at 15% 10%, rgba(59,130,246,.18), transparent 60%),
+                  radial-gradient(900px 600px at 85% 0%, rgba(34,197,94,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      padding:18px;
+    }
+    .wrap{max-width:1050px;margin:0 auto;}
+    .card{
+      background: linear-gradient(180deg, rgba(17,28,46,.98), rgba(17,28,46,.88));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:var(--r);
+      box-shadow: 0 14px 40px rgba(0,0,0,.40);
+      padding:14px;
+      margin:12px 0;
+    }
+    h1{margin:8px 0 0;font-size:22px;}
+    .hint{color:var(--muted);font-size:13px;line-height:1.5}
+    input,select{
+      width:100%; padding:12px; border-radius:12px; border:none; outline:none;
+      background:#eef2ff; color:#0f172a; font-size:16px;
+      box-sizing:border-box;
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .row > *{flex:1; min-width:220px;}
+    .btn{
+      border:none; border-radius:12px; padding:10px 12px; cursor:pointer;
+      font-weight:900; color:#fff; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn.blue{background:var(--blue)}
+    .btn.ok{background:var(--ok)}
+    .btn.danger{background:var(--danger)}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10);
+      font-weight:800; font-size:13px;
+    }
+    .list{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+    .item{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:12px;
+    }
+    .item-head{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+    .item-left{min-width:280px; flex:1;}
+    .item-right{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; min-width:180px;}
+    .img{
+      width:220px; max-width:100%; border-radius:12px; margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.15);
+    }
+    a{color:#93c5fd; word-break:break-all;}
+    .badge{
+      display:inline-block; padding:4px 10px; border-radius:999px; font-weight:900; font-size:12px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06);
+    }
+    .badge.pending{border-color:rgba(59,130,246,.35); background:rgba(59,130,246,.12); color:#cfe3ff;}
+    .badge.done{border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.12); color:#bff7cf;}
+    /* Cover */
+    #cover{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.55); z-index:9999;
+    }
+    #cover .box{
+      width:min(480px,92vw);
+      background:rgba(17,28,46,.96);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 18px 60px rgba(0,0,0,.55);
+    }
+    .hide{display:none !important;}
+  </style>
+</head>
+<body>
+  <div id="cover">
+    <div class="box" id="coverBox"></div>
+  </div>
+
+  <div id="main" class="hide">
+    <div class="wrap">
+      <h1>👑 SUPER（測試版）｜任務上傳審核</h1>
+      <div class="hint">此頁只有 Super UID 可以進。只顯示 <b>pending</b>，並提供「完成」按鈕（不提供核可/退回/刪除）。</div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="pill">Email：<b id="whoEmail">-</b></div>
+          </div>
+          <div>
+            <div class="pill">UID：<b id="whoUid">-</b></div>
+          </div>
+          <div style="flex:0; min-width:160px;">
+            <button class="btn danger" id="btnLogout" style="width:100%;">登出</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="margin-bottom:10px;">
+          <div>
+            <label class="hint">狀態</label>
+            <select id="filterStatus">
+              <option value="pending" selected>pending（只看待查看）</option>
+              <option value="done">done（已看過）</option>
+              <option value="all">all（全部）</option>
+            </select>
+          </div>
+          <div>
+            <label class="hint">玩家</label>
+            <select id="filterPid">
+              <option value="all" selected>全部玩家</option>
+              <option value="1">p1</option><option value="2">p2</option><option value="3">p3</option>
+              <option value="4">p4</option><option value="5">p5</option><option value="6">p6</option>
+              <option value="7">p7</option><option value="8">p8</option><option value="9">p9</option>
+              <option value="10">p10</option><option value="11">p11</option>
+            </select>
+          </div>
+          <div style="flex:0; min-width:160px;">
+            <button class="btn blue" id="btnReload" style="width:100%;">重新載入</button>
+          </div>
+        </div>
+
+        <div class="hint" id="stats">-</div>
+        <div class="list" id="list"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // =========================
+  // Firebase 初始化
+  // =========================
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  // 你的 super uid（照你提供的）
+  const SUPER_UID = "AT3xEkjygoZEcCbrG8VdZVklEfj1";
+
+  const $ = (id)=>document.getElementById(id);
+
+  function renderLogin(){
+    return `
+      <div style="font-weight:950;font-size:18px;margin-bottom:6px;">🔐 SUPER 登入</div>
+      <div class="hint" style="margin-bottom:10px;">請輸入 super 的 Email / Password</div>
+      <input id="loginEmail" type="email" placeholder="Email" />
+      <div style="height:8px;"></div>
+      <input id="loginPass" type="password" placeholder="Password" />
+      <div style="height:12px;"></div>
+      <button class="btn blue" id="btnLogin" style="width:100%;">登入</button>
+      <div class="hint" id="loginHint" style="color:#fecaca;margin-top:10px;"></div>
+    `;
+  }
+
+  function renderDenied(user){
+    return `
+      <div style="font-weight:950;font-size:18px;margin-bottom:6px;">⛔ 權限不足</div>
+      <div class="hint">你已登入：<b>${user?.email||"-"}</b>，但不是 Super UID。</div>
+      <div class="hint" style="margin-top:6px;">你的 UID：<b>${user?.uid||"-"}</b></div>
+      <div style="height:12px;"></div>
+      <button class="btn danger" id="btnLogoutCover" style="width:100%;">登出</button>
+    `;
+  }
+
+  function showCover(html){
+    $("cover").classList.remove("hide");
+    $("coverBox").innerHTML = html;
+  }
+  function hideCover(){ $("cover").classList.add("hide"); }
+  function showMain(){ $("main").classList.remove("hide"); }
+  function hideMain(){ $("main").classList.add("hide"); }
+
+  function bindLogin(){
+    const b = $("btnLogin");
+    if(!b) return;
+    b.onclick = async ()=>{
+      const email = $("loginEmail").value.trim();
+      const pass  = $("loginPass").value;
+      const hint  = $("loginHint");
+      if(!email || !pass){ hint.textContent="請輸入 Email / Password"; return; }
+      try{
+        hint.textContent="";
+        await auth.signInWithEmailAndPassword(email, pass);
+      }catch(err){
+        hint.textContent = err?.message || String(err);
+      }
+    };
+  }
+
+  async function gate(user){
+    if(!user){
+      hideMain();
+      showCover(renderLogin());
+      bindLogin();
+      return;
+    }
+    $("whoEmail").textContent = user.email || "-";
+    $("whoUid").textContent = user.uid || "-";
+
+    if(user.uid !== SUPER_UID){
+      hideMain();
+      showCover(renderDenied(user));
+      $("btnLogoutCover").onclick = ()=>auth.signOut();
+      return;
+    }
+    hideCover();
+    showMain();
+    await load();
+  }
+
+  auth.onAuthStateChanged(gate);
+  showCover(renderLogin());
+  bindLogin();
+
+  $("btnLogout").onclick = ()=>auth.signOut();
+  $("btnReload").onclick = ()=>load();
+  $("filterStatus").onchange = ()=>load();
+  $("filterPid").onchange = ()=>load();
+
+  function fmtTime(ts){
+    if(!ts) return "-";
+    try{ return new Date(ts).toLocaleString(); }catch(e){ return String(ts); }
+  }
+
+  function itemHTML(id, x){
+    const pid = x.playerId ?? "?";
+    const stt = x.status || "pending";
+    const taskTitle = x.taskTitle || "-";
+    const note = x.note || "";
+    const url = x.url || "#";
+    const createdAt = fmtTime(x.createdAt);
+
+    return `
+      <div class="item">
+        <div class="item-head">
+          <div class="item-left">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span class="badge ${stt==='done'?'done':'pending'}">${stt}</span>
+              <span class="pill">玩家：<b>p${pid}</b></span>
+              <span class="pill">時間：<b>${createdAt}</b></span>
+            </div>
+            <div style="margin-top:8px;font-weight:950;">任務：${taskTitle}</div>
+            ${note ? `<div class="hint">備註：${note}</div>` : `<div class="hint">備註：-</div>`}
+            <div class="hint">id：<span style="font-family:monospace">${id}</span></div>
+            <div class="hint">連結： <a href="${url}" target="_blank" rel="noreferrer">開啟圖片</a></div>
+            <img class="img" src="${url}" alt="upload">
+          </div>
+
+          <div class="item-right">
+            ${stt === "pending"
+              ? `<button class="btn ok" data-done="${id}|${pid}" style="min-width:120px;">完成</button>`
+              : `<span class="pill">已看過 ✅</span>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function load(){
+    const status = $("filterStatus").value || "pending";
+    const pid = $("filterPid").value || "all";
+
+    const snap = await db.ref("uploadsIndex").limitToLast(200).once("value");
+    const all = snap.val() || {};
+    let arr = Object.entries(all).map(([id,d])=>({id, ...(d||{})}));
+    arr.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+    if(status !== "all") arr = arr.filter(x => (x.status||"pending") === status);
+    if(pid !== "all") arr = arr.filter(x => String(x.playerId||"") === String(pid));
+
+    $("stats").textContent = `共 ${arr.length} 筆`;
+    const html = arr.map(x => itemHTML(x.id, x)).join("");
+    $("list").innerHTML = html || `<div class="hint">沒有資料</div>`;
+  }
+
+  async function markDone(uploadId, pid){
+    const now = Date.now();
+    const updates = {};
+    updates[`uploadsIndex/${uploadId}/status`] = "done";
+    updates[`uploadsIndex/${uploadId}/reviewedAt`] = now;
+    updates[`uploadsIndex/${uploadId}/reviewedBy`] = SUPER_UID;
+
+    updates[`players/p${pid}/uploads/${uploadId}/status`] = "done";
+    updates[`players/p${pid}/uploads/${uploadId}/reviewedAt`] = now;
+    updates[`players/p${pid}/uploads/${uploadId}/reviewedBy`] = SUPER_UID;
+    updates[`players/p${pid}/uploads/${uploadId}/msg`] = "管理員已看過";
+
+    await db.ref().update(updates);
+  }
+
+  document.body.addEventListener("click", async (e)=>{
+    const b = e.target.closest("button");
+    if(!b) return;
+    if(b.hasAttribute("data-done")){
+      const [uploadId, pid] = b.getAttribute("data-done").split("|");
+      if(!confirm(`標記為完成？\nuploadId=${uploadId}\np${pid}`)) return;
+      await markDone(uploadId, pid);
+      await load();
+    }
+  });
+</script>
+</body>
+</html>
