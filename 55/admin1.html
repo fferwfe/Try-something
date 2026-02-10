@@ -1,0 +1,1409 @@
+!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷｜ADMIN 控制台（申請制：admin1/admin2）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+ <style>
+  :root{
+    --bg:#0b1220;
+    --card: rgba(20, 32, 46, .78);
+    --card2: rgba(20, 32, 46, .64);
+    --shadow: 0 18px 55px rgba(0,0,0,.45);
+    --row: rgba(255,255,255,.06);
+
+    --yellow:#f1c40f; --teal:#1abc9c; --blue:#3498db; --purple:#8e44ad; --gray:#7f8c8d;
+    --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+
+    --plus:#4ade80; --plus10:#16a34a; --minus:#fb7185; --minus10:#be123c;
+
+    --violet:#a78bfa;
+    --muted:#94a3b8;
+
+    --r:22px;
+    --r2:16px;
+    --stroke: rgba(255,255,255,.10);
+    --stroke2: rgba(255,255,255,.07);
+
+    --glass: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    --glass2: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
+    margin:0;
+    color:#fff;
+    padding:18px;
+    text-align:center;
+
+    background:
+      radial-gradient(1200px 780px at 15% 10%, rgba(52,152,219,.22), transparent 60%),
+      radial-gradient(900px 650px at 85% 0%, rgba(26,188,156,.18), transparent 55%),
+      radial-gradient(980px 720px at 55% 95%, rgba(142,68,173,.22), transparent 58%),
+      radial-gradient(800px 520px at 10% 88%, rgba(241,196,15,.12), transparent 60%),
+      linear-gradient(180deg, #060a12 0%, #0b1220 40%, #07101f 100%);
+  }
+
+  .wrap{max-width:1240px;margin:0 auto;}
+
+  h1{
+    margin:10px 0 0;
+    font-size: clamp(1.35rem, 2.2vw, 2.0rem);
+    letter-spacing:.4px;
+    font-weight:1000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    text-shadow: 0 10px 24px rgba(0,0,0,.35);
+  }
+
+  .card{
+    background: var(--glass), var(--card);
+    padding:16px;
+    border-radius:var(--r);
+    margin:14px auto;
+    text-align:left;
+    position:relative;
+    border-left:6px solid var(--teal);
+    box-shadow: var(--shadow);
+    border:1px solid var(--stroke);
+    backdrop-filter: blur(10px);
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    background:
+      radial-gradient(500px 180px at 20% 0%, rgba(52,152,219,.18), transparent 55%),
+      radial-gradient(500px 180px at 80% 0%, rgba(26,188,156,.12), transparent 55%);
+    pointer-events:none;
+    opacity:.7;
+  }
+  .card > *{position:relative;}
+
+  .hint{opacity:.88;font-size:.93em;line-height:1.5;margin-top:6px;color:rgba(255,255,255,.78);}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+  .kbd{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    background:rgba(0,0,0,0.28);
+    padding:3px 8px;border-radius:10px;display:inline-block;
+    border:1px solid rgba(255,255,255,.10);
+  }
+
+  .res-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:10px 0;
+    background:var(--glass2), rgba(255,255,255,.05);
+    padding:10px 12px;
+    border-radius:var(--r2);
+    gap:12px;
+    flex-wrap:wrap;
+    border:1px solid var(--stroke2);
+  }
+
+  .label-text{
+    font-weight:1000;
+    font-size:1.06em;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    letter-spacing:.2px;
+  }
+  .val{
+    font-size:1.42em;font-weight:1000;color:var(--yellow);
+    min-width:72px;text-align:center;
+    text-shadow: 0 8px 20px rgba(241,196,15,.18);
+  }
+
+  input,textarea,select{
+    width:100%;
+    padding:12px 12px;
+    margin:8px 0;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);
+    background: rgba(255,255,255,.92);
+    color:#101828;
+    font-size:16px;
+    outline:none;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  }
+  input:focus, textarea:focus, select:focus{
+    border-color: rgba(52,152,219,.55);
+    box-shadow: 0 10px 28px rgba(52,152,219,.22);
+    transform: translateY(-1px);
+  }
+  textarea{min-height:110px;resize:vertical;}
+
+  .btn{
+    border:none;
+    border-radius:14px;
+    padding:10px 14px;
+    cursor:pointer;
+    font-weight:1000;
+    color:#fff;
+    transition: transform .14s ease, filter .14s ease, box-shadow .14s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    box-shadow: 0 10px 22px rgba(0,0,0,.22);
+  }
+  .btn:hover{filter:brightness(1.10);}
+  .btn:active{transform:scale(0.975);}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;transform:none !important;box-shadow:none;}
+
+  .btn.plus{background:linear-gradient(180deg, rgba(74,222,128,1), rgba(34,197,94,1));}
+  .btn.plus10{background:linear-gradient(180deg, rgba(22,163,74,1), rgba(13,148,66,1));}
+  .btn.minus{background:linear-gradient(180deg, rgba(251,113,133,1), rgba(244,63,94,1));}
+  .btn.minus10{background:linear-gradient(180deg, rgba(190,18,60,1), rgba(159,18,57,1));}
+  .btn.warn{background:linear-gradient(180deg, rgba(245,158,11,1), rgba(217,119,6,1)); color:#1b1203;}
+  .btn.danger{background:linear-gradient(180deg, rgba(239,68,68,1), rgba(220,38,38,1));}
+  .btn.blue{background:linear-gradient(180deg, rgba(52,152,219,1), rgba(37,99,235,1));}
+  .btn.gray{background:linear-gradient(180deg, rgba(148,163,184,1), rgba(100,116,139,1)); color:#0b1220;}
+  .btn.ok{background:linear-gradient(180deg, rgba(34,197,94,1), rgba(16,185,129,1));}
+  .btn.violet{background:linear-gradient(180deg, rgba(167,139,250,1), rgba(139,92,246,1)); color:#1b102e;}
+  .btn.sm{padding:8px 12px;border-radius:14px;font-size:13px;box-shadow: 0 8px 16px rgba(0,0,0,.18);}
+
+  .btn.ghost,
+  .btn.toggle{
+    background: rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.14);
+    box-shadow:none;
+  }
+
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    background: rgba(0,0,0,0.24);
+    border:1px solid rgba(255,255,255,0.12);
+    font-weight:1000;
+    font-size:.94em;
+  }
+  .pill b{color:var(--yellow);}
+
+  .badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    font-weight:1000;
+    font-size:.84em;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.08);
+    color:rgba(255,255,255,.86);
+  }
+  .badge.ok{
+    background:rgba(34,197,94,0.16);
+    color:#b7f7c7;
+    border-color:rgba(34,197,94,0.22);
+  }
+  .badge.danger{
+    background:rgba(239,68,68,0.16);
+    color:#ffd1d1;
+    border-color:rgba(239,68,68,0.22);
+  }
+  .badge.warn{
+    background:rgba(245,158,11,0.16);
+    color:#ffe7c2;
+    border-color:rgba(245,158,11,0.22);
+  }
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width: 860px){.grid2{grid-template-columns:1fr;}}
+
+  .hide{display:none !important;}
+
+  #cover{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background: radial-gradient(900px 600px at 20% 10%, rgba(52,152,219,.18), transparent 65%),
+                radial-gradient(900px 600px at 80% 0%, rgba(26,188,156,.14), transparent 65%),
+                rgba(0,0,0,.62);
+    z-index:9999;
+    padding:14px;
+    backdrop-filter: blur(10px);
+  }
+  #cover .box{
+    width:min(560px, 94vw);
+    background: var(--glass), rgba(20, 32, 46, .92);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:18px;
+    padding:18px;
+    text-align:left;
+    box-shadow: 0 14px 55px rgba(0,0,0,.58);
+  }
+
+  .card .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .card .card-head h2,
+  .card .card-head h3{
+    margin:0;
+    font-weight:1000;
+    letter-spacing:.2px;
+  }
+  .card .card-tools{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .card .collapse{
+    overflow:hidden;
+    transition:max-height .25s ease, opacity .2s ease, transform .2s ease;
+    transform-origin: top;
+  }
+  .card .collapse.closed{
+    max-height:0 !important;
+    opacity:0;
+    transform: translateY(-6px);
+    pointer-events:none;
+  }
+  .card .collapse.open{
+    max-height:9000px;
+    opacity:1;
+    transform: translateY(0);
+    pointer-events:auto;
+  }
+
+  .player-head{
+    display:grid !important;
+    grid-template-columns: minmax(320px, 1fr) auto;
+    align-items:center;
+    gap:12px;
+  }
+  .player-left{min-width:320px;}
+  .player-right{
+    justify-self:end;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    max-width:680px;
+  }
+  @media (max-width:860px){
+    .player-head{grid-template-columns: 1fr;}
+    .player-right{justify-self:start; max-width:none;}
+  }
+
+  .pinfo{display:flex;align-items:center;gap:12px;min-width:320px;}
+  .pava{
+    width:64px;height:64px;border-radius:18px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.06);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow: 0 10px 26px rgba(0,0,0,.28);
+    position:relative;
+  }
+  .pava::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(50px 50px at 30% 20%, rgba(255,255,255,.16), transparent 60%);
+    pointer-events:none;
+  }
+  .pava img{width:100%;height:100%;object-fit:cover;display:none;}
+  .pava span{font-weight:1000;opacity:.90;}
+
+  .pname{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-weight:1000;font-size:1.06em;
+  }
+  .ptitle{opacity:.9;font-weight:900;font-size:.96em;color:rgba(255,255,255,.86);}
+
+  #local-timer{
+    font-size: clamp(2.1rem, 4vw, 2.8rem);
+    font-weight:1000;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    color:var(--yellow);
+    text-align:center;
+    margin:10px 0 12px;
+    text-shadow: 0 14px 32px rgba(241,196,15,.18);
+  }
+
+  .inv-tag{
+    background:rgba(142,68,173,.22);
+    color:#fff;
+    padding:5px 12px;
+    border-radius:12px;
+    margin:4px 6px 0 0;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    border:1px solid rgba(167,139,250,.18);
+  }
+  .inv-tag i{cursor:pointer;color:#ffd1d1;}
+  .inv-tag i:hover{filter:brightness(1.15);}
+
+  .inv-input{
+    width:60% !important;
+    display:inline-block !important;
+    padding:10px !important;
+    margin:0 !important;
+    border-radius:14px !important;
+  }
+
+  .mark{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(241,196,15,.12);
+    border:1px solid rgba(241,196,15,.18);
+    color:#ffe9a6;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:1000;
+  }
+
+  @media (max-width:520px){
+    body{padding:14px;}
+    .card{padding:14px;}
+    .btn{padding:10px 12px;}
+    .btn.sm{padding:8px 10px;}
+    .pava{width:58px;height:58px;}
+  }
+</style>
+</head>
+
+<body data-page="admin">
+
+  <!-- ========= 未授權遮罩 / 申請 ========= -->
+  <div id="cover">
+    <div class="box" id="coverBox"></div>
+  </div>
+
+  <!-- ========= 主內容（授權後顯示） ========= -->
+  <div id="main" class="hide">
+    <div class="wrap">
+      <h1 style="margin:10px 0 0;">🛡️ 人生履歷 ADMIN 控制台</h1>
+      <div class="hint" style="margin:8px 0 0;">
+        <span class="mark"><i class="fa-solid fa-user-shield"></i> admin1/admin2 由 SUPER 核准；未核准會停在申請畫面</span>
+      </div>
+
+      <!-- 身份列 -->
+      <div class="card" style="border-left-color:var(--gray);" data-collapsible="panel_identity">
+        <div class="card-head">
+          <h3 class="label-text"><i class="fa-solid fa-id-badge"></i> 身份資訊</h3>
+          <div class="card-tools">
+            <button class="btn toggle sm" data-card-toggle="panel_identity"><i class="fa-solid fa-chevron-up"></i> 收合</button>
+            <button class="btn ghost sm" id="btnForgetDevice"><i class="fa-solid fa-rotate"></i> 重設本機</button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div class="pill">Role：<b id="whoRole">-</b></div>
+            <div class="pill">Label：<b id="whoLabel">-</b></div>
+            <div class="pill">DeviceId：<b id="whoDev">-</b></div>
+          </div>
+          <div class="hint">
+            ✅ 多人同時進入：本頁已改成「update + lastEditor + timer 本機計算」避免互相覆寫與爆量寫入。
+          </div>
+        </div>
+      </div>
+
+      <!-- 跑馬燈（僅 admin2） -->
+      <div class="card" style="border-left-color:var(--blue);" data-collapsible="panel_marquee">
+        <div class="card-head">
+          <h3 class="label-text"><i class="fas fa-bullhorn"></i> 跑馬燈公告（admin2）</h3>
+          <div class="card-tools">
+            <span class="badge warn" id="badgeMarqueeLock">admin2 才可操作</span>
+            <button class="btn toggle sm" data-card-toggle="panel_marquee"><i class="fa-solid fa-chevron-up"></i> 收合</button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <textarea id="broadcastMsg" placeholder="輸入要廣播的公告內容..."></textarea>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button class="btn blue" style="flex:2;" id="btnBroadcast"><i class="fa-solid fa-paper-plane"></i> 發送公告</button>
+            <button class="btn gray" style="flex:1;" id="btnBroadcastClear"><i class="fa-solid fa-eraser"></i> 清除</button>
+            <label class="pill" style="cursor:pointer;">
+              <input type="checkbox" id="broadcastEnable" checked style="width:18px;height:18px;margin:0 8px 0 0;">
+              啟用公告
+            </label>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <label style="font-weight:950;">跑馬燈速度（秒，越小越快）</label>
+              <input id="mMarquee" type="range" min="3" max="60" step="1" value="10">
+              <div class="hint">目前：<span id="mMarqueeVal">10</span>s</div>
+            </div>
+            <div>
+              <label style="font-weight:950;">跑馬燈字體大小</label>
+              <input id="mMarqueeFont" type="range" min="12" max="64" step="1" value="22">
+              <div class="hint">目前：<span id="mMarqueeFontVal">22</span>px</div>
+            </div>
+          </div>
+
+          <div class="hint" id="hintMarqueeLock" style="color:#ffd0d0;">
+            （你目前不是 admin2，所以這區被鎖定）
+          </div>
+        </div>
+      </div>
+
+      <!-- 計時（admin1/admin2 都可） -->
+      <div class="card" style="border-left-color:var(--purple);" data-collapsible="panel_timer">
+        <div class="card-head">
+          <h3 class="label-text"><i class="fas fa-stopwatch"></i> 計時控制（admin1/admin2）</h3>
+          <div class="card-tools">
+            <button class="btn toggle sm" data-card-toggle="panel_timer"><i class="fa-solid fa-chevron-up"></i> 收合</button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <div id="local-timer">00:00</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <input type="number" id="setTimerSec" value="60" style="flex:1; min-width:140px;">
+            <button class="btn plus" style="flex:1;" id="btnTimerStart">▶️ 開始</button>
+            <button class="btn warn" style="flex:1;" id="btnTimerPause">⏸️ 暫停</button>
+          </div>
+          <button class="btn danger" style="width:100%;" id="btnTimerReset">🔄 重製時間</button>
+
+          <div class="hint" id="timerMeta" style="margin-top:10px;">
+            這裡已改成：只在操作時寫入 DB，倒數由本機計算（多人同時在線也不爆量）。
+          </div>
+        </div>
+      </div>
+
+      <!-- 大螢幕 controls（僅 admin2） -->
+      <div class="card" style="border-left-color:var(--warn);" data-collapsible="panel_screen">
+        <div class="card-head">
+          <h2 style="margin:0;"><i class="fa-solid fa-sliders"></i> 大螢幕控制台（admin2）</h2>
+          <div class="card-tools">
+            <span class="badge warn" id="badgeScreenLock">admin2 才可操作</span>
+            <button class="btn toggle sm" data-card-toggle="panel_screen"><i class="fa-solid fa-chevron-up"></i> 收合</button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <div class="res-row" style="background: rgba(231, 76, 60, 0.10); border: 1px solid rgba(231, 76, 60, 0.18);">
+            <div class="label-text"><i class="fa-solid fa-toggle-on"></i> 彈幕顯示開關</div>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+              <input type="checkbox" id="ctrlDanmakuEnable" checked style="width:20px;height:20px;margin:0;">
+              <span id="danmakuStatusText" style="font-weight:950; color:var(--ok);">開啟中</span>
+            </label>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label style="font-weight:950;">彈幕速度（秒，越小越快）</label>
+              <input id="ctrlDanmaku" type="range" min="3" max="60" step="1" value="10">
+              <div class="hint">目前：<span id="ctrlDanmakuVal">10</span>s</div>
+            </div>
+            <div>
+              <label style="font-weight:950;">彈幕字體大小（px）</label>
+              <input id="ctrlFont" type="range" min="12" max="64" step="1" value="22">
+              <div class="hint">目前：<span id="ctrlFontVal">22</span>px</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <label style="font-weight:950;">同時彈幕數量上限</label>
+            <input id="ctrlMaxOn" type="range" min="1" max="30" step="1" value="8">
+            <div class="hint">目前：<span id="ctrlMaxOnVal">8</span> 條</div>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+            <button class="btn blue" id="btnSaveCtrl"><i class="fa-solid fa-floppy-disk"></i> 立即套用</button>
+            <button class="btn warn" id="btnResetCtrl"><i class="fa-solid fa-rotate-left"></i> 還原預設</button>
+            <button class="btn danger" id="btnClearDanmaku"><i class="fa-solid fa-broom"></i> 清空彈幕</button>
+          </div>
+
+          <div class="hint" id="hintScreenLock" style="color:#ffd0d0;">
+            （你目前不是 admin2，所以這區被鎖定）
+          </div>
+        </div>
+      </div>
+
+      <!-- 玩家清單（admin1/admin2 都可改資源/背包/稱號） -->
+      <div class="card" style="border-left-color:var(--gray);" data-collapsible="panel_players">
+        <div class="card-head">
+          <h3 class="label-text"><i class="fa-solid fa-users"></i> 玩家清單（admin1/admin2）</h3>
+          <div class="card-tools">
+            <button class="btn toggle sm" data-card-toggle="panel_players"><i class="fa-solid fa-chevron-up"></i> 收合</button>
+            <button class="btn ghost sm" onclick="expandAllPlayers()"><i class="fa-solid fa-chevron-down"></i> 全部展開</button>
+            <button class="btn ghost sm" onclick="collapseAllPlayers()"><i class="fa-solid fa-chevron-up"></i> 全部收合</button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <div class="hint">
+            ✅ Admin 端多人同時在線：資源加減用 transaction；Timer 不再每秒寫 DB。
+          </div>
+          <div id="player-list" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // =========================
+  // Firebase 初始化
+  // =========================
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const $ = (id)=>document.getElementById(id);
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+  // =========================
+  // deviceId（向下相容：舊 device_id -> 新 lifeResume_deviceId_v3）
+  // =========================
+  const DEVICE_ID_KEY_NEW = "lifeResume_deviceId_v3";
+  const DEVICE_ID_KEY_OLD = "device_id";
+  const DEVICE_LABEL_KEY  = "device_label";
+
+  function getDeviceId(){
+    let id = localStorage.getItem(DEVICE_ID_KEY_NEW);
+    if(id) return id;
+
+    // migrate old
+    const old = localStorage.getItem(DEVICE_ID_KEY_OLD);
+    if(old){
+      localStorage.setItem(DEVICE_ID_KEY_NEW, old);
+      return old;
+    }
+
+    id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36)));
+    localStorage.setItem(DEVICE_ID_KEY_NEW, id);
+    return id;
+  }
+  function getDeviceLabel(){
+    return (localStorage.getItem(DEVICE_LABEL_KEY) || "").trim();
+  }
+  function setDeviceLabel(v){
+    v = (v||"").trim();
+    if(v) localStorage.setItem(DEVICE_LABEL_KEY, v);
+    else localStorage.removeItem(DEVICE_LABEL_KEY);
+  }
+  function resetLocal(){
+    localStorage.removeItem(DEVICE_ID_KEY_NEW);
+    localStorage.removeItem(DEVICE_ID_KEY_OLD);
+    localStorage.removeItem(DEVICE_LABEL_KEY);
+  }
+
+  // =========================
+  // Session / Presence（多人進入）
+  // =========================
+  let mySession = null; // {devId, sessionId, role, label}
+
+  function newSessionId(){
+    return (crypto.randomUUID ? crypto.randomUUID() : ("sess_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2)));
+  }
+  function stampEditor(){
+    return mySession ? { lastEditor: mySession.devId, lastEditAt: Date.now() } : { lastEditAt: Date.now() };
+  }
+
+  async function adminPresenceStart(){
+    if(!myRole) return;
+    const devId = getDeviceId();
+    const sessionId = newSessionId();
+    mySession = { devId, sessionId, role: myRole, label: myLabel || "" };
+
+    const ref = db.ref(`adminSessions/${devId}`);
+    try{
+      await ref.onDisconnect().remove();
+      await ref.set({
+        devId, sessionId,
+        role: myRole,
+        label: myLabel || getDeviceLabel() || "",
+        page: "admin.html",
+        ts: Date.now(),
+        lastSeen: Date.now()
+      });
+    }catch(e){
+      // 如果 rules 擋住 presence，不影響主功能
+      console.warn("adminPresenceStart blocked:", e?.message || e);
+      return;
+    }
+
+    setInterval(()=> ref.update({ lastSeen: Date.now() }).catch(()=>{}), 60000);
+  }
+
+  // =========================
+  // Cover（未核可 / 申請）
+  // =========================
+  function showCoverHTML(html){
+    $("cover").classList.remove("hide");
+    $("coverBox").innerHTML = html;
+  }
+  function hideCover(){ $("cover").classList.add("hide"); }
+  function showMain(){ $("main").classList.remove("hide"); }
+  function hideMain(){ $("main").classList.add("hide"); }
+
+  function renderApplyBox({deviceId, lastReq, note}){
+    const savedLabel = getDeviceLabel();
+    return `
+      <div class="label-text"><i class="fa-solid fa-user-shield"></i> 管理員申請（admin1 / admin2）</div>
+      <div class="hint">
+        本頁不用 Email 登入。你要先申請 → 由 SUPER 核准後才能進入。
+      </div>
+
+      <div class="res-row" style="justify-content:flex-start;">
+        <div class="pill">DeviceId：<b class="mono">${deviceId}</b></div>
+      </div>
+
+      <label style="font-weight:950;">設備名稱（label）</label>
+      <input id="applyLabel" placeholder="例如：管理員手機 / 教室平板 / 筆電A" value="${savedLabel || ""}">
+
+      <label style="font-weight:950;">申請等級</label>
+      <select id="applyWant">
+        <option value="admin1">admin1（可控資源/背包/稱號/計時）</option>
+        <option value="admin2">admin2（含：跑馬燈 + 彈幕/大螢幕）</option>
+      </select>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button class="btn ok" id="btnApply"><i class="fa-solid fa-paper-plane"></i> 送出申請</button>
+        <button class="btn gray" id="btnReload"><i class="fa-solid fa-rotate"></i> 重新檢查</button>
+      </div>
+
+      ${note ? `<div class="hint" style="margin-top:10px;color:#ffd0d0;">${note}</div>` : ``}
+      ${lastReq ? `<div class="hint" style="margin-top:10px;">上次申請：${new Date(lastReq).toLocaleString()}</div>` : ``}
+
+      <div class="hint" style="margin-top:10px;">
+        送出後請到 SUPER 的「設備管理」核准你這台。
+      </div>
+    `;
+  }
+
+  function renderPendingBox({deviceId, label, want, when}){
+    return `
+      <div class="label-text"><i class="fa-solid fa-hourglass-half"></i> 申請已送出（等待 SUPER 核准）</div>
+      <div class="hint">DeviceId：<span class="kbd">${deviceId}</span></div>
+      <div class="hint">Label：<b>${label || "-"}</b></div>
+      <div class="hint">Want：<b>${want}</b></div>
+      <div class="hint">時間：${when ? new Date(when).toLocaleString() : "-"}</div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button class="btn blue" id="btnReload"><i class="fa-solid fa-rotate"></i> 我已被核准，重新檢查</button>
+        <button class="btn gray" id="btnResetLocal"><i class="fa-solid fa-rotate-left"></i> 重設本機</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px;">
+        若核准後仍卡住：按「重新檢查」即可進入。
+      </div>
+    `;
+  }
+
+  // =========================
+  // Gate：檢查 adminDevices/{deviceId}
+  // =========================
+  let myRole = null;      // 'admin1' | 'admin2'
+  let myLabel = null;
+
+  function canAdmin2(){ return myRole === 'admin2'; }
+
+  async function checkGate(){
+    const deviceId = getDeviceId();
+
+    hideMain();
+    showCoverHTML(renderApplyBox({deviceId}));
+
+    const snap = await db.ref(`adminDevices/${deviceId}`).once("value");
+    const dev = snap.val();
+
+    if(dev && dev.revoked !== true){
+      myRole = dev.role || "admin1";
+      myLabel = dev.label || "-";
+
+      $("whoRole").textContent = myRole;
+      $("whoLabel").textContent = myLabel;
+      $("whoDev").textContent = deviceId;
+
+      hideCover();
+      showMain();
+
+      applyRoleLocks();
+
+      // ✅ 多人在線 presence
+      adminPresenceStart().catch(()=>{});
+      return;
+    }
+
+    const jrSnap = await db.ref("joinRequests").limitToLast(80).once("value");
+    const jr = jrSnap.val() || {};
+    let last = null;
+    for(const [k,v] of Object.entries(jr)){
+      if(!v) continue;
+      if(String(v.deviceId||"") !== String(deviceId)) continue;
+      if(v.status && v.status !== "pending") continue;
+      if(!last || (v.createdAt||0) > (last.createdAt||0)) last = {key:k, ...v};
+    }
+
+    if(last){
+      showCoverHTML(renderPendingBox({
+        deviceId,
+        label: last.label || last.deviceLabel || getDeviceLabel() || "",
+        want: last.want || last.type || "admin1",
+        when: last.createdAt || last.time || last.ts || 0
+      }));
+      bindPendingButtons();
+    }else{
+      showCoverHTML(renderApplyBox({deviceId}));
+      bindApplyButtons();
+    }
+  }
+
+  function bindApplyButtons(){
+    const deviceId = getDeviceId();
+    const btnApply = document.getElementById("btnApply");
+    const btnReload = document.getElementById("btnReload");
+
+    btnReload.onclick = checkGate;
+
+    btnApply.onclick = async ()=>{
+      const label = (document.getElementById("applyLabel")?.value || "").trim();
+      const want = (document.getElementById("applyWant")?.value || "admin1").trim();
+
+      if(!label){
+        alert("請先填寫設備名稱（label）");
+        return;
+      }
+      setDeviceLabel(label);
+
+      const ref = db.ref("joinRequests").push();
+      await ref.set({
+        deviceId,
+        label,
+        want,
+        createdAt: Date.now(),
+        status: "pending"
+      });
+
+      showCoverHTML(renderPendingBox({deviceId, label, want, when: Date.now()}));
+      bindPendingButtons();
+    };
+  }
+
+  function bindPendingButtons(){
+    const btnReload = document.getElementById("btnReload");
+    const btnResetLocal = document.getElementById("btnResetLocal");
+    if(btnReload) btnReload.onclick = checkGate;
+    if(btnResetLocal) btnResetLocal.onclick = ()=>{
+      resetLocal();
+      location.reload();
+    };
+  }
+
+  // =========================
+  // 收合系統
+  // =========================
+  const CARD_COLLAPSE_KEY = "admin_card_collapsed_v1";
+  let cardCollapsed = {};
+  try{ cardCollapsed = JSON.parse(localStorage.getItem(CARD_COLLAPSE_KEY) || "{}") || {}; }catch(e){ cardCollapsed = {}; }
+
+  function isCardCollapsed(id){
+    const v = cardCollapsed[id];
+    return v === undefined ? false : !!v;
+  }
+  function applyCardCollapse(id){
+    const body = document.querySelector(`[data-collapsible="${id}"] .collapse`);
+    const btn  = document.querySelector(`[data-collapsible="${id}"] [data-card-toggle="${id}"]`);
+    if(!body || !btn) return;
+    const c = isCardCollapsed(id);
+    body.classList.toggle("closed", c);
+    body.classList.toggle("open", !c);
+    btn.innerHTML = c ? `<i class="fa-solid fa-chevron-down"></i> 展開` : `<i class="fa-solid fa-chevron-up"></i> 收合`;
+  }
+  function setCardCollapsed(id, collapsed){
+    cardCollapsed[id] = !!collapsed;
+    localStorage.setItem(CARD_COLLAPSE_KEY, JSON.stringify(cardCollapsed));
+    applyCardCollapse(id);
+  }
+  function initCollapsibleCards(){
+    document.querySelectorAll("[data-collapsible]").forEach(card=>{
+      const id = card.getAttribute("data-collapsible");
+      applyCardCollapse(id);
+    });
+  }
+  document.body.addEventListener("click", (e)=>{
+    const b = e.target.closest("button");
+    if(!b) return;
+    const id = b.getAttribute("data-card-toggle");
+    if(!id) return;
+    setCardCollapsed(id, !isCardCollapsed(id));
+  });
+
+  // =========================
+  // 玩家卡片收合
+  // =========================
+  const PLAYER_COLLAPSE_KEY = "admin_player_cards_collapsed_v1";
+  let playerCollapsed = {};
+  try{ playerCollapsed = JSON.parse(localStorage.getItem(PLAYER_COLLAPSE_KEY)||"{}") || {}; }catch(e){ playerCollapsed = {}; }
+
+  function isPlayerCollapsed(pid){
+    const v = playerCollapsed[`p${pid}`];
+    return v === undefined ? false : !!v;
+  }
+  function applyPlayerCollapse(pid){
+    const body = document.getElementById(`p${pid}-panel`);
+    const btn  = document.getElementById(`p${pid}-btnToggle`);
+    if(!body || !btn) return;
+    const c = isPlayerCollapsed(pid);
+    body.classList.toggle("closed", c);
+    body.classList.toggle("open", !c);
+    btn.innerHTML = c ? `<i class="fa-solid fa-chevron-down"></i> 展開` : `<i class="fa-solid fa-chevron-up"></i> 收合`;
+  }
+  function setPlayerCollapsed(pid, collapsed){
+    playerCollapsed[`p${pid}`] = !!collapsed;
+    localStorage.setItem(PLAYER_COLLAPSE_KEY, JSON.stringify(playerCollapsed));
+    applyPlayerCollapse(pid);
+  }
+  function collapseAllPlayers(){
+    for(let i=1;i<=11;i++){ playerCollapsed[`p${i}`]=true; applyPlayerCollapse(i); }
+    localStorage.setItem(PLAYER_COLLAPSE_KEY, JSON.stringify(playerCollapsed));
+  }
+  function expandAllPlayers(){
+    for(let i=1;i<=11;i++){ playerCollapsed[`p${i}`]=false; applyPlayerCollapse(i); }
+    localStorage.setItem(PLAYER_COLLAPSE_KEY, JSON.stringify(playerCollapsed));
+  }
+  window.collapseAllPlayers = collapseAllPlayers;
+  window.expandAllPlayers = expandAllPlayers;
+
+  // =========================
+  // 資源設定 + 批次 transaction（多人安全）
+  // =========================
+  const resConfig = {
+    time: { name:'時間', icon:'fa-clock', color:'#a78bfa' },
+    money: { name:'金錢', icon:'fa-wallet', color:'#fbbf24' },
+    health: { name:'健康', icon:'fa-heartbeat', color:'#fb7185' },
+    knowledge: { name:'知識', icon:'fa-book', color:'#60a5fa' },
+    social: { name:'人際', icon:'fa-users', color:'#34d399' },
+    score: { name:'分數', icon:'fa-star', color:'#f59e0b' }
+  };
+
+  const __pendingDelta = {};
+  let __flushTimer = null;
+
+  function adj(playerId, key, delta) {
+    const el = document.getElementById(`p${playerId}-${key}`);
+    if (el) el.innerText = String(Math.max(0, (Number(el.innerText)||0) + delta));
+
+    const k = `p${playerId}.${key}`;
+    __pendingDelta[k] = (__pendingDelta[k] || 0) + delta;
+    if (__flushTimer) return;
+
+    __flushTimer = setTimeout(() => {
+      __flushTimer = null;
+      for (const path in __pendingDelta) {
+        const d = __pendingDelta[path];
+        if (!d) continue;
+        __pendingDelta[path] = 0;
+        const [pid, rkey] = path.split(".");
+        db.ref(`players/${pid}/res/${rkey}`).transaction(cur => {
+          const now = Number(cur)||0;
+          return Math.max(0, now + Number(d||0));
+        });
+      }
+    }, 150);
+  }
+
+  // =========================
+  // 玩家清單
+  // =========================
+  let __playerBound = false;
+
+  function renderPlayerList(){
+    if(__playerBound) return;
+    __playerBound = true;
+
+    const list = $("player-list");
+    list.innerHTML = "";
+
+    for(let i=1;i<=11;i++){
+      const html = `
+        <div class="card" style="border-left-color:rgba(255,255,255,.22);">
+          <div class="player-head">
+            <div class="player-left">
+              <div class="pinfo">
+                <div class="pava">
+                  <img id="p${i}-avatarImg" alt="avatar">
+                  <span id="p${i}-avatarFallback">${i}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div class="pname">
+                    👤 <span id="p${i}-n">-</span>
+                    <span class="badge" id="p${i}-online">-</span>
+                  </div>
+                  <div class="ptitle">稱號：<b id="p${i}-title">-</b></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="player-right">
+              <button class="btn toggle sm" id="p${i}-btnToggle">
+                <i class="fa-solid fa-chevron-up"></i> 收合
+              </button>
+            </div>
+          </div>
+
+          <div class="collapse open" id="p${i}-panel" style="margin-top:12px;">
+            <div class="hint" style="margin:0 0 10px 0;">
+              <span class="mark"><i class="fa-solid fa-screwdriver-wrench"></i> 玩家資源加減超控面板</span>
+            </div>
+
+            <div class="res-row">
+              <div class="label-text"><i class="fa-solid fa-crown"></i> 自訂稱號</div>
+              <div style="flex:1;min-width:260px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input id="p${i}-titleIn" class="inv-input" placeholder="輸入稱號（儲存後同步到玩家/顯示）" style="flex:1;min-width:220px;">
+                <button class="btn violet sm" data-settitle="${i}"><i class="fa-solid fa-floppy-disk"></i> 儲存</button>
+              </div>
+            </div>
+
+            ${Object.keys(resConfig).map(k => `
+              <div class="res-row">
+                <span class="label-text" style="color:${resConfig[k].color}">
+                  <i class="fas ${resConfig[k].icon}"></i> ${resConfig[k].name}
+                </span>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-50">-50</button>`:''}
+                  <button class="btn minus sm" data-adj="${i}|${k}|-10">-10</button>
+                  <span class="val" id="p${i}-${k}">0</span>
+                  <button class="btn plus sm" data-adj="${i}|${k}|10">+10</button>
+                  ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|50">+50</button>`:''}
+                </div>
+              </div>
+            `).join("")}
+
+            <div class="res-row" style="align-items:flex-start;">
+              <div class="label-text"><i class="fa-solid fa-bag-shopping"></i> 人生背包</div>
+              <div style="flex:1;min-width:260px;">
+                <div id="p${i}-inv-display"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+                  <input id="p${i}-inv-in" class="inv-input" placeholder="輸入道具名稱" style="flex:1;min-width:220px;">
+                  <button class="btn plus sm" data-addinv="${i}"><i class="fa-solid fa-plus"></i> 新增</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      `;
+      list.insertAdjacentHTML("beforeend", html);
+
+      const tbtn = document.getElementById(`p${i}-btnToggle`);
+      if(tbtn){
+        tbtn.addEventListener("click", ()=> setPlayerCollapsed(i, !isPlayerCollapsed(i)));
+      }
+      applyPlayerCollapse(i);
+
+      db.ref(`players/p${i}`).on("value", (s)=>{
+        const d = s.val() || {};
+
+        const nameEl = $(`p${i}-n`);
+        if(nameEl) nameEl.innerText = d.name || "空位";
+
+        const av = (d.avatar || "").trim();
+        const imgEl = $(`p${i}-avatarImg`);
+        const fbEl = $(`p${i}-avatarFallback`);
+        if(imgEl){
+          if(av){
+            imgEl.src = av;
+            imgEl.style.display = "block";
+            if(fbEl) fbEl.style.display="none";
+          }else{
+            imgEl.removeAttribute("src");
+            imgEl.style.display = "none";
+            if(fbEl){
+              fbEl.style.display="block";
+              fbEl.textContent = (d.name || `P${i}`).trim().slice(0,1) || String(i);
+            }
+          }
+        }
+
+        const title = (d.titleCustom || d.roleLabelAuto || d.roleLabel || "").trim();
+        const tEl = $(`p${i}-title`);
+        if(tEl) tEl.innerText = title || "-";
+
+        Object.keys(resConfig).forEach(k=>{
+          const el = $(`p${i}-${k}`);
+          if(el) el.innerText = d.res?.[k] ?? 0;
+        });
+
+        const lastSeen = d.lastSeen || 0;
+        const online = lastSeen && (Date.now() - lastSeen) <= 60000;
+        const elOnline = $(`p${i}-online`);
+        if(elOnline){
+          elOnline.textContent = online ? "在線" : "離線";
+          elOnline.className = "badge " + (online ? "ok" : "danger");
+        }
+
+        const inv = $(`p${i}-inv-display`);
+        if(inv){
+          inv.innerHTML = "";
+          if(d.inventory){
+            Object.entries(d.inventory).forEach(([key,item])=>{
+              inv.insertAdjacentHTML("beforeend",
+                `<span class="inv-tag">${String(item?.name||"")}<i class="fas fa-times" data-delinv="${i}|${key}"></i></span>`
+              );
+            });
+          }
+        }
+      });
+    }
+  }
+
+  // =========================
+  // 跑馬燈（marquee）— admin2 才能寫（update + stamp）
+  // =========================
+  function syncMarqueeHint(){
+    if($("mMarqueeVal")) $("mMarqueeVal").innerText = $("mMarquee").value;
+    if($("mMarqueeFontVal")) $("mMarqueeFontVal").innerText = $("mMarqueeFont").value;
+  }
+
+  function bindMarquee(){
+    const speedEl = $("mMarquee");
+    const fontEl = $("mMarqueeFont");
+
+    db.ref("marquee").on("value", (s)=>{
+      const d = s.val() || {};
+      if($("broadcastMsg") && document.activeElement !== $("broadcastMsg")) $("broadcastMsg").value = d.text || "";
+      if($("broadcastEnable")) $("broadcastEnable").checked = (d.enabled !== false);
+      if(speedEl && document.activeElement !== speedEl) speedEl.value = clamp(Number(d.speedSec ?? 10),3,60);
+      if(fontEl && document.activeElement !== fontEl) fontEl.value = clamp(Number(d.fontSize ?? 22),12,64);
+      syncMarqueeHint();
+    });
+
+    $("btnBroadcast").addEventListener("click", async ()=>{
+      if(!canAdmin2()) return;
+      await db.ref("marquee").update({
+        enabled: $("broadcastEnable").checked,
+        text: $("broadcastMsg").value || "",
+        ...stampEditor()
+      });
+    });
+
+    $("btnBroadcastClear").addEventListener("click", async ()=>{
+      if(!canAdmin2()) return;
+      $("broadcastMsg").value = "";
+      await db.ref("marquee").update({ text:"", ...stampEditor() });
+    });
+
+    $("broadcastEnable").addEventListener("change", async ()=>{
+      if(!canAdmin2()) return;
+      await db.ref("marquee").update({ enabled: $("broadcastEnable").checked, ...stampEditor() });
+    });
+
+    speedEl.addEventListener("input", syncMarqueeHint);
+    fontEl.addEventListener("input", syncMarqueeHint);
+
+    speedEl.addEventListener("change", async ()=>{
+      if(!canAdmin2()) return;
+      await db.ref("marquee").update({ speedSec: clamp(Number(speedEl.value),3,60), ...stampEditor() });
+    });
+
+    fontEl.addEventListener("change", async ()=>{
+      if(!canAdmin2()) return;
+      await db.ref("marquee").update({ fontSize: clamp(Number(fontEl.value),12,64), ...stampEditor() });
+    });
+
+    syncMarqueeHint();
+  }
+
+  // =========================
+  // 大螢幕 controls — admin2 才能寫（update + stamp；reset 不用 set）
+  // =========================
+  function syncDanmakuToggleUI(){
+    const on = $("ctrlDanmakuEnable").checked;
+    $("danmakuStatusText").textContent = on ? "開啟中" : "已關閉";
+    $("danmakuStatusText").style.color = on ? "var(--ok)" : "var(--danger)";
+  }
+  function setCtrlHint(){
+    $("ctrlDanmakuVal").innerText = $("ctrlDanmaku").value;
+    $("ctrlFontVal").innerText = $("ctrlFont").value;
+    $("ctrlMaxOnVal").innerText = $("ctrlMaxOn").value;
+    syncDanmakuToggleUI();
+  }
+
+  function bindScreenCtrl(){
+    const controlsRef = db.ref("controls");
+
+    ["ctrlDanmaku","ctrlFont","ctrlMaxOn"].forEach(id=>{
+      $(id).addEventListener("input", setCtrlHint);
+    });
+    $("ctrlDanmakuEnable").addEventListener("change", setCtrlHint);
+
+    controlsRef.on("value", snap=>{
+      const c = snap.val() || {};
+      $("ctrlDanmaku").value = clamp(c.danmakuDurationSec ?? 10, 3, 60);
+      $("ctrlFont").value = clamp(c.danmakuFontSizePx ?? 22, 12, 64);
+      $("ctrlMaxOn").value = clamp(c.danmakuMaxOnScreen ?? 8, 1, 30);
+      $("ctrlDanmakuEnable").checked = (c.danmakuEnabled !== false);
+      setCtrlHint();
+    });
+
+    $("btnSaveCtrl").onclick = async ()=>{
+      if(!canAdmin2()) return;
+      await controlsRef.update({
+        danmakuEnabled: $("ctrlDanmakuEnable").checked,
+        danmakuDurationSec: Number($("ctrlDanmaku").value),
+        danmakuFontSizePx: Number($("ctrlFont").value),
+        danmakuMaxOnScreen: Number($("ctrlMaxOn").value),
+        ...stampEditor()
+      });
+      alert("已套用彈幕設定");
+    };
+
+    $("btnResetCtrl").onclick = async ()=>{
+      if(!canAdmin2()) return;
+      await controlsRef.update({
+        danmakuEnabled: true,
+        danmakuDurationSec: 10,
+        danmakuFontSizePx: 22,
+        danmakuMaxOnScreen: 8,
+        ...stampEditor()
+      });
+      alert("已還原預設");
+    };
+
+    $("btnClearDanmaku").onclick = async ()=>{
+      if(!canAdmin2()) return;
+      if(confirm("確定清空彈幕？")){
+        await db.ref("purchaseFeed").remove();
+      }
+    };
+
+    setCtrlHint();
+  }
+
+  // =========================
+  // ✅ 計時器（timerSync）— 超大減負版：不再每秒寫 DB
+  // timerSync schema:
+  // { isRunning, startAt, durationSec, pauseLeftSec, lastEditor, lastEditAt }
+  // 顯示端每秒用本機 Date.now() 計算
+  // =========================
+  let __timerModel = { isRunning:false, startAt:0, durationSec:60, pauseLeftSec:60, lastEditor:"", lastEditAt:0 };
+  let __timerTick = null;
+
+  function calcLeftSec(model){
+    const dur = Number(model.durationSec||0);
+    if(model.isRunning && model.startAt){
+      const passed = Math.floor((Date.now() - Number(model.startAt||0))/1000);
+      return Math.max(0, dur - passed);
+    }
+    // paused or idle
+    if(model.pauseLeftSec !== undefined && model.pauseLeftSec !== null) return Math.max(0, Number(model.pauseLeftSec||0));
+    return Math.max(0, dur);
+  }
+
+  function renderTimer(){
+    const left = calcLeftSec(__timerModel);
+    const m = Math.floor(left/60).toString().padStart(2,'0');
+    const s = (left%60).toString().padStart(2,'0');
+    $("local-timer").innerText = `${m}:${s}`;
+
+    const meta = [];
+    meta.push(__timerModel.isRunning ? "狀態：進行中" : "狀態：暫停/待命");
+    if(__timerModel.lastEditor) meta.push(`最後操作：${__timerModel.lastEditor.slice(0,6)}…`);
+    if(__timerModel.lastEditAt) meta.push(new Date(__timerModel.lastEditAt).toLocaleTimeString());
+    $("timerMeta").textContent = meta.join("｜");
+  }
+
+  async function timerWrite(patch){
+    await db.ref("timerSync").update({ ...patch, ...stampEditor() });
+  }
+
+  function bindTimer(){
+    // 讀取模型
+    db.ref("timerSync").on("value", (s)=>{
+      const d = s.val() || {};
+      __timerModel = {
+        isRunning: !!d.isRunning,
+        startAt: Number(d.startAt||0),
+        durationSec: Number(d.durationSec ?? d.timeLeft ?? 60), // 兼容舊欄位
+        pauseLeftSec: (d.pauseLeftSec !== undefined) ? Number(d.pauseLeftSec||0) : (d.timeLeft !== undefined ? Number(d.timeLeft||0) : Number(d.durationSec||60)),
+        lastEditor: d.lastEditor || "",
+        lastEditAt: Number(d.lastEditAt||0)
+      };
+
+      // UI input 同步（避免你看不到目前設定）
+      const left = calcLeftSec(__timerModel);
+      if(document.activeElement !== $("setTimerSec")) $("setTimerSec").value = String(Math.max(1, left));
+
+      renderTimer();
+      if(!__timerTick){
+        __timerTick = setInterval(renderTimer, 1000);
+      }
+    });
+
+    $("btnTimerStart").onclick = async ()=>{
+      const want = clamp(parseInt($("setTimerSec").value)||60, 1, 24*3600);
+      const left = calcLeftSec(__timerModel);
+      const base = (__timerModel.isRunning ? left : (left>0 ? left : want));
+      const nextDur = (left>0 && !__timerModel.isRunning) ? left : want;
+      const dur = Math.max(1, nextDur);
+
+      await timerWrite({
+        isRunning: true,
+        startAt: Date.now(),
+        durationSec: dur,
+        pauseLeftSec: null
+      });
+    };
+
+    $("btnTimerPause").onclick = async ()=>{
+      const left = calcLeftSec(__timerModel);
+      await timerWrite({
+        isRunning: false,
+        startAt: null,
+        pauseLeftSec: left,
+        durationSec: left
+      });
+    };
+
+    $("btnTimerReset").onclick = async ()=>{
+      const want = clamp(parseInt($("setTimerSec").value)||60, 1, 24*3600);
+      await timerWrite({
+        isRunning: false,
+        startAt: null,
+        durationSec: want,
+        pauseLeftSec: want
+      });
+    };
+  }
+
+  // =========================
+  // Role 鎖（admin2 才能碰 marquee/screen）
+  // =========================
+  function lockSection(isLocked, ids){
+    ids.forEach(id=>{
+      const el = $(id);
+      if(!el) return;
+      el.disabled = !!isLocked;
+    });
+  }
+
+  function applyRoleLocks(){
+    const lock = !canAdmin2();
+
+    $("hintMarqueeLock").style.display = lock ? "block" : "none";
+    $("badgeMarqueeLock").className = "badge " + (lock ? "warn" : "ok");
+    $("badgeMarqueeLock").textContent = lock ? "admin2 才可操作" : "已解鎖（admin2）";
+
+    lockSection(lock, [
+      "broadcastMsg","btnBroadcast","btnBroadcastClear","broadcastEnable","mMarquee","mMarqueeFont"
+    ]);
+
+    $("hintScreenLock").style.display = lock ? "block" : "none";
+    $("badgeScreenLock").className = "badge " + (lock ? "warn" : "ok");
+    $("badgeScreenLock").textContent = lock ? "admin2 才可操作" : "已解鎖（admin2）";
+
+    lockSection(lock, [
+      "ctrlDanmakuEnable","ctrlDanmaku","ctrlFont","ctrlMaxOn","btnSaveCtrl","btnResetCtrl","btnClearDanmaku"
+    ]);
+  }
+
+  // =========================
+  // 事件委派：玩家調整/背包/稱號
+  // =========================
+  document.body.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+
+    if(btn.hasAttribute("data-adj")){
+      const [p,k,d] = btn.getAttribute("data-adj").split("|");
+      adj(p,k,Number(d));
+      return;
+    }
+    if(btn.hasAttribute("data-addinv")){
+      const p = btn.getAttribute("data-addinv");
+      const v = $(`p${p}-inv-in`).value.trim();
+      if(v){
+        db.ref(`players/p${p}/inventory`).push({ name:v });
+        $(`p${p}-inv-in`).value = "";
+      }
+      return;
+    }
+    if(btn.hasAttribute("data-settitle")){
+      const p = Number(btn.getAttribute("data-settitle"));
+      const v = ($(`p${p}-titleIn`)?.value || "").trim();
+      await db.ref(`players/p${p}`).update({ titleCustom: v, titleUpdatedAt: Date.now() });
+      alert(`已儲存 p${p} 稱號`);
+      return;
+    }
+
+    if(btn.id && btn.id.endsWith("-btnToggle")) return;
+  });
+
+  document.body.addEventListener("click", (e)=>{
+    const i = e.target.closest("i");
+    if(!i) return;
+    if(i.hasAttribute("data-delinv")){
+      const [p,k] = i.getAttribute("data-delinv").split("|");
+      db.ref(`players/p${p}/inventory/${k}`).remove();
+    }
+  });
+
+  // =========================
+  // 初始化
+  // =========================
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    $("btnForgetDevice").onclick = ()=>{
+      resetLocal();
+      location.reload();
+    };
+
+    initCollapsibleCards();
+    renderPlayerList();
+    bindMarquee();
+    bindScreenCtrl();
+    bindTimer();
+
+    await checkGate();
+
+    // 即時監看 role（若 SUPER 改 role，可即時鎖/解鎖）
+    const deviceId = getDeviceId();
+    db.ref(`adminDevices/${deviceId}`).on("value", (s)=>{
+      const dev = s.val();
+      if(!dev || dev.revoked === true){
+        myRole = null;
+        myLabel = null;
+        hideMain();
+        showCoverHTML(renderApplyBox({deviceId, note:"你已被 SUPER 剔除或尚未授權，請重新申請。"}));
+        bindApplyButtons();
+        return;
+      }
+      myRole = dev.role || "admin1";
+      myLabel = dev.label || "-";
+      if($("whoRole")) $("whoRole").textContent = myRole;
+      if($("whoLabel")) $("whoLabel").textContent = myLabel;
+      if($("whoDev")) $("whoDev").textContent = deviceId;
+
+      applyRoleLocks();
+
+      // 若 role 在頁內被升級，補啟動 presence（避免剛進來沒跑到）
+      if(!mySession) adminPresenceStart().catch(()=>{});
+    });
+  });
+</script>
+
+</body>
+</html>
