@@ -686,46 +686,75 @@ function attachForceLogoutListener(devId){
   });
 }
 
-/* ========= seat lock ========= */
-async function tryUnlockSeat(pid){
-  try{
-    await db.ref(`seatLocks/p${pid}`).remove();
-    return true;
-  }catch(e){
-    console.error("tryUnlockSeat error:", e);
-    alert("解除座位鎖定失敗（可能是資料庫規則擋住）\n" + (e?.message || e));
-    return false;
-  }
+/* ========= seat lock (SUPER ONLY unlock) ========= */
+async function requestUnlockSeat(pid, reason){
+  // ✅ 玩家端只能「申請」，不能 remove seatLocks
+  const deviceId = getDeviceId();
+  const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+  const reqRef = db.ref(`seatUnlockRequests/p${pid}`).push();
+  await reqRef.set({
+    pid: Number(pid),
+    requestAt: Date.now(),
+    requester: {
+      deviceId,
+      label,
+      playerName: String(myName||""),
+      ua: navigator.userAgent || ""
+    },
+    reason: String(reason||""),
+    status: "pending"
+  });
 }
-async function enforceSeatLockOrMaybeSelfUnlock(pid, playerName){
+
+async function enforceSeatLockSuperOnly(pid, playerName){
   const deviceId = getDeviceId();
   const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
   const lockRef = db.ref(`seatLocks/p${pid}`);
 
   let snap;
   try{ snap = await lockRef.get(); }
-  catch(err){ doLogoutToLogin("系統無法確認位子鎖定狀態，已中止登入。"); return false; }
+  catch(err){
+    doLogoutToLogin("系統無法確認位子鎖定狀態，已中止登入。");
+    return false;
+  }
 
   const lock = snap.val();
+
+  // ✅ 被其他裝置鎖住：直接拒絕（玩家不能自行解鎖）
   if(lock && lock.deviceId && lock.deviceId !== deviceId){
-    const ok = confirm(
-      `此玩家位子（p${pid}）已被其他裝置使用：\n` +
+    const wantReq = confirm(
+      `此角色（p${pid}）已被其他裝置鎖定：\n` +
       `${lock.label || lock.deviceId}\n\n` +
-      `如果那台是你之前的裝置或已當機，你可以按「確定」解除舊鎖並重新登入。\n` +
-      `如果不是你，請按「取消」。`
+      `⚠️ 你無法自行解鎖。\n` +
+      `要送出「請 Super 解鎖」申請嗎？`
     );
-    if(!ok){ doLogoutToLogin("已取消登入。"); return false; }
-    const unlocked = await tryUnlockSeat(pid);
-    if(!unlocked){ doLogoutToLogin("解除舊鎖失敗，已回到登入頁。"); return false; }
-    return await enforceSeatLockOrMaybeSelfUnlock(pid, playerName);
+
+    if(wantReq){
+      try{
+        await requestUnlockSeat(pid, `login_blocked: locked_by_${lock.label||lock.deviceId}`);
+        alert("✅ 已送出解鎖申請，請通知 Super 解鎖後再登入。");
+      }catch(e){
+        alert("❌ 送出解鎖申請失敗（可能被 Rules 擋住）\n" + (e?.message||e));
+      }
+    }
+
+    doLogoutToLogin("此角色已被其他裝置鎖定，請由 Super 解鎖後再登入。");
+    return false;
   }
 
+  // ✅ 沒鎖 or 同裝置：建立 / 更新鎖
   if(!lock || !lock.deviceId){
-    try{ await lockRef.set({ deviceId, name: playerName || "", label, ts: Date.now() }); }
-    catch(err){ doLogoutToLogin("位子鎖定寫入失敗，已中止登入。"); return false; }
+    try{
+      await lockRef.set({ deviceId, name: playerName || "", label, ts: Date.now() });
+    }catch(err){
+      doLogoutToLogin("位子鎖定寫入失敗，已中止登入。");
+      return false;
+    }
   }else{
+    // 同裝置重登：刷新資訊
     try{ await lockRef.update({ name: playerName || lock.name || "", label, ts: Date.now() }); }catch(e){}
   }
+
   return true;
 }
 
@@ -757,9 +786,13 @@ document.getElementById("btnRelog").addEventListener("click", async ()=>{
 document.getElementById("btnLogoutLocal").addEventListener("click", ()=> doLogoutToLogin());
 document.getElementById("btnUnlockSeat").addEventListener("click", async ()=>{
   if(!myId) return;
-  if(!confirm(`確定要解除 p${myId} 的位子鎖定？\n解除後你會回到登入頁。`)) return;
-  const ok = await tryUnlockSeat(myId);
-  if(ok) doLogoutToLogin("已解除鎖定。");
+  try{
+    await requestUnlockSeat(myId, "manual_request_from_button");
+    alert("✅ 已送出解鎖申請，請通知 Super 解鎖後再登入。");
+  }catch(e){
+    alert("❌ 送出解鎖申請失敗（可能被 Rules 擋住）\n" + (e?.message||e));
+  }
+  doLogoutToLogin("已送出申請，請等待 Super 解鎖。");
 });
 
 /* ========= join ========= */
@@ -772,7 +805,7 @@ async function join(){
 
   setDeviceLabel(document.getElementById("deviceLabel").value || "");
 
-  const ok = await enforceSeatLockOrMaybeSelfUnlock(myId, myName);
+ const ok = await enforceSeatLockSuperOnly(myId, myName);
   if(!ok) return;
 
   const authed = await ensureAnonAuth();
@@ -1757,4 +1790,5 @@ function initSimpleUpload(){
 })();
 </script>
 </body>
+
 </html>
