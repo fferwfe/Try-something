@@ -463,7 +463,7 @@
             <select id="uFilterPlayer" style="width:180px;margin:0;">
               <option value="all">全部玩家</option>
               <option value="1">p1</option><option value="2">p2</option><option value="3">p3</option><option value="4">p4</option><option value="5">p5</option><option value="6">p6</option>
-              <option value="7">p7</option><option value="8">p8</option><option value="9">p9</option><option value="10">p10</option><option value="11">p11</option>
+              <option value="7">p7</option><option value="8">p8</option><option value="9">p9</option><option value="10">p10</option><option value="11">p11</option><option value="12">p12</option>
             </select>
 
             <button class="btn blue sm" id="btnReloadUploads"><i class="fa-solid fa-rotate"></i> 重新載入</button>
@@ -493,7 +493,7 @@
 
         <div class="collapse open">
           <div class="hint">
-            ✅ 玩家監聽已改成 <span class="kbd">players</span> 的 <span class="kbd">child_changed</span>（減負），不再 11 個 value 監聽。
+            ✅ 玩家監聽已改成 <span class="kbd">players</span> 的 <span class="kbd">child_changed</span>（減負），不再 12 個 value 監聽。
           </div>
           <div id="player-list" style="margin-top:10px;"></div>
         </div>
@@ -547,6 +547,9 @@
 
   // ✅ 白名單路徑（多人可進）
   const SUPER_WL_PATH = "superWhitelist"; // superWhitelist/{uid} = { addedAt, addedBy, note? }
+
+  // ✅ 玩家數量（你要 12 位）
+  const PLAYER_COUNT = 12;
 
   // 工具
   const $ = (id) => document.getElementById(id);
@@ -844,7 +847,7 @@
       const locks = snap.val() || {};
       Object.keys(seatLocksCache).forEach(k=>delete seatLocksCache[k]);
       Object.entries(locks).forEach(([k,v])=>{ seatLocksCache[k]=v; });
-      for(let i=1;i<=11;i++) updatePlayerSeatUI(i);
+      for(let i=1;i<=PLAYER_COUNT;i++) updatePlayerSeatUI(i);
     });
   }
 
@@ -986,7 +989,7 @@
     const list = $("player-list");
     list.innerHTML = "";
 
-    for (let i=1; i<=11; i++) {
+    for (let i=1; i<=PLAYER_COUNT; i++) {
       const html = `
         <div class="card" style="border-left-color:rgba(255,255,255,.22);">
           <div class="player-head">
@@ -1210,7 +1213,8 @@
     };
 
     $("btnClearDanmaku").onclick = async () => {
-      if (confirm("確定清空彈幕？")) {
+      if (confirm("確定清空彈幕？（目前清除 purchaseFeed）")) {
+        // NOTE：若你未來彈幕來源改路徑，這行要跟著改
         await db.ref("purchaseFeed").remove();
       }
     };
@@ -1220,9 +1224,6 @@
 
   // =========================
   // ✅ 減負版計時器（timerSync）
-  // DB 格式：
-  // timerSync: { isRunning, endAt, pausedLeftSec, durationSec, updatedAt }
-  // - 顯示端每 250ms 自算剩餘，不每秒寫 DB
   // =========================
   function bindTimer() {
     const ref = db.ref("timerSync");
@@ -1648,6 +1649,9 @@
     const btn = e.target.closest('button');
     if (!btn) return;
 
+    // ✅ 保險：卡片收合按鈕交給另一個 listener 處理，這裡直接不管
+    if (btn.hasAttribute("data-card-toggle")) return;
+
     // ✅ whitelist remove
     if(btn.hasAttribute("data-wl-del")){
       const uid = btn.getAttribute("data-wl-del");
@@ -1657,6 +1661,7 @@
       return;
     }
 
+    // 玩家收合按鈕（由單獨綁定處理）
     if(btn.id && btn.id.endsWith("-btnToggle")) return;
 
     if (btn.hasAttribute("data-unlock-seat")){
@@ -1707,223 +1712,4 @@
       const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
       if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}）`);
 
-      const rs = await db.ref(`joinRequests/${reqKey}`).once('value');
-      const r = rs.val() || {};
-      const label = (r.label || r.deviceLabel || devId || reqKey).toString();
-
-      await db.ref(`adminDevices/${devId}`).set({
-        role: isAdminReqType(role) ? role : 'admin1',
-        label,
-        revoked: false,
-        approvedAt: Date.now(),
-        approvedBy: auth.currentUser?.uid || SUPER_UID,
-        source: 'joinRequests'
-      });
-
-      await db.ref(`joinRequests/${reqKey}`).update({
-        status: 'approved',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID,
-        approvedRole: isAdminReqType(role) ? role : 'admin1'
-      });
-
-      alert('已核准並加入授權設備。');
-      return;
-    }
-
-    if (btn.hasAttribute('data-deny-jr')) {
-      const reqKey = btn.getAttribute('data-deny-jr');
-      if (!confirm('確定要拒絕此申請？')) return;
-
-      await db.ref(`joinRequests/${reqKey}`).update({
-        status: 'denied',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
-      });
-      return;
-    }
-
-    if (btn.hasAttribute('data-approve')) {
-      const [devId, role] = btn.getAttribute('data-approve').split('|');
-
-      const snap = await db.ref('adminDevices').once('value');
-      const all = snap.val() || {};
-      const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
-      if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}）`);
-
-      const rs = await db.ref(`deviceRequests/${devId}`).once('value');
-      const r = rs.val() || {};
-      const label = r.deviceLabel || devId;
-
-      await db.ref(`adminDevices/${devId}`).set({
-        role: isAdminReqType(role) ? role : 'admin1',
-        label,
-        revoked: false,
-        approvedAt: Date.now(),
-        approvedBy: auth.currentUser?.uid || SUPER_UID
-      });
-
-      await db.ref(`deviceRequests/${devId}`).update({
-        status: 'approved',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
-      });
-
-      alert('已核准並加入授權設備。');
-      return;
-    }
-
-    if (btn.hasAttribute('data-deny')) {
-      const devId = btn.getAttribute('data-deny');
-      if (!confirm('確定要拒絕此申請？')) return;
-
-      await db.ref(`deviceRequests/${devId}`).update({
-        status: 'denied',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
-      });
-      return;
-    }
-
-    if (btn.hasAttribute('data-revoke')) {
-      const devId = btn.getAttribute('data-revoke');
-      if (!confirm('剔除後該設備將無法登入管理端，確定？')) return;
-
-      await db.ref(`adminDevices/${devId}`).update({
-        revoked: true,
-        revokedAt: Date.now(),
-        revokedBy: auth.currentUser?.uid || SUPER_UID
-      });
-      return;
-    }
-
-    if (btn.hasAttribute('data-unrevoke')) {
-      const devId = btn.getAttribute('data-unrevoke');
-
-      const snap = await db.ref('adminDevices').once('value');
-      const all = snap.val() || {};
-      const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
-      if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}），無法恢復。`);
-
-      await db.ref(`adminDevices/${devId}`).update({
-        revoked: false,
-        restoredAt: Date.now(),
-        restoredBy: auth.currentUser?.uid || SUPER_UID
-      });
-      return;
-    }
-
-    if(btn.hasAttribute("data-adj")) {
-      const [p,k,d] = btn.getAttribute("data-adj").split('|');
-      adj(p,k,Number(d));
-      return;
-    }
-
-    if(btn.hasAttribute("data-addinv")) {
-      const p = btn.getAttribute("data-addinv");
-      const v = $(`p${p}-inv-in`).value.trim();
-      if (v) {
-        db.ref(`players/p${p}/inventory`).push({ name: v });
-        $(`p${p}-inv-in`).value = "";
-      }
-      return;
-    }
-
-    if(btn.hasAttribute("data-settitle")){
-      const p = Number(btn.getAttribute("data-settitle"));
-      const v = ($(`p${p}-titleIn`)?.value || "").trim();
-      await db.ref(`players/p${p}`).update({ titleCustom: v, titleUpdatedAt: Date.now() });
-      alert(`已儲存 p${p} 稱號`);
-      return;
-    }
-
-    if(btn.hasAttribute("data-clear")) {
-      const p = Number(btn.getAttribute("data-clear"));
-      if(confirm("清空玩家？（包含資源、分數、背包、登入資訊）")) {
-        await db.ref(`players/p${p}`).set({
-          name:"",
-          seat: p,
-          res:{ time:0, money:0, health:0, knowledge:0, social:0, score:0 }
-        });
-        await db.ref(`players/p${p}/inventory`).remove();
-        await db.ref(`seatLocks/p${p}`).remove();
-      }
-      return;
-    }
-  });
-
-  document.body.addEventListener('change', async (e)=>{
-    const sel = e.target.closest('select');
-    if (!sel) return;
-    if (!sel.hasAttribute('data-role')) return;
-
-    const devId = sel.getAttribute('data-role');
-    const role = sel.value;
-    if (!isAdminReqType(role)) return;
-
-    await db.ref(`adminDevices/${devId}`).update({
-      role,
-      roleUpdatedAt: Date.now(),
-      roleUpdatedBy: auth.currentUser?.uid || SUPER_UID
-    });
-  });
-
-  document.body.addEventListener("click", e => {
-    const i = e.target.closest("i");
-    if (!i) return;
-    if (i.hasAttribute("data-delinv")) {
-      const [p,k] = i.getAttribute("data-delinv").split('|');
-      db.ref(`players/p${p}/inventory/${k}`).remove();
-    }
-  });
-
-  // =========================
-  // 初始化
-  // =========================
-  document.addEventListener("DOMContentLoaded", () => {
-    initStandaloneLogin();
-
-    renderPlayerList();
-    bindPlayersLight();
-    bindSeatLocksToPlayerList();
-
-    bindWhitelist();
-
-    bindMarquee();
-    bindScreenCtrl();
-    bindTimer();
-    bindSuperDevices();
-    bindPurgeRevoked();
-
-    initCollapsibleCards();
-
-    $("btnLogout").addEventListener("click", async () => {
-      await auth.signOut();
-    });
-
-    document.getElementById("btnReloadUploads")?.addEventListener("click", loadUploadsIndex);
-    document.getElementById("uFilterStatus")?.addEventListener("change", loadUploadsIndex);
-    document.getElementById("uFilterPlayer")?.addEventListener("change", loadUploadsIndex);
-    loadUploadsIndex();
-
-    $("btnResetAllRes").onclick = async () => {
-      if (!confirm("確定清空所有玩家資源、分數與背包？")) return;
-      const updates = {};
-      for (let i=1; i<=11; i++) {
-        updates[`players/p${i}/res`] = { time:0, money:0, health:0, knowledge:0, social:0, score:0 };
-        updates[`players/p${i}/inventory`] = null;
-      }
-      await db.ref().update(updates);
-      alert("已清空。");
-    };
-
-    $("btnResetTotal").onclick = async () => {
-      if (!confirm("確定徹底重置資料庫？")) return;
-      await db.ref().remove();
-      location.reload();
-    };
-  });
-</script>
-
-</body>
-</html>
+      const rs = await db.ref(`j
