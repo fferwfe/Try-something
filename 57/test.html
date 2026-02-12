@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>人生履歷｜Player</title>
+
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- FontAwesome (optional) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+<style>
+  :root{
+    --bg1:#0b1220;
+    --bg2:#0e1a2e;
+    --card: rgba(255,255,255,.08);
+    --stroke: rgba(255,255,255,.14);
+    --text: rgba(255,255,255,.92);
+    --muted: rgba(255,255,255,.70);
+    --shadow: 0 18px 55px rgba(0,0,0,.45);
+    --r:18px;
+
+    --gold1:#f6d27a;
+    --gold2:#c79b3c;
+
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+
+    --mq-sec: 18s;
+    --mq-font: 18px;
+  }
+
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family: 'PingFang TC','Microsoft JhengHei',system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 700px at 20% 10%, rgba(246,210,122,.18), transparent 55%),
+      radial-gradient(900px 500px at 80% 20%, rgba(59,130,246,.15), transparent 60%),
+      linear-gradient(180deg,var(--bg1),var(--bg2));
+    padding: 14px 14px 94px;
+    box-sizing:border-box;
+    overflow-x:hidden;
+  }
+
+  .wrap{max-width:980px;margin:0 auto;}
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin-bottom:10px;
+  }
+  .brand{
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .brand .t{
+    font-weight:900; letter-spacing:.5px;
+    font-size:18px;
+  }
+  .brand .s{
+    font-size:12px; color:var(--muted);
+  }
+  .pill{
+    display:flex; align-items:center; gap:10px;
+  }
+  .btnIcon{
+    width:40px;height:40px;border-radius:12px;
+    border:1px solid var(--stroke);
+    background: rgba(255,255,255,.06);
+    color:var(--text);
+    box-shadow: var(--shadow);
+    display:grid; place-items:center;
+    cursor:pointer;
+  }
+  .btnIcon:active{transform: translateY(1px);}
+
+  /* Marquee / Announcement (only when enabled) */
+  #marqueeWrap{
+    display:none;
+    position: sticky;
+    top: 10px;
+    z-index: 30;
+    margin-bottom: 10px;
+  }
+  #marqueeWrap.on{display:block;}
+  .marqueeCard{
+    border-radius: 14px;
+    border: 1px solid rgba(246,210,122,.28);
+    background: linear-gradient(180deg, rgba(246,210,122,.18), rgba(0,0,0,.18));
+    box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  .marqueeInner{
+    display:flex; align-items:center; gap:10px;
+    padding: 10px 12px;
+  }
+  .marqueeBadge{
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(246,210,122,.18);
+    border: 1px solid rgba(246,210,122,.35);
+    font-weight:800;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .marqueeTrack{
+    flex:1;
+    overflow:hidden;
+    position:relative;
+  }
+  .marqueeText{
+    display:inline-block;
+    white-space:nowrap;
+    font-size: var(--mq-font);
+    animation: mq var(--mq-sec) linear infinite;
+    padding-left: 100%;
+  }
+  @keyframes mq{
+    0%{ transform: translateX(0); }
+    100%{ transform: translateX(-200%); }
+  }
+
+  /* Cards */
+  .card{
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
+  }
+  .cardHd{
+    padding: 14px 14px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+  }
+  .cardHd .ttl{
+    font-weight:900; letter-spacing:.5px;
+  }
+  .cardBd{ padding: 0 14px 14px; }
+
+  /* Profile collapsible */
+  .profileTop{
+    display:flex; gap:12px; align-items:center;
+  }
+  .avatar{
+    width:54px;height:54px;border-radius:16px;
+    border:1px solid rgba(246,210,122,.25);
+    background: radial-gradient(circle at 30% 30%, rgba(246,210,122,.25), rgba(255,255,255,.06));
+    display:grid; place-items:center;
+    font-weight:900;
+    box-shadow: 0 14px 38px rgba(0,0,0,.35);
+    flex:0 0 auto;
+  }
+  .who{
+    display:flex; flex-direction:column; gap:2px;
+    min-width:0;
+  }
+  .who .name{
+    font-size:16px; font-weight:900;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .who .meta{
+    font-size:12px; color:var(--muted);
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .toggleBtn{
+    border:1px solid var(--stroke);
+    background: rgba(255,255,255,.06);
+    color:var(--text);
+    border-radius: 12px;
+    padding: 10px 12px;
+    cursor:pointer;
+    font-weight:800;
+  }
+  .toggleBtn:active{transform: translateY(1px);}
+  .profileDetails{
+    display:none;
+    gap:12px;
+    padding-top: 10px;
+  }
+  .profileDetails.on{display:grid;}
+  .grid2{
+    display:grid; gap:12px;
+    grid-template-columns: 1fr;
+  }
+  @media(min-width:720px){
+    .grid2{ grid-template-columns: 1.2fr .8fr; }
+  }
+
+  /* Resources row */
+  .resRow{
+    display:grid; gap:10px;
+    grid-template-columns: repeat(5, minmax(0,1fr));
+    padding: 12px 14px 14px;
+  }
+  @media(max-width:560px){
+    .resRow{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  .res{
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    border-radius: 14px;
+    padding: 10px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+  }
+  .res .k{
+    display:flex; align-items:center; gap:8px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .res .v{
+    font-weight:900;
+    color: rgba(246,210,122,.95);
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(246,210,122,.12);
+    border: 1px solid rgba(246,210,122,.25);
+    font-size:12px;
+    font-weight:900;
+  }
+
+  /* Tabs */
+  .tabs{
+    display:flex; gap:10px; flex-wrap:wrap;
+    padding: 12px 14px 14px;
+  }
+  .tab{
+    border:1px solid var(--stroke);
+    background: rgba(255,255,255,.06);
+    color: var(--text);
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .tab.on{
+    background: linear-gradient(180deg, rgba(246,210,122,.22), rgba(255,255,255,.06));
+    border-color: rgba(246,210,122,.35);
+  }
+
+  .panel{ display:none; }
+  .panel.on{ display:block; }
+
+  /* Lists */
+  .list{ display:grid; gap:10px; }
+  .item{
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    border-radius: 14px;
+    padding: 12px;
+    display:flex; gap:12px; align-items:center;
+  }
+  .thumb{
+    width:56px;height:56px;border-radius:14px;
+    border:1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.25);
+    overflow:hidden;
+    flex:0 0 auto;
+    display:grid; place-items:center;
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .item .info{ flex:1; min-width:0; }
+  .item .info .nm{ font-weight:900; }
+  .item .info .ds{ font-size:12px; color:var(--muted); margin-top:3px; }
+  .item .act{ display:flex; flex-direction:column; gap:8px; }
+
+  .btn{
+    border:none;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight:900;
+    cursor:pointer;
+    color:#1b1406;
+    background: linear-gradient(180deg,var(--gold1),var(--gold2));
+    box-shadow: 0 14px 40px rgba(0,0,0,.38);
+  }
+  .btn:active{transform: translateY(1px);}
+  .btn2{
+    border:1px solid rgba(255,255,255,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight:900;
+    cursor:pointer;
+    color:var(--text);
+    background: rgba(255,255,255,.06);
+  }
+  .btn2:active{transform: translateY(1px);}
+  .btnSmall{
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight:900;
+  }
+
+  /* Modal (Mission) */
+  .modalBack{
+    position:fixed; inset:0;
+    background: rgba(0,0,0,.52);
+    display:none;
+    z-index: 80;
+  }
+  .modalBack.on{display:block;}
+  .modal{
+    position:absolute;
+    left:50%; top:50%;
+    transform: translate(-50%,-50%);
+    width:min(560px, calc(100vw - 26px));
+    border-radius: 20px;
+    border:1px solid rgba(246,210,122,.28);
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(0,0,0,.18));
+    box-shadow: 0 24px 90px rgba(0,0,0,.55);
+    backdrop-filter: blur(14px);
+    overflow:hidden;
+  }
+  .modalHd{
+    padding: 14px 14px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+    border-bottom: 1px solid rgba(255,255,255,.10);
+  }
+  .modalHd .mttl{ font-weight:1000; letter-spacing:.6px; }
+  .modalBd{ padding: 12px 14px 14px; }
+  .kv{
+    display:grid; gap:10px;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media(max-width:520px){ .kv{grid-template-columns:1fr;} }
+  .kv .box{
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+  .kv .box .k{ font-size:12px; color:var(--muted); font-weight:900; }
+  .kv .box .v{ margin-top:6px; font-weight:900; }
+  .modalFt{
+    padding: 12px 14px 14px;
+    display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+    border-top: 1px solid rgba(255,255,255,.10);
+  }
+
+  /* Upload */
+  .uploadBox{
+    border:1px dashed rgba(255,255,255,.22);
+    background: rgba(255,255,255,.04);
+    border-radius: 16px;
+    padding: 14px;
+    display:grid;
+    gap:10px;
+  }
+  input[type="file"]{
+    width:100%;
+    color: var(--muted);
+  }
+  .hint{ font-size:12px; color:var(--muted); line-height:1.4; }
+
+  /* Bottom safe area */
+  .safe{ height: env(safe-area-inset-bottom); }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="t">人生履歷｜Player</div>
+      <div class="s" id="subline">未登入</div>
+    </div>
+    <div class="pill">
+      <button class="btnIcon" id="btnMissionBell" title="任務" style="display:none;">
+        <i class="fa-solid fa-bell"></i>
+      </button>
+      <button class="btnIcon" id="btnRefresh" title="重新同步">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Announcement / marquee -->
+  <div id="marqueeWrap">
+    <div class="marqueeCard">
+      <div class="marqueeInner">
+        <div class="marqueeBadge">公告</div>
+        <div class="marqueeTrack">
+          <div class="marqueeText" id="marqueeText"></div>
+        </div>
+        <button class="btnIcon" id="btnHideMarquee" title="關閉" style="width:36px;height:36px;border-radius:10px;box-shadow:none;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile card -->
+  <div class="card" id="profileCard">
+    <div class="cardHd">
+      <div class="profileTop">
+        <div class="avatar" id="avatar">P</div>
+        <div class="who">
+          <div class="name" id="playerName">玩家</div>
+          <div class="meta">
+            <span class="chip">Lv.<span id="lv">1</span></span>
+            <span class="chip">EXP <span id="expNow">0</span>/<span id="expMax">100</span></span>
+            <span class="chip">Score <span id="score">0</span></span>
+          </div>
+        </div>
+      </div>
+      <button class="toggleBtn" id="btnToggleProfile">展開</button>
+    </div>
+
+    <div class="cardBd profileDetails" id="profileDetails">
+      <div class="grid2">
+        <div class="card" style="box-shadow:none;">
+          <div class="cardHd">
+            <div class="ttl">雷達圖</div>
+            <div class="s" style="color:var(--muted);font-size:12px;">五大資源分佈</div>
+          </div>
+          <div class="cardBd">
+            <canvas id="radar" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="card" style="box-shadow:none;">
+          <div class="cardHd">
+            <div class="ttl">角色資訊</div>
+          </div>
+          <div class="cardBd" style="display:grid;gap:10px;">
+            <div class="res" style="justify-content:flex-start;gap:10px;">
+              <div class="k"><i class="fa-solid fa-user-group"></i> 家庭/隊伍</div>
+              <div class="v" id="teamName">—</div>
+            </div>
+            <div class="res" style="justify-content:flex-start;gap:10px;">
+              <div class="k"><i class="fa-solid fa-id-badge"></i> 玩家ID</div>
+              <div class="v" id="pidText">—</div>
+            </div>
+            <div class="hint">
+              小提醒：此頁只改 Player，不影響其他頁。任務只有發佈時才會跳出，可收起、可再打開。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources row (always visible) -->
+    <div class="resRow" id="resRow">
+      <div class="res"><div class="k">⏳ 時間</div><div class="v" id="rTime">0</div></div>
+      <div class="res"><div class="k">💰 金錢</div><div class="v" id="rMoney">0</div></div>
+      <div class="res"><div class="k">❤️ 健康</div><div class="v" id="rHealth">0</div></div>
+      <div class="res"><div class="k">📘 知識</div><div class="v" id="rKnow">0</div></div>
+      <div class="res"><div class="k">🤝 人際</div><div class="v" id="rSocial">0</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab on" data-tab="bag">背包</button>
+      <button class="tab" data-tab="shop">商店</button>
+      <button class="tab" data-tab="upload">上傳證明</button>
+      <button class="tab" data-tab="mission">任務</button>
+    </div>
+  </div>
+
+  <!-- Panels -->
+  <div class="card" style="margin-top:12px;">
+    <div class="cardBd" style="padding-top:14px;">
+      <div class="panel on" id="panel-bag">
+        <div class="list" id="bagList"></div>
+        <div class="hint" id="bagHint">尚無背包物品。</div>
+      </div>
+
+      <div class="panel" id="panel-shop">
+        <div class="list" id="shopList"></div>
+        <div class="hint" id="shopHint">尚無商店商品，或路徑不同（我已做兼容讀取）。</div>
+      </div>
+
+      <div class="panel" id="panel-upload">
+        <div class="uploadBox">
+          <div style="font-weight:1000;">📸 上傳完成證明（照片）</div>
+          <div class="hint">
+            用於任務「我完成了」後提交，Storage 路徑：<b>uploads/p{pid}/{uploadId}_{fileName}</b><br>
+            你也可以平常就先上傳，留存證明。
+          </div>
+          <input type="file" id="fileInput" accept="image/*" />
+          <button class="btn" id="btnUpload">上傳</button>
+          <div class="hint" id="uploadStatus"></div>
+
+          <div style="margin-top:6px;font-weight:1000;">最近上傳</div>
+          <div class="list" id="uploadList"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-mission">
+        <div class="hint" id="missionEmpty">目前沒有任務。任務只有發佈時才會出現。</div>
+
+        <div class="card" id="missionCard" style="display:none; box-shadow:none;">
+          <div class="cardHd">
+            <div class="ttl">目前任務</div>
+            <button class="btn2 btnSmall" id="btnOpenMission">打開任務視窗</button>
+          </div>
+          <div class="cardBd" style="display:grid;gap:10px;">
+            <div class="res" style="justify-content:flex-start;gap:10px;">
+              <div class="k">📌 名稱</div><div class="v" id="mTitle">—</div>
+            </div>
+            <div class="res" style="justify-content:flex-start;gap:10px;">
+              <div class="k">📝 內容</div><div class="v" id="mDesc">—</div>
+            </div>
+            <div class="res" style="justify-content:flex-start;gap:10px;">
+              <div class="k">⏱ 剩餘</div><div class="v" id="mLeft">—</div>
+            </div>
+            <button class="btn" id="btnDone">我完成了（上傳證明）</button>
+            <div class="hint">按下後會跳到「上傳證明」分頁。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="safe"></div>
+</div>
+
+<!-- Mission Modal -->
+<div class="modalBack" id="missionModalBack">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="任務">
+    <div class="modalHd">
+      <div class="mttl">突發任務</div>
+      <button class="btnIcon" id="btnCloseMission" title="關閉" style="width:36px;height:36px;border-radius:10px;box-shadow:none;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="modalBd">
+      <div style="font-weight:1000;font-size:16px;" id="mmTitle">—</div>
+      <div style="margin-top:6px;color:var(--muted);line-height:1.5;" id="mmDesc">—</div>
+
+      <div style="margin-top:10px;" class="kv">
+        <div class="box">
+          <div class="k">花費</div>
+          <div class="v" id="mmCost">—</div>
+        </div>
+        <div class="box">
+          <div class="k">獎勵</div>
+          <div class="v" id="mmReward">—</div>
+        </div>
+        <div class="box">
+          <div class="k">剩餘時間</div>
+          <div class="v" id="mmLeft">—</div>
+        </div>
+        <div class="box">
+          <div class="k">狀態</div>
+          <div class="v" id="mmState">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="modalFt">
+      <button class="btn2" id="btnLater">稍後再看</button>
+      <button class="btn" id="btnSeen">我已看到</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   0) Firebase 初始化
+   ========================= */
+const firebaseConfig = {
+  // TODO: 換成你的 Firebase 設定
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+const st = firebase.storage();
+
+/* =========================
+   1) 基本工具
+   ========================= */
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+function now(){ return Date.now(); }
+function fmtInt(n){
+  const x = Number(n||0);
+  return isFinite(x) ? Math.round(x).toString() : "0";
+}
+function fmtLeft(ms){
+  ms = Math.max(0, ms|0);
+  const s = Math.floor(ms/1000);
+  const mm = String(Math.floor(s/60)).padStart(2,"0");
+  const ss = String(s%60).padStart(2,"0");
+  return `${mm}:${ss}`;
+}
+function safeText(s){ return (s==null? "" : String(s)); }
+
+function iconForKey(k){
+  const m = { time:"⏳", money:"💰", health:"❤️", knowledge:"📘", social:"🤝", score:"⭐" };
+  return m[k] || "✨";
+}
+
+/* =========================
+   2) 玩家識別（pid）
+   - 支援 ?pid=1~11
+   - 預設 pid=1
+   ========================= */
+let pid = Number(qs("pid") || 1);
+pid = clamp(pid,1,11);
+
+document.getElementById("pidText").textContent = "p" + pid;
+
+/* =========================
+   3) UI狀態
+   ========================= */
+const state = {
+  player: null,
+  resources: {time:0,money:0,health:0,knowledge:0,social:0,score:0},
+  lv: 1,
+  expNow: 0,
+  expMax: 100,
+  teamName: "",
+  mission: null,       // {id,title,desc,cost,reward,endAt,active}
+  missionSeen: false,  // 是否已按「我已看到」
+  missionSnooze: false // 是否按「稍後再看」
+};
+
+function setSubline(s){ document.getElementById("subline").textContent = s; }
+
+/* =========================
+   4) Tabs
+   ========================= */
+const tabs = Array.from(document.querySelectorAll(".tab"));
+function openTab(name){
+  tabs.forEach(t=>t.classList.toggle("on", t.dataset.tab===name));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
+  document.getElementById("panel-"+name).classList.add("on");
+}
+tabs.forEach(t=>t.addEventListener("click", ()=>openTab(t.dataset.tab)));
+
+/* =========================
+   5) Profile collapse
+   ========================= */
+const btnToggleProfile = document.getElementById("btnToggleProfile");
+const profileDetails = document.getElementById("profileDetails");
+btnToggleProfile.addEventListener("click", ()=>{
+  const on = profileDetails.classList.toggle("on");
+  btnToggleProfile.textContent = on ? "收起" : "展開";
+});
+
+/* =========================
+   6) Radar chart
+   ========================= */
+let radarChart = null;
+function ensureRadar(){
+  if(radarChart) return;
+  const ctx = document.getElementById("radar").getContext("2d");
+  radarChart = new Chart(ctx,{
+    type:"radar",
+    data:{
+      labels:["時間","金錢","健康","知識","人際"],
+      datasets:[{
+        label:"資源",
+        data:[0,0,0,0,0],
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false}
+      },
+      scales:{
+        r:{
+          ticks:{display:false},
+          grid:{color:"rgba(255,255,255,.12)"},
+          angleLines:{color:"rgba(255,255,255,.12)"},
+          pointLabels:{color:"rgba(255,255,255,.80)", font:{size:12, weight:"700"}}
+        }
+      }
+    }
+  });
+}
+function updateRadar(){
+  ensureRadar();
+  const r = state.resources;
+  const data = [r.time,r.money,r.health,r.knowledge,r.social].map(x=>Number(x||0));
+  radarChart.data.datasets[0].data = data;
+  radarChart.update();
+}
+
+/* =========================
+   7) Render Resources + Header
+   ========================= */
+function renderTop(){
+  const pName = (state.player?.name || state.teamName || ("第"+pid+"家庭"));
+  document.getElementById("playerName").textContent = pName;
+  document.getElementById("teamName").textContent = state.teamName || "—";
+  document.getElementById("avatar").textContent = (pName?.[0] || "P");
+
+  document.getElementById("lv").textContent = fmtInt(state.lv);
+  document.getElementById("expNow").textContent = fmtInt(state.expNow);
+  document.getElementById("expMax").textContent = fmtInt(state.expMax);
+  document.getElementById("score").textContent = fmtInt(state.resources.score);
+
+  document.getElementById("rTime").textContent = fmtInt(state.resources.time);
+  document.getElementById("rMoney").textContent = fmtInt(state.resources.money);
+  document.getElementById("rHealth").textContent = fmtInt(state.resources.health);
+  document.getElementById("rKnow").textContent = fmtInt(state.resources.knowledge);
+  document.getElementById("rSocial").textContent = fmtInt(state.resources.social);
+
+  updateRadar();
+}
+
+/* =========================
+   8) 資料來源（兼容讀取）
+   你之前常見路徑可能有：
+   - players/p{pid}/resources 或 players/p{pid} 直接有 time,money,...
+   - players/p{pid}/score
+   - players/p{pid}/profile/name
+   我做容錯：能讀到就套用
+   ========================= */
+function normalizePlayerData(val){
+  val = val || {};
+  // 可能 resources 子節點
+  const r = val.resources || val.resource || val.res || val;
+
+  const out = {
+    name: val.name || val.playerName || val.profile?.name || "",
+    teamName: val.teamName || val.team || val.groupName || "",
+    time: Number(r.time ?? r.Time ?? 0) || 0,
+    money: Number(r.money ?? r.Money ?? 0) || 0,
+    health: Number(r.health ?? r.Health ?? 0) || 0,
+    knowledge: Number(r.knowledge ?? r.Knowledge ?? 0) || 0,
+    social: Number(r.social ?? r.Social ?? 0) || 0,
+    score: Number(val.score ?? r.score ?? r.Score ?? 0) || 0,
+    lv: Number(val.lv ?? val.level ?? 1) || 1,
+    expNow: Number(val.expNow ?? val.exp?.now ?? 0) || 0,
+    expMax: Number(val.expMax ?? val.exp?.max ?? 100) || 100
+  };
+  return out;
+}
+
+/* =========================
+   9) 任務（只在發佈時出現）
+   兼容讀取路徑：
+   - currentMission
+   - missions/current
+   - randomEvent/current
+   - randomEvents/current
+   你 super 發佈時，建議寫：
+   { active:true, id, title, desc, cost:{time:-3,...}, reward:{...}, endAt:timestamp }
+   ========================= */
+function normalizeMission(val){
+  if(!val) return null;
+
+  // 若某些系統用 {active:false}
+  const active = (val.active === true) || (val.enabled === true) || (val.on === true);
+  if(!active) return null;
+
+  const id = val.id || val.missionId || val.key || ("m_"+(val.updatedAt||val.time||now()));
+  const title = val.title || val.name || "突發任務";
+  const desc = val.desc || val.task || val.content || "";
+  const cost = val.cost || val.fee || val.spend || {};
+  const reward = val.reward || val.bonus || val.gain || {};
+  const endAt = Number(val.endAt || val.deadline || val.endTime || 0) || 0;
+
+  return { id, title, desc, cost, reward, endAt, active:true };
+}
+
+function formatDelta(obj){
+  if(!obj || typeof obj!=="object") return "—";
+  const keys = ["time","money","health","knowledge","social","score"];
+  const parts = [];
+  for(const k of keys){
+    if(obj[k]==null) continue;
+    const v = Number(obj[k]);
+    if(!isFinite(v) || v===0) continue;
+    const sign = v>0 ? "+" : "";
+    parts.push(`${iconForKey(k)} ${sign}${Math.round(v)}`);
+  }
+  return parts.length ? parts.join("　") : "—";
+}
+
+/* Mission UI */
+const bell = document.getElementById("btnMissionBell");
+const modalBack = document.getElementById("missionModalBack");
+const btnCloseMission = document.getElementById("btnCloseMission");
+const btnSeen = document.getElementById("btnSeen");
+const btnLater = document.getElementById("btnLater");
+
+const missionEmpty = document.getElementById("missionEmpty");
+const missionCard = document.getElementById("missionCard");
+const btnOpenMission = document.getElementById("btnOpenMission");
+const btnDone = document.getElementById("btnDone");
+
+let leftTimer = null;
+
+function openMissionModal(){
+  if(!state.mission) return;
+  document.getElementById("mmTitle").textContent = state.mission.title;
+  document.getElementById("mmDesc").textContent = state.mission.desc || "（無）";
+  document.getElementById("mmCost").textContent = formatDelta(state.mission.cost);
+  document.getElementById("mmReward").textContent = formatDelta(state.mission.reward);
+  document.getElementById("mmState").textContent =
+    state.missionSeen ? "已查看（可再開啟）" : (state.missionSnooze ? "稍後再看" : "新任務");
+
+  modalBack.classList.add("on");
+  tickLeft();
+  if(leftTimer) clearInterval(leftTimer);
+  leftTimer = setInterval(tickLeft, 500);
+}
+
+function closeMissionModal(){
+  modalBack.classList.remove("on");
+  if(leftTimer) clearInterval(leftTimer);
+  leftTimer = null;
+}
+
+function tickLeft(){
+  if(!state.mission){ document.getElementById("mmLeft").textContent = "—"; return; }
+  const endAt = Number(state.mission.endAt||0);
+  if(!endAt){
+    document.getElementById("mmLeft").textContent = "—";
+    document.getElementById("mLeft").textContent = "—";
+    return;
+  }
+  const ms = endAt - now();
+  const txt = fmtLeft(ms);
+  document.getElementById("mmLeft").textContent = txt;
+  document.getElementById("mLeft").textContent = txt;
+}
+
+btnCloseMission.addEventListener("click", closeMissionModal);
+modalBack.addEventListener("click", (e)=>{ if(e.target===modalBack) closeMissionModal(); });
+
+btnSeen.addEventListener("click", async ()=>{
+  state.missionSeen = true;
+  state.missionSnooze = false;
+  // 記錄「已看到」到玩家節點（不影響其他頁）
+  if(state.mission){
+    db.ref(`players/p${pid}/missionSeen/${state.mission.id}`).set(now()).catch(()=>{});
+  }
+  closeMissionModal();
+  refreshMissionUI();
+});
+
+btnLater.addEventListener("click", ()=>{
+  state.missionSnooze = true;
+  closeMissionModal();
+  refreshMissionUI();
+});
+
+bell.addEventListener("click", ()=>{
+  openMissionModal();
+});
+
+btnOpenMission.addEventListener("click", openMissionModal);
+
+btnDone.addEventListener("click", ()=>{
+  // 跳到上傳分頁（同頁整合）
+  openTab("upload");
+  // 也把任務視窗打開，讓他確認任務內容
+  openMissionModal();
+});
+
+function refreshMissionUI(){
+  if(!state.mission){
+    bell.style.display = "none";
+    missionEmpty.style.display = "block";
+    missionCard.style.display = "none";
+    return;
+  }
+  bell.style.display = "grid";
+  missionEmpty.style.display = "none";
+  missionCard.style.display = "block";
+
+  document.getElementById("mTitle").textContent = state.mission.title;
+  document.getElementById("mDesc").textContent = state.mission.desc || "（無）";
+  tickLeft();
+
+  // 若是新任務且尚未 seen/snooze → 自動彈出一次
+  const shouldAutoPop = (!state.missionSeen && !state.missionSnooze);
+  if(shouldAutoPop){
+    openMissionModal();
+  }
+}
+
+/* =========================
+   10) 背包（inventory）
+   兼容讀取：
+   - players/p{pid}/inventory
+   - inventory/p{pid}
+   ========================= */
+function renderBag(list){
+  const wrap = document.getElementById("bagList");
+  wrap.innerHTML = "";
+  const arr = list || [];
+  document.getElementById("bagHint").style.display = arr.length ? "none" : "block";
+
+  arr.forEach(it=>{
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `
+      <div class="thumb">${it.img ? `<img src="${it.img}" alt="">` : `<i class="fa-solid fa-box"></i>`}</div>
+      <div class="info">
+        <div class="nm">${safeText(it.name||"物品")}</div>
+        <div class="ds">${safeText(it.desc||"")}</div>
+      </div>
+      <div class="act">
+        <div class="chip">x ${fmtInt(it.qty||1)}</div>
+      </div>
+    `;
+    wrap.appendChild(el);
+  });
+}
+
+/* =========================
+   11) 商店（shop）
+   兼容讀取：
+   - shop/items
+   - shop
+   - shopItems
+   商品格式建議：
+   { name, desc, img, cost:{money:100,time:1}, bonus:{health:5,...} }
+   ========================= */
+function renderShop(items){
+  const wrap = document.getElementById("shopList");
+  wrap.innerHTML = "";
+  const arr = items || [];
+  document.getElementById("shopHint").style.display = arr.length ? "none" : "block";
+
+  arr.forEach(it=>{
+    const el = document.createElement("div");
+    el.className = "item";
+    const costTxt = formatDelta(it.cost);
+    const bonusTxt = formatDelta(it.bonus);
+    el.innerHTML = `
+      <div class="thumb">${it.img ? `<img src="${it.img}" alt="">` : `<i class="fa-solid fa-store"></i>`}</div>
+      <div class="info">
+        <div class="nm">${safeText(it.name||"商品")}</div>
+        <div class="ds">${safeText(it.desc||"")}</div>
+        <div class="ds">花費：${costTxt}</div>
+        <div class="ds">效果：${bonusTxt}</div>
+      </div>
+      <div class="act">
+        <button class="btnSmall btn" data-buy="${safeText(it.id)}">購買</button>
+      </div>
+    `;
+    wrap.appendChild(el);
+
+    el.querySelector("[data-buy]").addEventListener("click", ()=>buyItem(it));
+  });
+}
+
+async function buyItem(it){
+  // 只做 Player 端購買行為（不改其他頁）
+  // 扣資源 + 加成就/背包 可依你原本規則調整
+  const cost = it.cost || {};
+  const bonus = it.bonus || {};
+
+  const r = {...state.resources};
+
+  // 檢查資源是否足夠（只檢查 cost 中的正值）
+  for(const k of Object.keys(cost)){
+    const c = Number(cost[k]||0);
+    if(!isFinite(c) || c===0) continue;
+    // 若 cost 用正數表示扣除，則要足夠
+    if(c>0 && (Number(r[k]||0) < c)){
+      alert(`資源不足：${iconForKey(k)} ${k}`);
+      return;
+    }
+  }
+
+  // 寫入：用 transaction 保險
+  const pRef = db.ref(`players/p${pid}`);
+  await pRef.transaction(cur=>{
+    cur = cur || {};
+    const rr = cur.resources || cur.resource || cur.res || cur;
+    // 讀當前值
+    const get = (key)=>Number(rr[key] ?? cur[key] ?? 0) || 0;
+    const set = (key, val)=>{
+      if(cur.resources) cur.resources[key] = val;
+      else if(cur.resource) cur.resource[key] = val;
+      else if(cur.res) cur.res[key] = val;
+      else cur[key] = val;
+    };
+
+    // 扣 cost（支援 cost 正數=扣，或負數=扣）
+    for(const k of Object.keys(cost)){
+      let c = Number(cost[k]||0);
+      if(!isFinite(c) || c===0) continue;
+      // 若 cost 是正數，表示要扣除
+      if(c>0) c = -c;
+      set(k, get(k) + c);
+    }
+
+    // 加 bonus（正數加、負數扣）
+    for(const k of Object.keys(bonus)){
+      const b = Number(bonus[k]||0);
+      if(!isFinite(b) || b===0) continue;
+      set(k, get(k) + b);
+    }
+
+    // 寫入背包：players/p{pid}/inventory
+    cur.inventory = cur.inventory || {};
+    const inv = cur.inventory;
+    const id = it.id || it.key || it.name || ("item_"+now());
+    inv[id] = inv[id] || { name: it.name||"商品", desc: it.desc||"", img: it.img||"", qty: 0 };
+    inv[id].qty = Number(inv[id].qty||0) + 1;
+
+    return cur;
+  });
+
+  alert("購買成功！");
+}
+
+/* =========================
+   12) 上傳照片（證明）
+   - Storage: uploads/p{pid}/{uploadId}_{fileName}
+   - RTDB 索引：
+       uploadsIndex/{uploadId}
+       players/p{pid}/uploads/{uploadId}
+   ========================= */
+async function doUpload(){
+  const f = document.getElementById("fileInput").files?.[0];
+  if(!f){ alert("請先選擇照片"); return; }
+
+  const uploadId = "u_" + now() + "_" + Math.random().toString(16).slice(2,8);
+  const safeName = f.name.replace(/[^\w.\-()]+/g,"_");
+  const path = `uploads/p${pid}/${uploadId}_${safeName}`;
+
+  const stRef = st.ref().child(path);
+
+  const status = document.getElementById("uploadStatus");
+  status.textContent = "上傳中…";
+
+  try{
+    const snap = await stRef.put(f, { contentType: f.type || "image/jpeg" });
+    const url = await snap.ref.getDownloadURL();
+
+    const meta = {
+      pid,
+      uploadId,
+      fileName: f.name,
+      path,
+      url,
+      createdAt: now()
+    };
+
+    const updates = {};
+    updates[`uploadsIndex/${uploadId}`] = meta;
+    updates[`players/p${pid}/uploads/${uploadId}`] = meta;
+    await db.ref().update(updates);
+
+    status.textContent = "✅ 上傳成功";
+    document.getElementById("fileInput").value = "";
+  }catch(e){
+    console.error(e);
+    status.textContent = "❌ 上傳失敗：" + (e?.message || e);
+    alert("上傳失敗，可能是 Storage 規則尚未開放 uploads/p{pid}/ 讀寫。");
+  }
+}
+
+document.getElementById("btnUpload").addEventListener("click", doUpload);
+
+/* =========================
+   13) 跑馬燈（公告）
+   只在 broadcast.enable === true 且 message 有值時顯示
+   ========================= */
+const marqueeWrap = document.getElementById("marqueeWrap");
+const marqueeText = document.getElementById("marqueeText");
+document.getElementById("btnHideMarquee").addEventListener("click", ()=>{
+  marqueeWrap.classList.remove("on");
+});
+
+db.ref("broadcast").on("value",(snap)=>{
+  const b = snap.val() || {};
+  const enable = (b.enable === true);
+  const msg = (b.message || "").trim();
+
+  if(enable && msg){
+    marqueeText.textContent = msg;
+    marqueeWrap.classList.add("on");
+    const sp = Number(b.style?.speed || 18);
+    const fs = Number(b.style?.size || 18);
+    document.documentElement.style.setProperty("--mq-sec", sp + "s");
+    document.documentElement.style.setProperty("--mq-font", fs + "px");
+  }else{
+    marqueeText.textContent = "";
+    marqueeWrap.classList.remove("on");
+  }
+});
+
+/* =========================
+   14) 讀取資料（Player / Inventory / Shop / Uploads / Mission）
+   ========================= */
+async function attachAll(){
+  setSubline(`已載入：p${pid}`);
+
+  // Player
+  db.ref(`players/p${pid}`).on("value",(snap)=>{
+    const v = snap.val() || {};
+    const n = normalizePlayerData(v);
+
+    state.player = v;
+    state.teamName = n.teamName || state.teamName;
+    state.resources.time = n.time;
+    state.resources.money = n.money;
+    state.resources.health = n.health;
+    state.resources.knowledge = n.knowledge;
+    state.resources.social = n.social;
+    state.resources.score = n.score;
+    state.lv = n.lv;
+    state.expNow = n.expNow;
+    state.expMax = n.expMax;
+
+    renderTop();
+  });
+
+  // Inventory (try players/p{pid}/inventory first)
+  const invRef1 = db.ref(`players/p${pid}/inventory`);
+  invRef1.on("value",(snap)=>{
+    const v = snap.val();
+    if(v){
+      const arr = Object.entries(v).map(([id,x])=>({id,...x}));
+      renderBag(arr);
+    }else{
+      // fallback inventory/p{pid}
+      db.ref(`inventory/p${pid}`).once("value").then(s2=>{
+        const vv = s2.val();
+        const arr = vv ? Object.entries(vv).map(([id,x])=>({id,...x})) : [];
+        renderBag(arr);
+      });
+    }
+  });
+
+  // Upload list
+  db.ref(`players/p${pid}/uploads`).limitToLast(20).on("value",(snap)=>{
+    const v = snap.val() || {};
+    const arr = Object.values(v).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const wrap = document.getElementById("uploadList");
+    wrap.innerHTML = "";
+    arr.forEach(u=>{
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
+        <div class="thumb">${u.url?`<img src="${u.url}" alt="">`:`<i class="fa-solid fa-image"></i>`}</div>
+        <div class="info">
+          <div class="nm">${safeText(u.fileName||"照片")}</div>
+          <div class="ds">${new Date(u.createdAt||0).toLocaleString()}</div>
+        </div>
+        <div class="act">
+          ${u.url?`<a class="btn2 btnSmall" href="${u.url}" target="_blank" rel="noopener">查看</a>`:""}
+        </div>
+      `;
+      wrap.appendChild(el);
+    });
+  });
+
+  // Shop: try shop/items, then shop, then shopItems
+  const tryShopRefs = ["shop/items","shop","shopItems"];
+  let shopBound = false;
+  for(const path of tryShopRefs){
+    await new Promise(resolve=>{
+      db.ref(path).once("value").then(s=>{
+        const v = s.val();
+        if(v && !shopBound){
+          shopBound = true;
+          db.ref(path).on("value",(snap)=>{
+            const x = snap.val() || {};
+            const arr = Array.isArray(x)
+              ? x.filter(Boolean).map((it,idx)=>({id: it.id||String(idx), ...it}))
+              : Object.entries(x).map(([id,it])=>({id, ...it}));
+
+            // normalize fields
+            const out = arr.map(it=>({
+              id: it.id,
+              name: it.name || it.title || "商品",
+              desc: it.desc || it.description || "",
+              img: it.img || it.image || it.imageUrl || "",
+              cost: it.cost || it.price || {},
+              bonus: it.bonus || it.effect || it.reward || {}
+            }));
+            renderShop(out);
+          });
+        }
+        resolve();
+      }).catch(()=>resolve());
+    });
+    if(shopBound) break;
+  }
+  if(!shopBound) renderShop([]);
+
+  // Mission seen from RTDB (if exists)
+  db.ref(`players/p${pid}/missionSeen`).limitToLast(1).on("value",()=>{ /* 不強依賴 */ });
+
+  // Mission: try several paths; keep first active
+  const missionPaths = ["currentMission","missions/current","randomEvent/current","randomEvents/current"];
+  let missionBound = false;
+
+  for(const path of missionPaths){
+    await new Promise(resolve=>{
+      db.ref(path).once("value").then(s=>{
+        const v = s.val();
+        const m = normalizeMission(v);
+        if(m && !missionBound){
+          missionBound = true;
+          db.ref(path).on("value",(snap)=>{
+            const raw = snap.val();
+            const mm = normalizeMission(raw);
+
+            // 更新 mission
+            state.mission = mm;
+
+            // 讀取已看狀態（若有）
+            if(mm){
+              db.ref(`players/p${pid}/missionSeen/${mm.id}`).once("value").then(ss=>{
+                state.missionSeen = !!ss.val();
+                // snooze 只存在本機 session（不寫入 DB）
+                // 若任務變更，重置 snooze
+                refreshMissionUI();
+              }).catch(()=>{
+                state.missionSeen = false;
+                refreshMissionUI();
+              });
+            }else{
+              state.missionSeen = false;
+              state.missionSnooze = false;
+              refreshMissionUI();
+            }
+          });
+        }
+        resolve();
+      }).catch(()=>resolve());
+    });
+    if(missionBound) break;
+  }
+  if(!missionBound){
+    state.mission = null;
+    refreshMissionUI();
+  }
+}
+
+/* =========================
+   15) Refresh
+   ========================= */
+document.getElementById("btnRefresh").addEventListener("click", ()=>{
+  location.reload();
+});
+
+/* =========================
+   16) Start
+   ========================= */
+attachAll();
+</script>
+</body>
+</html>
