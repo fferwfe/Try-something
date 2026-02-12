@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>人生履歷｜隨機事件（獨立頁）</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --row:rgba(2,6,23,0.05);
+      --text:#0f172a;
+      --muted:rgba(15,23,42,0.72);
+      --shadow:rgba(2,6,23,0.12);
+
+      --blue:#3b82f6;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --violet:#8b5cf6;
+      --yellow:#fbbf24;
+      --gray:#64748b;
+
+      --radius:18px;
+    }
+
+    html,body{height:100%;}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+        radial-gradient(900px 520px at 50% 100%, rgba(139,92,246,0.10), transparent 65%),
+        var(--bg);
+      color:var(--text);
+      margin:0;
+      padding:14px;
+      -webkit-text-size-adjust:100%;
+      text-align:center;
+    }
+
+    .wrap{width:100%;max-width:1180px;margin:0 auto;}
+    h1{font-size:1.55rem;margin:10px 0 12px;}
+    h2{font-size:1.18rem;margin:0 0 8px;}
+    h3{font-size:1.05rem;margin:0 0 8px;}
+    .hint{color:var(--muted);font-size:.95em;margin-top:6px;line-height:1.4;}
+    code{background:rgba(2,6,23,.06);padding:2px 8px;border-radius:999px}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:0 10px 26px var(--shadow);
+      border:1px solid rgba(2,6,23,0.08);
+      padding:14px 16px;
+      margin:12px auto;
+      text-align:left;
+      position:relative;
+    }
+
+    .head{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+
+    .row{margin:10px 0;}
+    .row label{display:block;font-weight:900;margin-bottom:6px;}
+
+    input,textarea,select{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      font-size:16px;
+      background:#fff;
+      color:var(--text);
+      border:1px solid rgba(2,6,23,0.14);
+      box-shadow:0 6px 16px rgba(2,6,23,0.06);
+      box-sizing:border-box;
+    }
+    textarea{min-height:90px;resize:vertical;}
+
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:1000;
+      color:#fff;
+      transition:transform .12s, filter .12s;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+      white-space:nowrap;
+    }
+    .btn:hover{filter:brightness(1.06);}
+    .btn:active{transform:scale(0.98);}
+    .btn.blue{background:var(--blue);}
+    .btn.warn{background:var(--warn);color:#1b1203;}
+    .btn.danger{background:var(--danger);}
+    .btn.gray{background:var(--gray);}
+    .btn.plus{background:var(--ok);}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(2,6,23,.10);
+      background:rgba(2,6,23,.03);
+      font-weight:900;
+      font-size:.92em;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media (min-width: 1100px){ .grid2{grid-template-columns: 1fr 1fr;} }
+
+    .mini{font-size:12px;color:var(--muted);}
+
+    .list{
+      display:flex; flex-direction:column; gap:10px;
+      max-height: 520px;
+      overflow:auto;
+      padding-right: 4px;
+    }
+    .item{
+      border:1px solid rgba(2,6,23,.10);
+      background: rgba(2,6,23,.03);
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align:left;
+    }
+    .itemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .tag{
+      font-size:12px;font-weight:900;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(2,6,23,.10);
+      color:rgba(15,23,42,.72);
+      white-space:nowrap;
+      height: fit-content;
+      background:#fff;
+    }
+    .tag.pending{background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.25); color:#92400e}
+    .tag.free{background:rgba(34,197,94,.10); border-color:rgba(34,197,94,.20); color:#166534}
+    .tag.blue{background:rgba(59,130,246,.10); border-color:rgba(59,130,246,.20); color:#1e40af}
+    .tag.violet{background:rgba(139,92,246,.10); border-color:rgba(139,92,246,.20); color:#4c1d95}
+
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;font-weight:1000;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(2,6,23,.10);
+      background:#fff;
+      color:rgba(15,23,42,.78);
+      margin-right:6px;
+    }
+    .badge.pending{background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.25); color:#92400e}
+    .badge.free{background:rgba(34,197,94,.10); border-color:rgba(34,197,94,.20); color:#166534}
+    .badge.gray{background:rgba(100,116,139,.10); border-color:rgba(100,116,139,.20); color:#334155}
+
+    .smallBtn{padding:8px 10px;border-radius:12px;font-weight:1000;font-size:12px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+    .row6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .row6 input{padding:9px 10px;border-radius:12px;font-size:12px}
+
+    .splitTitle{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      padding-bottom:8px;border-bottom:1px dashed rgba(2,6,23,.12);margin-bottom:10px;
+    }
+
+    /* =========================
+       ✅ Collapsible（修正：收合後必能再打開）
+       ========================= */
+    .collapse{
+      overflow:hidden;
+      transition:max-height .25s ease, opacity .2s ease, transform .2s ease;
+      transform-origin: top;
+    }
+    .collapse.open{
+      max-height: 9000px;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .collapse.closed{
+      max-height: 0 !important;
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none; /* ✅ 收合內容不可點，但按鈕在外面所以沒問題 */
+    }
+    /* 防呆：確保標題列的按鈕永遠可點 */
+    .head, .splitTitle{ position:relative; z-index:5; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>🎲 隨機事件系統（獨立頁）</h1>
+    <div class="hint" style="text-align:left; max-width:1180px; margin:0 auto 10px;">
+      事件庫：<code>/events</code>｜玩家任務：<code>/players/p{pid}/activeEvent</code>｜去重鎖：<code>/eventClaims/global</code>
+    </div>
+
+    <!-- 玩家事件狀態總覽 -->
+    <div class="card" style="border-left:6px solid var(--violet);" data-collapsible="panel_status">
+      <div class="head">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <h2><i class="fa-solid fa-people-group"></i> 玩家事件狀態總覽（p1~p12）</h2>
+          <span class="tag violet">即時狀態</span>
+        </div>
+
+        <button type="button" class="btn gray smallBtn" data-card-toggle="panel_status">
+          <i class="fa-solid fa-chevron-up"></i> 收合
+        </button>
+      </div>
+
+      <div class="collapse open">
+        <div class="hint">
+          顯示每位玩家目前 activeEvent 的狀態（無事件 / 進行中 / 已完成 / 駁回），以及是否有完成申請與截止倒數。
+        </div>
+        <div id="playerStatus" class="list" style="max-height:360px;"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+
+      <!-- LEFT：事件庫管理 + 配發 -->
+      <div>
+
+        <!-- 事件庫管理 -->
+        <div class="card" style="border-left:6px solid var(--blue);" data-collapsible="panel_event_form">
+          <div class="splitTitle">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2 style="margin:0;"><i class="fa-solid fa-database"></i> 事件庫管理（新增 / 編輯 / 存檔）</h2>
+              <span class="tag blue">events</span>
+            </div>
+
+            <button type="button" class="btn gray smallBtn" data-card-toggle="panel_event_form">
+              <i class="fa-solid fa-chevron-up"></i> 收合
+            </button>
+          </div>
+
+          <div class="collapse open">
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>事件 eid（留空自動）</label>
+                <input id="ev_eid" placeholder="例如 e001（留空會自動產生）">
+              </div>
+              <div>
+                <label>確認按鈕文字（玩家端）</label>
+                <input id="ev_confirmText" value="同意（我已收到）">
+              </div>
+            </div>
+
+            <div class="row">
+              <label>事件名稱 title</label>
+              <input id="ev_title" placeholder="例如：突發任務：協助同學">
+            </div>
+
+            <div class="row">
+              <label>事件影響（顯示用 impactText，可選）</label>
+              <input id="ev_impactText" placeholder="例如：押金金錢-100（完成後返還60+時間40）">
+            </div>
+
+            <div class="row">
+              <label>事件任務 taskHint</label>
+              <input id="ev_taskHint" placeholder="例如：完成指定任務後回報管理員">
+            </div>
+
+            <div class="row">
+              <label>事件描述 desc（可選）</label>
+              <textarea id="ev_desc" placeholder="簡短描述事件內容…"></textarea>
+            </div>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr;gap:10px;">
+              <div class="card" style="margin:0;box-shadow:none;">
+                <div style="font-weight:1000;margin-bottom:8px;">押金 cost（派發即扣）</div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+                  <input id="c_time" type="number" placeholder="時間" value="0">
+                  <input id="c_money" type="number" placeholder="金錢" value="0">
+                  <input id="c_health" type="number" placeholder="健康" value="0">
+                  <input id="c_knowledge" type="number" placeholder="知識" value="0">
+                  <input id="c_social" type="number" placeholder="人際" value="0">
+                </div>
+                <div class="mini" style="margin-top:8px;">填 100 表示扣 100（系統會自動扣成 -100）。</div>
+              </div>
+
+              <div class="card" style="margin:0;box-shadow:none;">
+                <div style="font-weight:1000;margin-bottom:8px;">返還 refund（完成時加回 + 額外收穫）</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+                  <input id="f_time" type="number" placeholder="+時間" value="0">
+                  <input id="f_money" type="number" placeholder="+金錢" value="0">
+                  <input id="f_health" type="number" placeholder="+健康" value="0">
+                  <input id="f_knowledge" type="number" placeholder="+知識" value="0">
+                  <input id="f_social" type="number" placeholder="+人際" value="0">
+                  <input id="f_score" type="number" placeholder="+分數" value="0">
+                </div>
+                <div class="mini" style="margin-top:8px;">例：扣金錢100，但完成只返還金錢60+時間40，就這裡填。</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <button class="btn blue" id="btnSaveEvent"><i class="fa-solid fa-floppy-disk"></i> 存到事件庫</button>
+              <button class="btn gray" id="btnClearEvent"><i class="fa-solid fa-eraser"></i> 清空表單</button>
+            </div>
+
+            <div class="hint">
+              - <b>cost</b>：派發當下扣（押金）<br>
+              - <b>refund</b>：同意完成時加回（可拆金錢60+時間40）<br>
+              - 同意完成：加 <b>refund + bonus</b>（bonus 在右側「完成申請」卡片填）
+            </div>
+          </div>
+        </div>
+
+        <!-- 配發 -->
+        <div class="card" style="border-left:6px solid var(--warn);" data-collapsible="panel_assign">
+          <div class="splitTitle">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2 style="margin:0;"><i class="fa-solid fa-paper-plane"></i> 事件配發（派發 / 自動分配）</h2>
+              <span class="tag pending">assign</span>
+            </div>
+
+            <button type="button" class="btn gray smallBtn" data-card-toggle="panel_assign">
+              <i class="fa-solid fa-chevron-up"></i> 收合
+            </button>
+          </div>
+
+          <div class="collapse open">
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>玩家 pid（1~12）</label>
+                <select id="ev_pid"></select>
+              </div>
+              <div>
+                <label>倒數（分鐘）</label>
+                <input id="ev_minutes" type="number" min="1" value="5">
+              </div>
+            </div>
+
+            <div class="row">
+              <label>選擇要派發的事件（來自事件庫）</label>
+              <select id="assign_eid">
+                <option value="">（尚無事件）</option>
+              </select>
+              <div class="mini">提示：右側事件庫清單也可直接按「派發給選的玩家」。</div>
+            </div>
+
+            <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label>手動派發：是否強制覆蓋 pending？</label>
+                <select id="ev_forceMode">
+                  <option value="0">否（已有 pending 就不覆蓋）</option>
+                  <option value="1">是（強制覆蓋）</option>
+                </select>
+              </div>
+              <div>
+                <label>自動分配：是否強制覆蓋 pending？</label>
+                <select id="ev_forceModeAuto">
+                  <option value="0">否（已有 pending 就跳過）</option>
+                  <option value="1">是（強制覆蓋）</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <button class="btn warn" id="btnAssignSelected"><i class="fa-solid fa-paper-plane"></i> 派發「已選事件」給玩家</button>
+              <button class="btn warn" id="btnAutoAssign"><i class="fa-solid fa-shuffle"></i> 系統自動分配（p1~p12 不重複）</button>
+              <button class="btn gray" id="btnResetClaims"><i class="fa-solid fa-rotate"></i> 重置不重複鎖</button>
+            </div>
+
+            <div class="hint">
+              - 自動分配使用 <code>/eventClaims/global</code> 去重（同一事件不會同時給多人）<br>
+              - 勾強制會覆蓋 claim 與玩家 pending（用於緊急調整）
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT：事件庫清單 + 完成申請（待審核） -->
+      <div>
+
+        <div class="card" style="border-left:6px solid var(--gray);" data-collapsible="panel_event_list">
+          <div class="head">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2><i class="fa-solid fa-list"></i> 事件庫清單</h2>
+              <span class="tag">events</span>
+            </div>
+
+            <button type="button" class="btn gray smallBtn" data-card-toggle="panel_event_list">
+              <i class="fa-solid fa-chevron-up"></i> 收合
+            </button>
+          </div>
+
+          <div class="collapse open">
+            <div class="list" id="eventList"></div>
+          </div>
+        </div>
+
+        <!-- ✅ 任務（完成申請）收合後可再打開：按鈕在外面 -->
+        <div class="card" style="border-left:6px solid var(--ok);" data-collapsible="panel_finish">
+          <div class="head">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2><i class="fa-solid fa-clipboard-check"></i> 完成申請（待審核）</h2>
+              <span class="tag free">finishRequest</span>
+            </div>
+
+            <button type="button" class="btn gray smallBtn" data-card-toggle="panel_finish">
+              <i class="fa-solid fa-chevron-up"></i> 收合
+            </button>
+          </div>
+
+          <div class="collapse open">
+            <div class="list" id="finishList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+      authDomain: "try-something-ddd1e.firebaseapp.com",
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "try-something-ddd1e",
+      storageBucket: "try-something-ddd1e.firebasestorage.app",
+      messagingSenderId: "245905464126",
+      appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+    };
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const $ = (id)=>document.getElementById(id);
+
+    /***********************
+     * ✅ Collapsible（事件委派 + 記憶狀態）
+     ***********************/
+    const COLLAPSE_KEY = "event_cards_collapsed_v1";
+    let __collapsed = {};
+    try{ __collapsed = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "{}") || {}; }catch(e){ __collapsed = {}; }
+
+    function isCollapsed(id){ return !!__collapsed[id]; }
+
+    function applyCollapse(id){
+      const card = document.querySelector(`[data-collapsible="${id}"]`);
+      if(!card) return;
+      const body = card.querySelector(".collapse");
+      const btn  = card.querySelector(`[data-card-toggle="${id}"]`);
+      if(!body || !btn) return;
+
+      const c = isCollapsed(id);
+      body.classList.toggle("closed", c);
+      body.classList.toggle("open", !c);
+
+      btn.innerHTML = c
+        ? `<i class="fa-solid fa-chevron-down"></i> 展開`
+        : `<i class="fa-solid fa-chevron-up"></i> 收合`;
+    }
+
+    function setCollapsed(id, v){
+      __collapsed[id] = !!v;
+      localStorage.setItem(COLLAPSE_KEY, JSON.stringify(__collapsed));
+      applyCollapse(id);
+    }
+
+    function initCollapsible(){
+      document.querySelectorAll("[data-collapsible]").forEach(card=>{
+        const id = card.getAttribute("data-collapsible");
+        applyCollapse(id);
+      });
+    }
+
+    document.addEventListener("click", (e)=>{
+      const btn = e.target.closest("[data-card-toggle]");
+      if(!btn) return;
+      const id = btn.getAttribute("data-card-toggle");
+      if(!id) return;
+      setCollapsed(id, !isCollapsed(id));
+    });
+
+    /***********************
+     * 小工具
+     ***********************/
+    function num(v){ return Number(v||0)||0; }
+    function compactObj(o){
+      const out={};
+      Object.keys(o).forEach(k=>{
+        const n=num(o[k]);
+        if(n!==0) out[k]=n;
+      });
+      return out;
+    }
+    function autoEid(){ return "e" + Math.random().toString(16).slice(2,8); }
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      return arr;
+    }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function fmtObj(o){
+      if(!o || typeof o!=="object") return "";
+      const pairs = Object.entries(o).filter(([,v])=>Number(v||0)!==0);
+      if(!pairs.length) return "";
+      return pairs.map(([k,v])=>`${k}:${v}`).join(" ");
+    }
+
+    /***********************
+     * 路徑
+     ***********************/
+    const MAX_P = 12;
+    const eventsPath = ()=>"events";
+    const globalClaimsPath = ()=>"eventClaims/global";
+    const claimRef = (eid)=>db.ref(`${globalClaimsPath()}/${eid}`);
+    const activePath = (pid)=>`players/p${pid}/activeEvent`;
+    const resPath = (pid)=>`players/p${pid}/res`;
+
+    let eventsCache = {};
+
+    function initPidOptions(){
+      const sel = $("ev_pid");
+      sel.innerHTML = "";
+      for(let i=1;i<=MAX_P;i++){
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `p${i}`;
+        sel.appendChild(opt);
+      }
+    }
+
+    function readEventForm(){
+      const eid = ($("ev_eid").value || "").trim() || autoEid();
+      const payload = {
+        title: ($("ev_title").value || "").trim() || "隨機事件",
+        impactText: ($("ev_impactText").value || "").trim(),
+        taskHint: ($("ev_taskHint").value || "").trim() || "完成指定任務後回報管理員",
+        confirmText: ($("ev_confirmText").value || "").trim() || "同意（我已收到）",
+        desc: ($("ev_desc").value || "").trim(),
+
+        cost: compactObj({
+          time: $("c_time").value,
+          money: $("c_money").value,
+          health: $("c_health").value,
+          knowledge: $("c_knowledge").value,
+          social: $("c_social").value
+        }),
+
+        refund: compactObj({
+          time: $("f_time").value,
+          money: $("f_money").value,
+          health: $("f_health").value,
+          knowledge: $("f_knowledge").value,
+          social: $("f_social").value,
+          score: $("f_score").value
+        }),
+
+        updatedAt: Date.now()
+      };
+      return {eid, payload};
+    }
+
+    function setIfExists(id, val){
+      const el = document.getElementById(id);
+      if(el) el.value = val;
+    }
+
+    function clearEventForm(){
+      setIfExists("ev_eid","");
+      setIfExists("ev_title","");
+      setIfExists("ev_impactText","");
+      setIfExists("ev_taskHint","");
+      setIfExists("ev_confirmText","同意（我已收到）");
+      setIfExists("ev_desc","");
+
+      ["c_time","c_money","c_health","c_knowledge","c_social",
+       "f_time","f_money","f_health","f_knowledge","f_social","f_score"
+      ].forEach(id=>setIfExists(id,0));
+    }
+
+    function refreshAssignSelect(){
+      const sel = $("assign_eid");
+      const ids = Object.keys(eventsCache || {});
+      if(!ids.length){
+        sel.innerHTML = `<option value="">（尚無事件）</option>`;
+        return;
+      }
+      ids.sort((a,b)=>a.localeCompare(b));
+      const cur = sel.value;
+      sel.innerHTML = ids.map(eid=>{
+        const t = (eventsCache[eid]?.title || "").trim();
+        const label = t ? `${eid}｜${t}` : eid;
+        return `<option value="${escapeHtml(eid)}">${escapeHtml(label)}</option>`;
+      }).join("");
+      if(ids.includes(cur)) sel.value = cur;
+      else sel.value = ids[0];
+    }
+
+    function watchEvents(){
+      db.ref(eventsPath()).on("value", s=>{
+        eventsCache = s.val() || {};
+        renderEventList();
+        refreshAssignSelect();
+      });
+    }
+
+    function renderEventList(){
+      const list = $("eventList");
+      const ids = Object.keys(eventsCache || {});
+      if(!ids.length){
+        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（尚無事件）</div><div class="hint">請在左側「事件庫管理」新增並存到事件庫。</div></div>`;
+        return;
+      }
+      ids.sort((a,b)=>a.localeCompare(b));
+      list.innerHTML = ids.map(eid=>{
+        const ev = eventsCache[eid] || {};
+        const cost = fmtObj(ev.cost);
+        const refund = fmtObj(ev.refund);
+        return `
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:1000;">${escapeHtml(eid)}｜${escapeHtml(ev.title||"（無標題）")}</div>
+                <div class="hint" style="margin-top:6px;">
+                  ${ev.impactText ? `影響：${escapeHtml(ev.impactText)}<br>` : ""}
+                  任務：${escapeHtml(ev.taskHint||"")}<br>
+                  ${ev.desc ? `描述：${escapeHtml(ev.desc)}<br>` : ""}
+                  ${cost ? `cost：${escapeHtml(cost)}<br>` : ""}
+                  ${refund ? `refund：${escapeHtml(refund)}<br>` : ""}
+                </div>
+              </div>
+              <span class="tag free">事件庫</span>
+            </div>
+            <div class="actions">
+              <button class="btn gray smallBtn" onclick="loadEventToForm('${escapeHtml(eid)}')">載入到表單</button>
+              <button class="btn warn smallBtn" onclick="assignThis('${escapeHtml(eid)}')">派發給「左側選的玩家」</button>
+              <button class="btn danger smallBtn" onclick="deleteEvent('${escapeHtml(eid)}')">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.loadEventToForm = (eid)=>{
+      const ev = eventsCache[eid];
+      if(!ev) return;
+      setIfExists("ev_eid", eid);
+      setIfExists("ev_title", ev.title || "");
+      setIfExists("ev_impactText", ev.impactText || "");
+      setIfExists("ev_taskHint", ev.taskHint || "");
+      setIfExists("ev_confirmText", ev.confirmText || "同意（我已收到）");
+      setIfExists("ev_desc", ev.desc || "");
+
+      const c = ev.cost || {};
+      setIfExists("c_time", c.time||0);
+      setIfExists("c_money", c.money||0);
+      setIfExists("c_health", c.health||0);
+      setIfExists("c_knowledge", c.knowledge||0);
+      setIfExists("c_social", c.social||0);
+
+      const f = ev.refund || {};
+      setIfExists("f_time", f.time||0);
+      setIfExists("f_money", f.money||0);
+      setIfExists("f_health", f.health||0);
+      setIfExists("f_knowledge", f.knowledge||0);
+      setIfExists("f_social", f.social||0);
+      setIfExists("f_score", f.score||0);
+
+      if($("assign_eid")) $("assign_eid").value = eid;
+
+      alert(`已載入 ${eid}`);
+    };
+
+    window.deleteEvent = async (eid)=>{
+      if(!confirm(`確定刪除事件 ${eid}？`)) return;
+      await db.ref(`${eventsPath()}/${eid}`).remove();
+      await claimRef(eid).remove();
+    };
+
+    async function applyCostOnce(pid, evPayload){
+      const activeRef = db.ref(activePath(pid));
+      const cur = (await activeRef.get()).val();
+      if(cur && cur.costApplied) return;
+
+      const cost = evPayload.cost || {};
+      const keys = ["time","money","health","knowledge","social"];
+      const deltaNeg = {};
+      keys.forEach(k=>{
+        const c = num(cost[k]);
+        if(c !== 0) deltaNeg[k] = -Math.abs(c);
+      });
+
+      if(!Object.keys(deltaNeg).length){
+        await activeRef.update({ costApplied:true, costAppliedAt: Date.now(), appliedCost:{} });
+        return;
+      }
+
+      await db.ref(resPath(pid)).transaction(curr=>{
+        const base = curr && typeof curr==="object" ? curr : {};
+        const out = { ...base };
+        keys.forEach(k=>{
+          out[k] = num(out[k]) + num(deltaNeg[k]);
+        });
+        return out;
+      });
+
+      await activeRef.update({
+        costApplied:true,
+        costAppliedAt: Date.now(),
+        appliedCost: deltaNeg
+      });
+    }
+
+    async function assignEventToPlayer(pid, eid, minutes, force, meta){
+      const evSnap = await db.ref(`${eventsPath()}/${eid}`).get();
+      const ev = evSnap.val();
+      if(!ev) return {ok:false, reason:"event_not_found"};
+
+      const activeRef = db.ref(activePath(pid));
+
+      if(!force){
+        const cur = (await activeRef.get()).val();
+        if(cur && cur.status==="pending"){
+          return {ok:false, reason:"player_has_pending"};
+        }
+      }
+
+      if(force){
+        await claimRef(eid).set({ claimedBy:`p${pid}`, claimedAt: Date.now(), forced:true, pool: meta?.pool || "manual" });
+      }else{
+        const tx = await claimRef(eid).transaction(curr=>{
+          if(curr === null) return { claimedBy:`p${pid}`, claimedAt: Date.now(), forced:false, pool: meta?.pool || "manual" };
+          return;
+        });
+        if(!tx.committed){
+          return {ok:false, reason:"already_claimed"};
+        }
+      }
+
+      const payload = {
+        eid,
+        pool: meta?.pool || "manual",
+        status: "pending",
+        ack: false,
+
+        title: ev.title || "隨機事件",
+        desc: ev.desc || "",
+        taskHint: ev.taskHint || "完成指定任務後回報管理員",
+        confirmText: ev.confirmText || "同意（我已收到）",
+        impactText: ev.impactText || "",
+
+        cost: ev.cost || {},
+        refund: ev.refund || {},
+
+        createdAt: Date.now(),
+        deadlineTs: Date.now() + minutes*60*1000,
+
+        assignedBy: meta?.assignedBy || "admin",
+        assignedMode: meta?.assignedMode || (force ? "force" : "manual"),
+
+        costApplied: false
+      };
+
+      await activeRef.set(payload);
+      await applyCostOnce(pid, payload);
+      return {ok:true};
+    }
+
+    window.assignThis = async (eid)=>{
+      const pid = Number($("ev_pid").value);
+      const minutes = Math.max(1, num($("ev_minutes").value));
+      const force = $("ev_forceMode").value === "1";
+
+      const r = await assignEventToPlayer(pid, eid, minutes, force, {assignedBy:"event.html", assignedMode: force?"force-manual":"manual", pool:"manual"});
+      if(r.ok) alert(`✅ 已派發：p${pid} ← ${eid}${force?"（強制覆蓋）":""}`);
+      else if(r.reason==="player_has_pending") alert("⚠️ 玩家已有 pending 任務（未覆蓋）。把「強制模式」改成是即可覆蓋。");
+      else if(r.reason==="already_claimed") alert("⚠️ 這個事件已被 claim（不重複鎖）。要改派請按「重置不重複鎖」或用強制模式覆蓋。");
+      else alert("派發失敗：" + (r.reason||"unknown"));
+    };
+
+    async function claimOneEventRandomly(ids){
+      for(const eid of ids){
+        const tx = await claimRef(eid).transaction(curr=>{
+          if(curr === null){
+            return { claimedAt: Date.now(), forced:false };
+          }
+          return;
+        });
+        if(tx.committed) return eid;
+      }
+      return null;
+    }
+
+    async function autoAssignAll(){
+      const minutes = Math.max(1, num($("ev_minutes").value));
+      const force = $("ev_forceModeAuto").value === "1";
+      const ids = Object.keys(eventsCache || {});
+      if(!ids.length) return alert("events 裡沒有事件，先新增。");
+      shuffle(ids);
+
+      const results = [];
+      for(let pid=1; pid<=MAX_P; pid++){
+        const picked = force ? ids[(pid-1) % ids.length] : await claimOneEventRandomly(ids);
+
+        if(!picked){
+          results.push(`p${pid}:（沒有可用事件）`);
+          continue;
+        }
+
+        if(!force){
+          await claimRef(picked).transaction(curr=>{
+            if(curr && !curr.claimedBy) return { ...curr, claimedBy:`p${pid}` };
+            return curr;
+          });
+        }
+
+        const r = await assignEventToPlayer(pid, picked, minutes, force, {assignedBy:"system", assignedMode: force?"force-auto":"auto", pool:"auto"});
+        if(r.ok) results.push(`p${pid}: ${picked}`);
+        else if(r.reason==="player_has_pending") results.push(`p${pid}:（跳過：已有 pending）`);
+        else results.push(`p${pid}:（失敗：${r.reason||"unknown"}）`);
+      }
+      alert("自動分配完成：\n" + results.join("\n"));
+    }
+
+    async function resetClaims(){
+      if(!confirm("確定要重置 eventClaims/global？（所有事件可再次分配）")) return;
+      await db.ref(globalClaimsPath()).remove();
+      alert("✅ 已重置 eventClaims/global");
+    }
+
+    function renderFinishList(arr){
+      const el = $("finishList");
+      if(!arr.length){
+        el.innerHTML = `<div class="item"><div style="font-weight:1000;">（目前沒有待審核）</div><div class="hint">玩家按「我完成了」後會出現在這裡。</div></div>`;
+        return;
+      }
+
+      el.innerHTML = arr.map(({pid,ev})=>{
+        const when = ev.finishRequest?.requestedAt ? new Date(ev.finishRequest.requestedAt).toLocaleString() : "";
+        const cost = fmtObj(ev.cost);
+        const refund = fmtObj(ev.refund);
+
+        return `
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:1000;">p${pid}｜${escapeHtml(ev.title||"隨機事件")}</div>
+                <div class="hint" style="margin-top:6px;">
+                  事件：${escapeHtml(ev.eid||"")}｜申請：${escapeHtml(when)}<br>
+                  ${cost ? `cost（已扣）：${escapeHtml(cost)}<br>` : "cost（已扣）：（無）<br>"}
+                  ${refund ? `refund（同意加回）：${escapeHtml(refund)}<br>` : "refund（同意加回）：（無）<br>"}
+                  <span class="tag pending">待審核</span>
+                </div>
+              </div>
+              <span class="tag">finishRequest</span>
+            </div>
+
+            <div class="hint" style="margin-top:10px;font-weight:1000;">Bonus（額外加成）</div>
+            <div class="row6" style="margin-top:8px">
+              <input id="b_time_${pid}" type="number" placeholder="+時間" value="0">
+              <input id="b_money_${pid}" type="number" placeholder="+金錢" value="0">
+              <input id="b_health_${pid}" type="number" placeholder="+健康" value="0">
+              <input id="b_knowledge_${pid}" type="number" placeholder="+知識" value="0">
+              <input id="b_social_${pid}" type="number" placeholder="+人際" value="0">
+              <input id="b_score_${pid}" type="number" placeholder="+分數" value="0">
+            </div>
+
+            <div class="actions">
+              <button class="btn plus smallBtn" onclick="approveFinish(${pid})">同意（加 refund + bonus）</button>
+              <button class="btn danger smallBtn" onclick="rejectFinish(${pid})">駁回</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function readBonus(pid){
+      return compactObj({
+        time: document.getElementById(`b_time_${pid}`)?.value,
+        money: document.getElementById(`b_money_${pid}`)?.value,
+        health: document.getElementById(`b_health_${pid}`)?.value,
+        knowledge: document.getElementById(`b_knowledge_${pid}`)?.value,
+        social: document.getElementById(`b_social_${pid}`)?.value,
+        score: document.getElementById(`b_score_${pid}`)?.value
+      });
+    }
+
+    window.approveFinish = async (pid)=>{
+      const evRef = db.ref(activePath(pid));
+      const snap = await evRef.get();
+      const ev = snap.val();
+
+      if(!ev || !ev.finishRequest || ev.finishRequest.status!=="pending"){
+        return alert("這筆已不存在或不是待審核狀態。");
+      }
+
+      const refund = ev.refund || {};
+      const bonus  = readBonus(pid);
+
+      const keys = ["time","money","health","knowledge","social","score"];
+      const delta = {};
+      keys.forEach(k=>{
+        const add = num(refund[k]) + num(bonus[k]);
+        if(add !== 0) delta[k] = add;
+      });
+
+      await db.ref(resPath(pid)).transaction(curr=>{
+        const base = curr && typeof curr==="object" ? curr : {};
+        const out = { ...base };
+        keys.forEach(k=>{
+          out[k] = num(out[k]) + num(delta[k]);
+        });
+        return out;
+      });
+
+      await evRef.update({
+        status: "success",
+        finishRequest: {
+          ...(ev.finishRequest || {}),
+          status: "approved",
+          approvedAt: Date.now(),
+          approvedBy: "event.html"
+        },
+        appliedDelta: delta,
+        appliedAt: Date.now()
+      });
+
+      alert(`✅ 已同意 p${pid} 完成\n${fmtObj(delta) ? "加成："+fmtObj(delta) : ""}`);
+    };
+
+    window.rejectFinish = async (pid)=>{
+      const evRef = db.ref(activePath(pid));
+      const snap = await evRef.get();
+      const ev = snap.val();
+
+      if(!ev || !ev.finishRequest || ev.finishRequest.status!=="pending"){
+        return alert("這筆已不存在或不是待審核狀態。");
+      }
+
+      await evRef.update({
+        finishRequest: {
+          ...(ev.finishRequest || {}),
+          status: "rejected",
+          rejectedAt: Date.now(),
+          rejectedBy: "event.html"
+        },
+        status: "rejected"
+      });
+
+      alert(`已駁回 p${pid} 完成申請（押金不返還）`);
+    };
+
+    function watchFinishRequests(){
+      const cache = new Map();
+
+      const flush = ()=>{
+        const pendings = [];
+        for(const [pid, ev] of cache.entries()){
+          if(!ev) continue;
+          const fr = ev.finishRequest || null;
+          if(fr && fr.status==="pending") pendings.push({ pid, ev });
+        }
+        pendings.sort((a,b)=>a.pid-b.pid);
+        renderFinishList(pendings);
+      };
+
+      for(let i=1;i<=MAX_P;i++){
+        const pid = i;
+        db.ref(activePath(pid)).on("value", s=>{
+          cache.set(pid, s.val() || null);
+          flush();
+        });
+      }
+    }
+
+    function statusText(ev){
+      if(!ev) return {badge:"gray", text:"無事件"};
+      const st = ev.status || "pending";
+      if(st==="pending") return {badge:"pending", text:"未完成（進行中）"};
+      if(st==="success") return {badge:"free", text:"已完成（success）"};
+      if(st==="rejected") return {badge:"pending", text:"已駁回（rejected）"};
+      return {badge:"pending", text: st};
+    }
+
+    function finishReqText(ev){
+      const fr = ev?.finishRequest || null;
+      if(!fr) return {text:"未申請完成", cls:"gray"};
+      const s = fr.status || "pending";
+      if(s==="pending") return {text:"已申請完成（待審核）", cls:"pending"};
+      if(s==="approved") return {text:"完成申請（已同意）", cls:"free"};
+      if(s==="rejected") return {text:"完成申請（已駁回）", cls:"pending"};
+      return {text:`完成申請（${s}）`, cls:"pending"};
+    }
+
+    function leftMinutes(ev){
+      const dl = Number(ev?.deadlineTs||0);
+      if(!dl) return "";
+      const diff = dl - Date.now();
+      const m = Math.ceil(Math.abs(diff)/60000);
+      if(diff>0) return `剩 ${m} 分`;
+      return `逾時 ${m} 分`;
+    }
+
+    function renderPlayerStatus(rows){
+      const el = $("playerStatus");
+      if(!el) return;
+
+      if(!rows.length){
+        el.innerHTML = `<div class="item"><div style="font-weight:1000;">（尚無資料）</div><div class="hint">等待玩家 activeEvent 資料。</div></div>`;
+        return;
+      }
+
+      el.innerHTML = rows.map(r=>{
+        const pid = r.pid;
+        const ev  = r.ev;
+        const st  = statusText(ev);
+        const fr  = finishReqText(ev);
+        const lm  = leftMinutes(ev);
+
+        const title = ev?.title || "";
+        const eid   = ev?.eid || "";
+        const task  = ev?.taskHint || "";
+
+        return `
+          <div class="item">
+            <div class="itemTop">
+              <div>
+                <div style="font-weight:1000;">
+                  p${pid}｜
+                  ${eid ? `${escapeHtml(eid)}｜${escapeHtml(title||"（無標題）")}` : "（無事件）"}
+                </div>
+                <div class="hint" style="margin-top:6px;">
+                  <span class="badge ${st.badge}">${escapeHtml(st.text)}</span>
+                  <span class="badge ${fr.cls}">${escapeHtml(fr.text)}</span>
+                  ${lm ? `<span class="badge">${escapeHtml(lm)}</span>` : ``}
+                  ${task ? `<br>任務：${escapeHtml(task)}` : ``}
+                </div>
+              </div>
+              <span class="tag">${eid ? "activeEvent" : "—"}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function watchPlayerStatus(){
+      const cache = new Map();
+
+      const flush = ()=>{
+        const rows = [];
+        for(let pid=1; pid<=MAX_P; pid++){
+          rows.push({ pid, ev: cache.get(pid) || null });
+        }
+        renderPlayerStatus(rows);
+      };
+
+      for(let i=1;i<=MAX_P;i++){
+        const pid = i;
+        db.ref(activePath(pid)).on("value", s=>{
+          cache.set(pid, s.val() || null);
+          flush();
+        });
+      }
+
+      setInterval(flush, 30000);
+    }
+
+    // Bind buttons
+    $("btnSaveEvent").addEventListener("click", async ()=>{
+      const {eid, payload} = readEventForm();
+      await db.ref(`${eventsPath()}/${eid}`).set(payload);
+      setIfExists("ev_eid", eid);
+      alert(`✅ 已存到事件庫：${eid}`);
+    });
+
+    $("btnClearEvent").addEventListener("click", clearEventForm);
+
+    $("btnAssignSelected").addEventListener("click", async ()=>{
+      const pid = Number($("ev_pid").value);
+      const minutes = Math.max(1, num($("ev_minutes").value));
+      const force = $("ev_forceMode").value === "1";
+      const eid = ($("assign_eid").value || "").trim();
+
+      if(!eid){
+        alert("事件庫目前沒有事件可派發。請先新增事件並存檔。");
+        return;
+      }
+
+      const r = await assignEventToPlayer(pid, eid, minutes, force, {assignedBy:"event.html", assignedMode: force?"force-manual":"manual", pool:"manual"});
+      if(r.ok) alert(`✅ 已派發給 p${pid}：${eid}`);
+      else if(r.reason==="player_has_pending") alert(`⚠️ p${pid} 已有 pending 任務（未覆蓋）。把「強制模式」改成是即可覆蓋。`);
+      else if(r.reason==="already_claimed") alert(`⚠️ 事件已被 claim（不重複鎖）。要改派請重置 claim 或用強制模式覆蓋。`);
+      else alert(`派發失敗：${r.reason||"unknown"}`);
+    });
+
+    $("btnAutoAssign").addEventListener("click", autoAssignAll);
+    $("btnResetClaims").addEventListener("click", resetClaims);
+
+    // init + start
+    initPidOptions();
+    watchEvents();
+    watchFinishRequests();
+    watchPlayerStatus();
+
+    // ✅ init collapsible states (after DOM ready)
+    initCollapsible();
+  </script>
+</body>
+</html>
