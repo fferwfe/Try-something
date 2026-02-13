@@ -525,6 +525,15 @@
   </div>
 
 <script>
+/* =========================
+   SUPER 控制台（新版修正版 Script）
+   - 支援多個 SUPER_UIDS
+   - SUPER_UID 相容舊程式
+   - 修掉 reviewedBy 的 |、approvedBy 少逗號等語法錯
+   - 所有 decidedBy/approvedBy 統一 fallback
+   ========================= */
+
+(() => {
   // =========================
   // Firebase 初始化
   // =========================
@@ -537,23 +546,33 @@
     messagingSenderId: "245905464126",
     appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
   };
+
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   const auth = firebase.auth();
   const st = firebase.storage();
 
-  // ✅ 原本 super uid（仍保留：永遠是超級超級管理）
-  const SUPER_UID = "AT3xEkjygoZEcCbrG8VdZVklEfj1";
+  // =========================
+  // ✅ SUPER UID / 白名單
+  // =========================
+  const SUPER_UIDS = [
+    "AT3xEkjygoZEcCbrG8VdZVklEfj1", // 舊的
+    "0zDzCvR3WdWQ0vKCZorxVIp8sfZ2",
+    "botJBBZvTiP9Abq0H7CdXzIpC3u2"  // 新的
+  ];
+  // ✅ 舊程式相容（很多地方仍在用 SUPER_UID）
+  const SUPER_UID = SUPER_UIDS[0];
 
-  // ✅ 白名單路徑（多人可進）
   const SUPER_WL_PATH = "superWhitelist"; // superWhitelist/{uid} = { addedAt, addedBy, note? }
 
-  // ✅ 玩家數量（你要 12 位）
+  // ✅ 玩家數量（你目前 UI 有到 p12）
   const PLAYER_COUNT = 12;
 
   // 工具
   const $ = (id) => document.getElementById(id);
+  const now = () => Date.now();
   function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
   function getDeviceId() {
     let id = localStorage.getItem("device_id");
     if (!id) {
@@ -562,11 +581,16 @@
     }
     return id;
   }
+
   function shortId(id, n=6){
     id = String(id||"");
     if (!id) return "-";
     if (id.length <= n+4) return id;
     return id.slice(0,n) + "…" + id.slice(-4);
+  }
+
+  function getActorUid(){
+    return auth.currentUser?.uid || SUPER_UID;
   }
 
   // =========================
@@ -605,7 +629,7 @@
   }
 
   // =========================
-  // [獨立登入門禁]
+  // [獨立登入門禁 UI]
   // =========================
   function renderLogin(){
     return `
@@ -619,6 +643,7 @@
       <div class="hint" id="loginHint" style="color:#ffd9d9;"></div>
     `;
   }
+
   function renderDenied(){
     return `
       <div class="label-text"><i class="fa-solid fa-ban"></i> 權限不足</div>
@@ -630,13 +655,16 @@
       </div>
     `;
   }
+
   function showCoverHTML(html){
-    $("cover").classList.remove("hide");
-    $("coverBox").innerHTML = html;
+    $("cover")?.classList.remove("hide");
+    const box = $("coverBox");
+    if (box) box.innerHTML = html;
   }
-  function hideCover(){ $("cover").classList.add("hide"); }
-  function showMain(){ $("main").classList.remove("hide"); }
-  function hideMain(){ $("main").classList.add("hide"); }
+
+  function hideCover(){ $("cover")?.classList.add("hide"); }
+  function showMain(){ $("main")?.classList.remove("hide"); }
+  function hideMain(){ $("main")?.classList.add("hide"); }
 
   function bindLogin(){
     const btn = document.getElementById("btnLogin");
@@ -661,7 +689,7 @@
   // ✅ 檢查是否在白名單（多人同時可進）
   async function isSuperWhitelisted(uid){
     if(!uid) return false;
-    if(uid === SUPER_UID) return true;
+    if (SUPER_UIDS.includes(uid)) return true;
     try{
       const s = await db.ref(`${SUPER_WL_PATH}/${uid}`).once("value");
       return s.exists();
@@ -682,17 +710,18 @@
     }
 
     // 顯示身份
-    $("whoEmail").innerText = user.email || "-";
-    $("whoUid").innerText = user.uid || "-";
-    $("whoDev").innerText = devId;
+    if ($("whoEmail")) $("whoEmail").innerText = user.email || "-";
+    if ($("whoUid")) $("whoUid").innerText = user.uid || "-";
+    if ($("whoDev")) $("whoDev").innerText = devId;
 
     const ok = await isSuperWhitelisted(user.uid);
-    $("whoSuper").innerText = ok ? "YES" : "NO";
+    if ($("whoSuper")) $("whoSuper").innerText = ok ? "YES" : "NO";
 
     if (!ok){
       hideMain();
       showCoverHTML(renderDenied());
-      document.getElementById("btnLogoutCover").onclick = async () => { await auth.signOut(); };
+      const out = document.getElementById("btnLogoutCover");
+      if (out) out.onclick = async () => { await auth.signOut(); };
       return;
     }
 
@@ -747,7 +776,8 @@
     setCardCollapsed(id, !isCardCollapsed(id));
   });
 
-  function collapseAllCards(){
+  // 全收合/全展開（你 HTML 有用到）
+  window.collapseAllCards = function(){
     document.querySelectorAll("[data-collapsible]").forEach(card=>{
       const id = card.getAttribute("data-collapsible");
       cardCollapsed[id] = true;
@@ -755,7 +785,7 @@
     });
     localStorage.setItem(CARD_COLLAPSE_KEY, JSON.stringify(cardCollapsed));
   }
-  function expandAllCards(){
+  window.expandAllCards = function(){
     document.querySelectorAll("[data-collapsible]").forEach(card=>{
       const id = card.getAttribute("data-collapsible");
       cardCollapsed[id] = false;
@@ -803,7 +833,7 @@
   }
 
   // =========================
-  // ✅ seatLocks 整合到玩家清單（cache）+ 強制登出
+  // ✅ seatLocks + 強制登出
   // =========================
   const seatLocksCache = {};
   const playerDevCache = {};
@@ -853,7 +883,7 @@
 
   async function forceLogoutDevice(devId){
     if(!devId || devId === "-") return;
-    await db.ref(`devices/${devId}/forceLogoutAt`).set(Date.now());
+    await db.ref(`devices/${devId}/forceLogoutAt`).set(now());
   }
 
   // =========================
@@ -887,7 +917,7 @@
   }
 
   // =========================
-  // ✅ 減負：玩家資料只用 child_changed 更新
+  // ✅ 減負：玩家資料 child_added/changed
   // =========================
   function applyPlayerData(pid, d){
     if(!pid) return;
@@ -923,7 +953,7 @@
     });
 
     const lastSeen = d?.lastSeen || 0;
-    const online = lastSeen && (Date.now() - lastSeen) <= 60000;
+    const online = lastSeen && (now() - lastSeen) <= 60000;
     const elOnline = $(`p${pid}-online`);
     if(elOnline){
       elOnline.textContent = online ? "在線" : "離線";
@@ -978,7 +1008,7 @@
   }
 
   // =========================
-  // 渲染玩家清單（純 super）
+  // 渲染玩家清單
   // =========================
   let __playerRendered = false;
 
@@ -987,6 +1017,7 @@
     __playerRendered = true;
 
     const list = $("player-list");
+    if (!list) return;
     list.innerHTML = "";
 
     for (let i=1; i<=PLAYER_COUNT; i++) {
@@ -1117,21 +1148,21 @@
       setHint();
     });
 
-    $("btnBroadcast").addEventListener("click", async () => {
+    $("btnBroadcast")?.addEventListener("click", async () => {
       await db.ref("marquee").update({
-        enabled: $("broadcastEnable").checked,
-        text: $("broadcastMsg").value || "",
-        updatedAt: Date.now()
+        enabled: $("broadcastEnable")?.checked ?? true,
+        text: $("broadcastMsg")?.value || "",
+        updatedAt: now()
       });
     });
 
-    $("btnBroadcastClear").addEventListener("click", async () => {
-      $("broadcastMsg").value = "";
-      await db.ref("marquee").update({ text: "", updatedAt: Date.now() });
+    $("btnBroadcastClear")?.addEventListener("click", async () => {
+      if ($("broadcastMsg")) $("broadcastMsg").value = "";
+      await db.ref("marquee").update({ text: "", updatedAt: now() });
     });
 
-    $("broadcastEnable").addEventListener("change", async () => {
-      await db.ref("marquee").update({ enabled: $("broadcastEnable").checked, updatedAt: Date.now() });
+    $("broadcastEnable")?.addEventListener("change", async () => {
+      await db.ref("marquee").update({ enabled: $("broadcastEnable").checked, updatedAt: now() });
     });
 
     if (speedEl){
@@ -1139,7 +1170,7 @@
       speedEl.addEventListener("change", async () => {
         await db.ref("marquee").update({
           speedSec: clamp(Number(speedEl.value), 3, 60),
-          updatedAt: Date.now()
+          updatedAt: now()
         });
       });
     }
@@ -1149,7 +1180,7 @@
       fontEl.addEventListener("change", async () => {
         await db.ref("marquee").update({
           fontSize: clamp(Number(fontEl.value), 12, 64),
-          updatedAt: Date.now()
+          updatedAt: now()
         });
       });
     }
@@ -1161,15 +1192,17 @@
   // 大螢幕控制（controls）
   // =========================
   function syncDanmakuToggleUI() {
-    const on = $("ctrlDanmakuEnable").checked;
-    $("danmakuStatusText").textContent = on ? "開啟中" : "已關閉";
-    $("danmakuStatusText").style.color = on ? "var(--ok)" : "var(--danger)";
+    const on = $("ctrlDanmakuEnable")?.checked ?? true;
+    if ($("danmakuStatusText")){
+      $("danmakuStatusText").textContent = on ? "開啟中" : "已關閉";
+      $("danmakuStatusText").style.color = on ? "var(--ok)" : "var(--danger)";
+    }
   }
 
   function setCtrlHint() {
-    $("ctrlDanmakuVal").innerText = $("ctrlDanmaku").value;
-    $("ctrlFontVal").innerText = $("ctrlFont").value;
-    $("ctrlMaxOnVal").innerText = $("ctrlMaxOn").value;
+    if ($("ctrlDanmakuVal")) $("ctrlDanmakuVal").innerText = $("ctrlDanmaku")?.value ?? "10";
+    if ($("ctrlFontVal")) $("ctrlFontVal").innerText = $("ctrlFont")?.value ?? "22";
+    if ($("ctrlMaxOnVal")) $("ctrlMaxOnVal").innerText = $("ctrlMaxOn")?.value ?? "8";
     syncDanmakuToggleUI();
   }
 
@@ -1177,47 +1210,46 @@
     const controlsRef = db.ref("controls");
 
     ["ctrlDanmaku","ctrlFont","ctrlMaxOn"].forEach(id => {
-      $(id).addEventListener("input", setCtrlHint);
+      $(id)?.addEventListener("input", setCtrlHint);
     });
-    $("ctrlDanmakuEnable").addEventListener("change", setCtrlHint);
+    $("ctrlDanmakuEnable")?.addEventListener("change", setCtrlHint);
 
     controlsRef.on("value", snap => {
       const c = snap.val() || {};
-      $("ctrlDanmaku").value = clamp(c.danmakuDurationSec ?? 10, 3, 60);
-      $("ctrlFont").value = clamp(c.danmakuFontSizePx ?? 22, 12, 64);
-      $("ctrlMaxOn").value = clamp(c.danmakuMaxOnScreen ?? 8, 1, 30);
-      $("ctrlDanmakuEnable").checked = (c.danmakuEnabled !== false);
+      if ($("ctrlDanmaku")) $("ctrlDanmaku").value = clamp(c.danmakuDurationSec ?? 10, 3, 60);
+      if ($("ctrlFont")) $("ctrlFont").value = clamp(c.danmakuFontSizePx ?? 22, 12, 64);
+      if ($("ctrlMaxOn")) $("ctrlMaxOn").value = clamp(c.danmakuMaxOnScreen ?? 8, 1, 30);
+      if ($("ctrlDanmakuEnable")) $("ctrlDanmakuEnable").checked = (c.danmakuEnabled !== false);
       setCtrlHint();
     });
 
-    $("btnSaveCtrl").onclick = async () => {
+    $("btnSaveCtrl") && ($("btnSaveCtrl").onclick = async () => {
       await controlsRef.update({
-        danmakuEnabled: $("ctrlDanmakuEnable").checked,
-        danmakuDurationSec: Number($("ctrlDanmaku").value),
-        danmakuFontSizePx: Number($("ctrlFont").value),
-        danmakuMaxOnScreen: Number($("ctrlMaxOn").value),
-        updatedAt: Date.now()
+        danmakuEnabled: $("ctrlDanmakuEnable")?.checked ?? true,
+        danmakuDurationSec: Number($("ctrlDanmaku")?.value ?? 10),
+        danmakuFontSizePx: Number($("ctrlFont")?.value ?? 22),
+        danmakuMaxOnScreen: Number($("ctrlMaxOn")?.value ?? 8),
+        updatedAt: now()
       });
       alert("已套用彈幕設定");
-    };
+    });
 
-    $("btnResetCtrl").onclick = async () => {
+    $("btnResetCtrl") && ($("btnResetCtrl").onclick = async () => {
       await controlsRef.set({
         danmakuEnabled: true,
         danmakuDurationSec: 10,
         danmakuFontSizePx: 22,
         danmakuMaxOnScreen: 8,
-        updatedAt: Date.now()
+        updatedAt: now()
       });
       alert("已還原預設");
-    };
+    });
 
-    $("btnClearDanmaku").onclick = async () => {
+    $("btnClearDanmaku") && ($("btnClearDanmaku").onclick = async () => {
       if (confirm("確定清空彈幕？（目前清除 purchaseFeed）")) {
-        // NOTE：若你未來彈幕來源改路徑，這行要跟著改
         await db.ref("purchaseFeed").remove();
       }
-    };
+    });
 
     setCtrlHint();
   }
@@ -1240,14 +1272,14 @@
 
     function getLeftNow(){
       if(state.isRunning){
-        const left = Math.ceil((state.endAt - Date.now())/1000);
+        const left = Math.ceil((state.endAt - now())/1000);
         return Math.max(0, left);
       }
       return Math.max(0, Number(state.pausedLeftSec)||0);
     }
 
     function render(){
-      $("local-timer").innerText = fmt(getLeftNow());
+      if ($("local-timer")) $("local-timer").innerText = fmt(getLeftNow());
     }
 
     function startUiLoop(){
@@ -1270,33 +1302,33 @@
       startUiLoop();
     });
 
-    $("btnTimerStart").onclick = async () => {
+    $("btnTimerStart") && ($("btnTimerStart").onclick = async () => {
       const left = getLeftNow();
-      const endAt = Date.now() + left*1000;
-      await ref.update({ isRunning:true, endAt, updatedAt: Date.now() });
-    };
+      const endAt = now() + left*1000;
+      await ref.update({ isRunning:true, endAt, updatedAt: now() });
+    });
 
-    $("btnTimerPause").onclick = async () => {
+    $("btnTimerPause") && ($("btnTimerPause").onclick = async () => {
       const left = getLeftNow();
-      await ref.update({ isRunning:false, pausedLeftSec:left, updatedAt: Date.now() });
-    };
+      await ref.update({ isRunning:false, pausedLeftSec:left, updatedAt: now() });
+    });
 
-    $("btnTimerReset").onclick = async () => {
-      const dur = parseInt($("setTimerSec").value) || 60;
+    $("btnTimerReset") && ($("btnTimerReset").onclick = async () => {
+      const dur = parseInt($("setTimerSec")?.value) || 60;
       await ref.set({
         isRunning:false,
         endAt:0,
         pausedLeftSec: dur,
         durationSec: dur,
-        updatedAt: Date.now()
+        updatedAt: now()
       });
-    };
+    });
 
     startUiLoop();
   }
 
   // =========================
-  // SUPER：設備管理（adminDevices + deviceRequests）
+  // SUPER：設備管理（adminDevices + deviceRequests + joinRequests）
   // =========================
   const ADMIN_LIMIT = 10;
   function isAdminReqType(t){ return t === 'admin1' || t === 'admin2'; }
@@ -1392,15 +1424,15 @@
         html += renderDeviceItem(devId, d);
       });
 
-      adminCountEl.innerText = String(activeAdmin);
-      deviceList.innerHTML = html || `<div class="hint">目前沒有已授權設備。</div>`;
+      if (adminCountEl) adminCountEl.innerText = String(activeAdmin);
+      if (deviceList) deviceList.innerHTML = html || `<div class="hint">目前沒有已授權設備。</div>`;
     });
 
     let _reqHtmlA = '';
     let _reqHtmlB = '';
     function _updateReqList(){
       const html = (_reqHtmlA + _reqHtmlB).trim();
-      reqList.innerHTML = html || `<div class="hint">目前沒有管理員申請。</div>`;
+      if (reqList) reqList.innerHTML = html || `<div class="hint">目前沒有管理員申請。</div>`;
     }
 
     db.ref('deviceRequests').on('value', (s)=>{
@@ -1432,7 +1464,7 @@
   }
 
   function bindPurgeRevoked(){
-    $("btnPurgeRevoked").addEventListener("click", async () => {
+    $("btnPurgeRevoked")?.addEventListener("click", async () => {
       if (!confirm("確定要永久刪除所有「已剔除」設備？刪掉後要重新申請才會回來。")) return;
 
       try {
@@ -1490,22 +1522,22 @@
         .sort((a,b)=>(b[1]?.addedAt||0)-(a[1]?.addedAt||0))
         .map(([uid,d])=>renderWlRow(uid,d))
         .join("");
-      listEl.innerHTML = rows || `<div class="hint">目前白名單是空的（只有 SUPER_UID 永遠可進）。</div>`;
+      if (listEl) listEl.innerHTML = rows || `<div class="hint">目前白名單是空的（只有 SUPER_UIDS 永遠可進）。</div>`;
     });
 
-    $("btnAddWl").onclick = async ()=>{
-      const uid = ($("wlUid").value||"").trim();
+    $("btnAddWl") && ($("btnAddWl").onclick = async ()=>{
+      const uid = ($("wlUid")?.value||"").trim();
       if(!uid) return alert("請貼上 UID");
-      if(uid === SUPER_UID) return alert("這個 UID 已是 SUPER_UID，不需要加入白名單。");
+      if (SUPER_UIDS.includes(uid)) return alert("這個 UID 已在 SUPER_UIDS，不需要加入白名單。");
       if(!confirm(`確定加入白名單？\nUID: ${uid}`)) return;
 
       await db.ref(`${SUPER_WL_PATH}/${uid}`).set({
-        addedAt: Date.now(),
-        addedBy: auth.currentUser?.uid || SUPER_UID
+        addedAt: now(),
+        addedBy: getActorUid()
       });
-      $("wlUid").value = "";
+      if ($("wlUid")) $("wlUid").value = "";
       alert("已加入白名單");
-    };
+    });
   }
 
   // =========================
@@ -1591,7 +1623,6 @@
     if(status !== "all") arr = arr.filter(x => (x.status||"pending") === status);
     if(pid !== "all") arr = arr.filter(x => String(x.playerId||"") === String(pid));
 
-    // ✅ 限流並行（最多 6 條同時去取 downloadURL）
     await mapLimit(arr, 6, async (x)=>{
       const p = (x.storagePath || "").trim();
       if (!p) { x._dlUrl = (x.url || "").trim(); return; }
@@ -1610,15 +1641,17 @@
   }
 
   async function setUploadStatus(uploadId, pid, status){
-    const now = Date.now();
+    const ts = now();
+    const actor = getActorUid();
+
     const updates = {};
     updates[`uploadsIndex/${uploadId}/status`] = status;
-    updates[`uploadsIndex/${uploadId}/reviewedAt`] = now;
-    updates[`uploadsIndex/${uploadId}/reviewedBy`] = auth.currentUser?.uid || SUPER_UID;
+    updates[`uploadsIndex/${uploadId}/reviewedAt`] = ts;
+    updates[`uploadsIndex/${uploadId}/reviewedBy`] = actor; // ✅ 修掉你原本那個 |
 
     updates[`players/p${pid}/uploads/${uploadId}/status`] = status;
-    updates[`players/p${pid}/uploads/${uploadId}/reviewedAt`] = now;
-    updates[`players/p${pid}/uploads/${uploadId}/reviewedBy`] = auth.currentUser?.uid || SUPER_UID;
+    updates[`players/p${pid}/uploads/${uploadId}/reviewedAt`] = ts;
+    updates[`players/p${pid}/uploads/${uploadId}/reviewedBy`] = actor;
 
     await db.ref().update(updates);
   }
@@ -1649,10 +1682,10 @@
     const btn = e.target.closest('button');
     if (!btn) return;
 
-    // ✅ 保險：卡片收合按鈕交給另一個 listener 處理，這裡直接不管
+    // 卡片收合（由另一個 listener 處理）
     if (btn.hasAttribute("data-card-toggle")) return;
 
-    // ✅ whitelist remove
+    // whitelist remove
     if(btn.hasAttribute("data-wl-del")){
       const uid = btn.getAttribute("data-wl-del");
       if(!confirm(`確定移除白名單？\nUID: ${uid}`)) return;
@@ -1661,7 +1694,7 @@
       return;
     }
 
-    // 玩家收合按鈕（由單獨綁定處理）
+    // 玩家收合按鈕（每位玩家自己綁）
     if(btn.id && btn.id.endsWith("-btnToggle")) return;
 
     if (btn.hasAttribute("data-unlock-seat")){
@@ -1704,13 +1737,14 @@
       return;
     }
 
+    // joinRequests approve
     if (btn.hasAttribute('data-approve-jr')) {
       const [reqKey, devId, role] = btn.getAttribute('data-approve-jr').split('|');
 
       const snap = await db.ref('adminDevices').once('value');
       const all = snap.val() || {};
       const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
-      if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}）`);
+      if (activeCount >= 10) return alert(`管理員名額已滿（10）`);
 
       const rs = await db.ref(`joinRequests/${reqKey}`).once('value');
       const r = rs.val() || {};
@@ -1720,15 +1754,15 @@
         role: isAdminReqType(role) ? role : 'admin1',
         label,
         revoked: false,
-        approvedAt: Date.now(),
-        approvedBy: auth.currentUser?.uid || SUPER_UID,
+        approvedAt: now(),
+        approvedBy: getActorUid(),     // ✅ 修好 approvedBy
         source: 'joinRequests'
       });
 
       await db.ref(`joinRequests/${reqKey}`).update({
         status: 'approved',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID,
+        decidedAt: now(),
+        decidedBy: getActorUid(),
         approvedRole: isAdminReqType(role) ? role : 'admin1'
       });
 
@@ -1742,19 +1776,20 @@
 
       await db.ref(`joinRequests/${reqKey}`).update({
         status: 'denied',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
+        decidedAt: now(),
+        decidedBy: getActorUid()
       });
       return;
     }
 
+    // deviceRequests approve
     if (btn.hasAttribute('data-approve')) {
       const [devId, role] = btn.getAttribute('data-approve').split('|');
 
       const snap = await db.ref('adminDevices').once('value');
       const all = snap.val() || {};
       const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
-      if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}）`);
+      if (activeCount >= 10) return alert(`管理員名額已滿（10）`);
 
       const rs = await db.ref(`deviceRequests/${devId}`).once('value');
       const r = rs.val() || {};
@@ -1764,14 +1799,14 @@
         role: isAdminReqType(role) ? role : 'admin1',
         label,
         revoked: false,
-        approvedAt: Date.now(),
-        approvedBy: auth.currentUser?.uid || SUPER_UID
+        approvedAt: now(),
+        approvedBy: getActorUid()
       });
 
       await db.ref(`deviceRequests/${devId}`).update({
         status: 'approved',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
+        decidedAt: now(),
+        decidedBy: getActorUid()
       });
 
       alert('已核准並加入授權設備。');
@@ -1784,8 +1819,8 @@
 
       await db.ref(`deviceRequests/${devId}`).update({
         status: 'denied',
-        decidedAt: Date.now(),
-        decidedBy: auth.currentUser?.uid || SUPER_UID
+        decidedAt: now(),
+        decidedBy: getActorUid()
       });
       return;
     }
@@ -1796,8 +1831,8 @@
 
       await db.ref(`adminDevices/${devId}`).update({
         revoked: true,
-        revokedAt: Date.now(),
-        revokedBy: auth.currentUser?.uid || SUPER_UID
+        revokedAt: now(),
+        revokedBy: getActorUid()
       });
       return;
     }
@@ -1808,40 +1843,44 @@
       const snap = await db.ref('adminDevices').once('value');
       const all = snap.val() || {};
       const activeCount = Object.values(all).filter(x => x && !x.revoked).length;
-      if (activeCount >= ADMIN_LIMIT) return alert(`管理員名額已滿（${ADMIN_LIMIT}），無法恢復。`);
+      if (activeCount >= 10) return alert(`管理員名額已滿（10），無法恢復。`);
 
       await db.ref(`adminDevices/${devId}`).update({
         revoked: false,
-        restoredAt: Date.now(),
-        restoredBy: auth.currentUser?.uid || SUPER_UID
+        restoredAt: now(),
+        restoredBy: getActorUid()
       });
       return;
     }
 
+    // 資源 +/- 
     if(btn.hasAttribute("data-adj")) {
       const [p,k,d] = btn.getAttribute("data-adj").split('|');
       adj(p,k,Number(d));
       return;
     }
 
+    // 背包新增
     if(btn.hasAttribute("data-addinv")) {
       const p = btn.getAttribute("data-addinv");
-      const v = $(`p${p}-inv-in`).value.trim();
+      const v = $(`p${p}-inv-in`)?.value?.trim();
       if (v) {
         db.ref(`players/p${p}/inventory`).push({ name: v });
-        $(`p${p}-inv-in`).value = "";
+        if ($(`p${p}-inv-in`)) $(`p${p}-inv-in`).value = "";
       }
       return;
     }
 
+    // 稱號
     if(btn.hasAttribute("data-settitle")){
       const p = Number(btn.getAttribute("data-settitle"));
       const v = ($(`p${p}-titleIn`)?.value || "").trim();
-      await db.ref(`players/p${p}`).update({ titleCustom: v, titleUpdatedAt: Date.now() });
+      await db.ref(`players/p${p}`).update({ titleCustom: v, titleUpdatedAt: now() });
       alert(`已儲存 p${p} 稱號`);
       return;
     }
 
+    // 清除玩家
     if(btn.hasAttribute("data-clear")) {
       const p = Number(btn.getAttribute("data-clear"));
       if(confirm("清空玩家？（包含資源、分數、背包、登入資訊）")) {
@@ -1857,6 +1896,7 @@
     }
   });
 
+  // 角色切換
   document.body.addEventListener('change', async (e)=>{
     const sel = e.target.closest('select');
     if (!sel) return;
@@ -1868,11 +1908,12 @@
 
     await db.ref(`adminDevices/${devId}`).update({
       role,
-      roleUpdatedAt: Date.now(),
-      roleUpdatedBy: auth.currentUser?.uid || SUPER_UID
+      roleUpdatedAt: now(),
+      roleUpdatedBy: getActorUid()
     });
   });
 
+  // 背包刪除
   document.body.addEventListener("click", e => {
     const i = e.target.closest("i");
     if (!i) return;
@@ -1902,7 +1943,7 @@
 
     initCollapsibleCards();
 
-    $("btnLogout").addEventListener("click", async () => {
+    $("btnLogout")?.addEventListener("click", async () => {
       await auth.signOut();
     });
 
@@ -1911,7 +1952,7 @@
     document.getElementById("uFilterPlayer")?.addEventListener("change", loadUploadsIndex);
     loadUploadsIndex();
 
-    $("btnResetAllRes").onclick = async () => {
+    $("btnResetAllRes") && ($("btnResetAllRes").onclick = async () => {
       if (!confirm("確定清空所有玩家資源、分數與背包？")) return;
       const updates = {};
       for (let i=1; i<=PLAYER_COUNT; i++) {
@@ -1920,14 +1961,16 @@
       }
       await db.ref().update(updates);
       alert("已清空。");
-    };
+    });
 
-    $("btnResetTotal").onclick = async () => {
+    $("btnResetTotal") && ($("btnResetTotal").onclick = async () => {
       if (!confirm("確定徹底重置資料庫？")) return;
       await db.ref().remove();
       location.reload();
-    };
+    });
   });
+
+})();
 </script>
 
 </body>
