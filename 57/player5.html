@@ -189,17 +189,23 @@
     justify-content:space-between;
     background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72));
   }
-  .avatar{
-    width: 46px; height:46px;
-    border-radius: 14px;
-    border:1px solid rgba(255,255,255,.55);
-    box-shadow: 0 10px 24px rgba(2,6,23,.10);
-    flex: 0 0 auto;
-    overflow:hidden;
-    position:relative;
-    background: linear-gradient(135deg, rgba(59,130,246,.22), rgba(245,158,11,.18));
-    cursor:pointer;
-  }
+  /* ✅ avatar 真正照片層：永遠在最上面 */
+.avatar img{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  display:none;
+  z-index:3;
+}
+
+/* fallback SVG 在照片下面 */
+.avatar svg{ position:absolute; inset:0; z-index:1; }
+#avatarEmoji{ z-index:2; }
+
+/* ✅ 有照片時：隱藏 emoji + svg，只顯示 img */
+.avatar.hasPhoto #avatarEmoji{ display:none; }
+.avatar.hasPhoto svg{ display:none; }
+.avatar.hasPhoto img{ display:block; }
   .avatar.hasPhoto{ background-size:cover; background-position:center; }
   .avatar svg{ width:100%; height:100%; display:block; }
   #avatarEmoji{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
@@ -575,18 +581,20 @@
       <div class="roleHeader">
         <div class="card titleCard">
           <div class="avatar" id="avatarBtn" title="點我換照片（同步回管理端）">
-            <span id="avatarEmoji">🧑</span>
-            <!-- fallback svg 背景 -->
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-              <defs>
-                <linearGradient id="avG" x1="0" x2="1">
-                  <stop offset="0" stop-color="#3b82f6" stop-opacity=".95"/>
-                  <stop offset="1" stop-color="#f59e0b" stop-opacity=".85"/>
-                </linearGradient>
-              </defs>
-              <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#avG)"/>
-            </svg>
-          </div>
+  <img id="avatarImg" alt="" />
+  <span id="avatarEmoji">🧑</span>
+
+  <!-- fallback svg 背景（沒照片時才顯示） -->
+  <svg id="avatarSvg" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <linearGradient id="avG" x1="0" x2="1">
+        <stop offset="0" stop-color="#3b82f6" stop-opacity=".95"/>
+        <stop offset="1" stop-color="#f59e0b" stop-opacity=".85"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#avG)"/>
+  </svg>
+</div>
           <input id="avatarInput" type="file" accept="image/*" class="hide">
 
           <div class="titleMeta">
@@ -1099,14 +1107,55 @@ function bindMarquee(){
 
 /* ========= radar ========= */
 function initRadar(){
-  const ctx = document.getElementById("radarChart").getContext("2d");
-  radar=new Chart(ctx,{
-    type:"radar",
-    data:{
-      labels:["金錢","健康","知識","人際","時間"],
-      datasets:[{data:[0,0,0,0,0],borderWidth:2,pointRadius:3,fill:true}]
+  const canvas = document.getElementById("radarChart");
+  const ctx = canvas.getContext("2d");
+
+  function makeGradient(){
+    const h = canvas.height || 320;
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "rgba(37,99,235,.35)");
+    g.addColorStop(1, "rgba(6,182,212,.10)");
+    return g;
+  }
+
+  radar = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels: ["金錢","健康","知識","人際","時間"],
+      datasets: [{
+        data: [0,0,0,0,0],
+        borderWidth: 2.6,
+        borderColor: "rgba(37,99,235,.95)",
+        backgroundColor: makeGradient(),
+        pointRadius: 3.6,
+        pointHoverRadius: 5.2,
+        pointBackgroundColor: "#fff",
+        pointBorderWidth: 2.2,
+        pointBorderColor: "rgba(6,182,212,.95)"
+      }]
     },
-    options:{plugins:{legend:{display:false}},scales:{r:{beginAtZero:true,ticks:{display:false}}}}
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      elements: { line: { tension: 0.25 } },
+      scales: {
+        r: {
+          beginAtZero: true,
+          suggestedMin: 0,
+          suggestedMax: 10,
+          angleLines: { color:"rgba(2,6,23,.10)" },
+          grid: { color:"rgba(2,6,23,.08)" },
+          pointLabels: {
+            color: "rgba(15,23,42,.75)",
+            font: { size: 12, weight: "700" }
+          },
+          ticks: {
+            display: false
+          }
+        }
+      }
+    }
   });
 }
 
@@ -1609,12 +1658,20 @@ function fmtReward(reward){
 function avatarKey(){ return `lr_avatar_p${myId}`; }
 function setAvatar(dataUrl){
   const btn = document.getElementById("avatarBtn");
-  btn.style.backgroundImage = `url('${dataUrl}')`;
+  const img = document.getElementById("avatarImg");
+  if(img){
+    img.src = dataUrl;
+    img.style.display = "block";
+  }
   btn.classList.add("hasPhoto");
 }
 function clearAvatar(){
   const btn = document.getElementById("avatarBtn");
-  btn.style.backgroundImage = "";
+  const img = document.getElementById("avatarImg");
+  if(img){
+    img.src = "";
+    img.style.display = "none";
+  }
   btn.classList.remove("hasPhoto");
 }
 function loadAvatarFromLocal(){
