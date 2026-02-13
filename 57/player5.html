@@ -189,27 +189,39 @@
     justify-content:space-between;
     background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72));
   }
+
+  /* ✅✅✅ 修正重點：avatar 容器一定要有尺寸 + relative（不然 absolute 子元素會蓋滿整頁） */
+  .avatar{
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    overflow: hidden;
+    flex: 0 0 auto;
+    border: 1px solid rgba(2,6,23,.10);
+    box-shadow: 0 12px 24px rgba(2,6,23,.10);
+    background: rgba(2,6,23,.04);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* ✅ avatar 真正照片層：永遠在最上面 */
-.avatar img{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  object-fit:cover;
-  display:none;
-  z-index:3;
-}
+  .avatar img{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    display:none;
+    z-index:3;
+  }
 
-/* fallback SVG 在照片下面 */
-.avatar svg{ position:absolute; inset:0; z-index:1; }
-#avatarEmoji{ z-index:2; }
+  /* fallback SVG 在照片下面 */
+  .avatar svg{ position:absolute; inset:0; z-index:1; width:100%; height:100%; display:block; }
+  #avatarEmoji{ position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
 
-/* ✅ 有照片時：隱藏 emoji + svg，只顯示 img */
-.avatar.hasPhoto #avatarEmoji{ display:none; }
-.avatar.hasPhoto svg{ display:none; }
-.avatar.hasPhoto img{ display:block; }
-  .avatar.hasPhoto{ background-size:cover; background-position:center; }
-  .avatar svg{ width:100%; height:100%; display:block; }
-  #avatarEmoji{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
+  /* ✅ 有照片時：隱藏 emoji + svg，只顯示 img */
   .avatar.hasPhoto #avatarEmoji{ display:none; }
+  .avatar.hasPhoto svg{ display:none; }
+  .avatar.hasPhoto img{ display:block; }
 
   .titleMeta{ min-width:0; flex:1; }
   .roleTitle{
@@ -581,20 +593,20 @@
       <div class="roleHeader">
         <div class="card titleCard">
           <div class="avatar" id="avatarBtn" title="點我換照片（同步回管理端）">
-  <img id="avatarImg" alt="" />
-  <span id="avatarEmoji">🧑</span>
+            <img id="avatarImg" alt="" />
+            <span id="avatarEmoji">🧑</span>
 
-  <!-- fallback svg 背景（沒照片時才顯示） -->
-  <svg id="avatarSvg" viewBox="0 0 100 100" aria-hidden="true">
-    <defs>
-      <linearGradient id="avG" x1="0" x2="1">
-        <stop offset="0" stop-color="#3b82f6" stop-opacity=".95"/>
-        <stop offset="1" stop-color="#f59e0b" stop-opacity=".85"/>
-      </linearGradient>
-    </defs>
-    <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#avG)"/>
-  </svg>
-</div>
+            <!-- fallback svg 背景（沒照片時才顯示） -->
+            <svg id="avatarSvg" viewBox="0 0 100 100" aria-hidden="true">
+              <defs>
+                <linearGradient id="avG" x1="0" x2="1">
+                  <stop offset="0" stop-color="#3b82f6" stop-opacity=".95"/>
+                  <stop offset="1" stop-color="#f59e0b" stop-opacity=".85"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#avG)"/>
+            </svg>
+          </div>
           <input id="avatarInput" type="file" accept="image/*" class="hide">
 
           <div class="titleMeta">
@@ -1065,7 +1077,6 @@ async function join(){
   bindMarquee();
   bindActiveEvent();
 
-  // ✅ 進入後預設到角色頁（你要改成 task 就改這行）
   showTab("role");
 }
 
@@ -1150,9 +1161,7 @@ function initRadar(){
             color: "rgba(15,23,42,.75)",
             font: { size: 12, weight: "700" }
           },
-          ticks: {
-            display: false
-          }
+          ticks: { display: false }
         }
       }
     }
