@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>大螢幕 - 排行榜 + 達成清單（手動更新版）</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    html, body{width:100%;height:100%;margin:0;}
+    body{
+      background:#ffffff;color:#2c3e50;font-family:'PingFang TC','Microsoft JhengHei',sans-serif;
+      min-height:100vh;min-height:100svh;box-sizing:border-box;padding:10px 20px;
+      overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;
+    }
+
+    /* Header */
+    #display-header{
+      display:flex;gap:15px;margin-bottom:12px;height:60px;position:relative;z-index:2;flex:0 0 auto;
+    }
+    #announcement-bar{flex:3;background:#3498db;border-radius:12px;display:none;overflow:hidden;white-space:nowrap;}
+    #msg-box{
+      display:inline-block;padding-left:100%;
+      animation: marquee-left 10s linear infinite;
+      font-size:1.5em;font-weight:900;color:white;line-height:60px;margin:0;
+    }
+    @keyframes marquee-left{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+    @keyframes marquee-right{0%{transform:translateX(0);}100%{transform:translateX(100%);}}
+
+    #timer-bar{
+      flex:1;background:#e74c3c;border-radius:12px;text-align:center;color:white;
+      display:flex;align-items:center;justify-content:center;
+    }
+    #timer-box{margin:0;font-size:2.5em;font-family:monospace;font-weight:900;}
+
+    /* Layout */
+    #main{
+      flex:1 1 auto;display:flex;gap:16px;min-height:0;position:relative;z-index:1;height:auto;
+    }
+    #left{flex:1.2;min-width:520px;overflow:auto;min-height:0;}
+    #right{flex:1;overflow:auto;min-height:0;border-left:1px dashed #e5e5e5;padding-left:16px;}
+
+    .p-row{
+      background:#fdfdfd;margin-bottom:5px;padding:5px 15px;border-radius:8px;
+      display:flex;align-items:center;border:1px solid #eee;height:clamp(44px, 7vh, 92px);
+      box-sizing:border-box;
+    }
+    .rank-1{background:#fffcf0;border-color:#ffd700;border-left:10px solid #ffd700;}
+    .rank-2{background:#fafdff;border-color:#bdc3c7;border-left:10px solid #bdc3c7;}
+    .rank-3{background:#fff9f5;border-color:#e67e22;border-left:10px solid #e67e22;}
+
+    .rank-num{font-size:1.4em;font-weight:900;width:35px;color:#95a5a6;}
+    .rank-1 .rank-num{color:#f1c40f;}
+
+    .player-name{font-size:1.05em;font-weight:900;width:190px;color:#34495e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .player-link{appearance:none;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;}
+    .player-link:hover{background:rgba(52,73,94,0.06)}
+    .player-link .ava{width:34px;height:34px;border-radius:12px;object-fit:cover;border:1px solid rgba(0,0,0,0.08)}
+    .player-link .nm{display:block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    .res-summary{flex:1;display:flex;justify-content:space-around;font-size:0.95em;padding:0 10px;gap:10px;}
+    .res-item{display:flex;align-items:center;gap:4px;font-weight:700;white-space:nowrap;}
+    .res-label{font-size:0.85em;}
+    .res-score{color:#e67e22;background:rgba(230,126,34,0.1);padding:2px 10px;border-radius:6px;border:1px solid rgba(230,126,34,0.2);}
+
+    .total-box{width:100px;text-align:right;border-left:1px dashed #ddd;padding-left:10px;}
+    .total-val{font-size:1.6em;font-weight:900;color:#2980b9;}
+    .pts{font-size:0.5em;color:#7f8c8d;margin-left:2px;}
+
+    #purchases-title{
+      display:flex;align-items:center;gap:10px;margin:0 0 10px 0;font-size:1.3em;font-weight:900;color:#2c3e50;
+      position:sticky;top:0;background:rgba(255,255,255,0.85);backdrop-filter: blur(6px);padding:6px 0;z-index:2;
+    }
+    .buy-card{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+    .buy-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .buy-name{font-weight:900;color:#34495e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;}
+    .buy-count{
+      font-weight:800;color:#f39c12;font-size:0.95em;background:rgba(243,156,18,0.12);
+      border:1px solid rgba(243,156,18,0.25);padding:2px 8px;border-radius:999px;white-space:nowrap;
+    }
+    .buy-items{display:flex;flex-wrap:wrap;gap:6px;max-height:18vh;overflow:auto;padding-bottom:2px;}
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid #eaeaea;
+      padding:4px 8px;border-radius:999px;font-weight:800;font-size:0.92em;color:#2c3e50;
+    }
+    .chip img{width:22px;height:22px;border-radius:6px;object-fit:cover;border:1px solid #eee;}
+    .chip .icon{
+      width:22px;height:22px;border-radius:6px;border:1px dashed #ddd;
+      display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.95em;
+    }
+
+    /* Danmaku overlay（保留層，但改成手動抓最近幾筆時「一次性噴出」） */
+    #danmaku-layer{
+      position:fixed;left:0;top:0;width:100vw;min-height:100vh;min-height:100svh;
+      pointer-events:none;overflow:hidden;z-index:3;
+    }
+    .danmaku{
+      font-size: var(--danmaku-font-size, 22px);
+      position:absolute;right:-40vw;display:inline-flex;align-items:center;gap:10px;
+      padding:6px 12px;border-radius:999px;font-weight:900;color:#ffffff;background:rgba(243,156,18,0.95);
+      box-shadow:0 6px 18px rgba(0,0,0,0.14);
+      will-change:transform;
+      animation:fly var(--danmaku-duration, 10s) linear forwards;
+      max-width:78vw;
+    }
+    .danmaku span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70vw;}
+    .danmaku img{width:28px;height:28px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,255,255,0.7);}
+    @keyframes fly{from{transform:translateX(0);} to{transform:translateX(-140vw);} }
+
+    /* ===== 手動更新控制列 ===== */
+    #ctrlRow{
+      display:flex;gap:10px;align-items:center;justify-content:flex-start;
+      margin:0 0 10px 0;
+    }
+    .ctrlBtn{
+      border:none;cursor:pointer;border-radius:12px;padding:10px 12px;font-weight:900;
+      background:#ecf0f1;color:#2c3e50;
+      box-shadow:0 6px 14px rgba(2,6,23,0.10);
+    }
+    .ctrlBtn.blue{background:#3498db;color:#fff;}
+    .ctrlBtn.orange{background:#f39c12;color:#fff;}
+    .ctrlBtn:disabled{opacity:.55;cursor:not-allowed}
+    .ctrlHint{font-weight:900;color:#7f8c8d}
+  </style>
+</head>
+
+<body data-page="display">
+  <div id="danmaku-layer"></div>
+
+  <div id="display-header">
+    <div id="announcement-bar"><p id="msg-box"></p></div>
+    <div id="timer-bar"><h1 id="timer-box">00:00</h1></div>
+  </div>
+
+  <!-- ✅ 手動更新控制列 -->
+  <div id="ctrlRow">
+    <button class="ctrlBtn blue" id="btnRefresh"><i class="fas fa-rotate"></i> 更新</button>
+    <button class="ctrlBtn orange" id="btnToggleRank"><i class="fas fa-list-ol"></i> 完整排名</button>
+    <span class="ctrlHint" id="ctrlHint">目前：前 5 名（不自動更新）</span>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div id="board-list"></div>
+    </div>
+    <div id="right">
+      <div id="purchases-title"><i class="fas fa-receipt"></i> 玩家達成清單（人生背包）</div>
+      <div id="purchases-list"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ========= Firebase ========= */
+    const firebaseConfig = {
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const PLAYER_COUNT = 15;
+
+    function safeVal(v){
+      return (typeof v === 'number' && isFinite(v)) ? v : (Number(v) || 0);
+    }
+
+    function openCert(pid){
+      try{ window.open(`certificate.html?pid=${pid}`, "_blank"); }
+      catch(e){ location.href = `certificate.html?pid=${pid}`; }
+    }
+
+    /* ========= 顯示模式 ========= */
+    let showFullRank = false;         // false = 前五名；true = 完整
+    const btnRefresh = document.getElementById("btnRefresh");
+    const btnToggleRank = document.getElementById("btnToggleRank");
+    const ctrlHint = document.getElementById("ctrlHint");
+
+    function updateHint(){
+      ctrlHint.textContent = showFullRank ? "目前：完整排名（不自動更新）" : "目前：前 5 名（不自動更新）";
+      btnToggleRank.innerHTML = showFullRank
+        ? '<i class="fas fa-trophy"></i> 前五名'
+        : '<i class="fas fa-list-ol"></i> 完整排名';
+    }
+
+    btnToggleRank.addEventListener("click", ()=>{
+      showFullRank = !showFullRank;
+      updateHint();
+      // ✅ 切換只改渲染，不會去抓資料
+      renderPlayersBoard(_lastPlayersCache || {});
+    });
+
+    /* ========= 手動更新：一次性讀取 ========= */
+    let _lastPlayersCache = null;
+
+    async function refreshAll(){
+      btnRefresh.disabled = true;
+      btnRefresh.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 更新中…';
+      try{
+        // 1) controls
+        const controlsSnap = await db.ref("controls").get();
+        applyControls(controlsSnap.val() || {});
+
+        // 2) marquee
+        const marqueeSnap = await db.ref("marquee").get();
+        applyMarquee(marqueeSnap.val() || {});
+
+        // 3) timerSync
+        const timerSnap = await db.ref("timerSync").get();
+        applyTimer(timerSnap.val());
+
+        // 4) players
+        const playersSnap = await db.ref("players").get();
+        _lastPlayersCache = playersSnap.val() || {};
+        renderPlayersBoard(_lastPlayersCache);
+
+        // 5) purchaseFeed（一次性抓最近 20 筆，噴一次彈幕）
+        const feedSnap = await db.ref("purchaseFeed").limitToLast(20).get();
+        const feedVal = feedSnap.val() || {};
+        sprayDanmakuFromFeed(feedVal);
+
+      }catch(err){
+        console.error(err);
+        alert("更新失敗：" + (err?.message || err));
+      }finally{
+        btnRefresh.disabled = false;
+        btnRefresh.innerHTML = '<i class="fas fa-rotate"></i> 更新';
+      }
+    }
+
+    btnRefresh.addEventListener("click", refreshAll);
+
+    /* ========= apply: controls / marquee / timer ========= */
+    function applyControls(c){
+      const danmakuSec = Number(c.danmakuDurationSec ?? 10);
+      const fontPx = Number(c.danmakuFontSizePx ?? 22);
+      window.__danmakuDurationSec = Math.max(3, Math.min(60, danmakuSec));
+      window.__danmakuFontPx = Math.max(12, Math.min(64, fontPx));
+      window.__danmakuEnabled = (c.danmakuEnabled !== false);
+      window.__danmakuMaxOn = Math.max(1, Math.min(30, Number(c.danmakuMaxOnScreen ?? 8)));
+
+      document.documentElement.style.setProperty("--danmaku-duration", `${window.__danmakuDurationSec}s`);
+      document.documentElement.style.setProperty("--danmaku-font-size", `${window.__danmakuFontPx}px`);
+    }
+
+    function applyMarquee(v){
+      const bar = document.getElementById("announcement-bar");
+      const msgBox = document.getElementById("msg-box");
+      const enabled   = (v.enabled ?? true);
+      const text      = (v.text ?? "").toString();
+      const speedSec  = Math.max(3, Number(v.speedSec ?? 10));
+      const direction = (v.direction === "right") ? "right" : "left";
+      const fontSize  = Math.max(12, Number(v.fontSize ?? 22));
+
+      bar.style.display = (enabled && text.trim()) ? "block" : "none";
+      if (!(enabled && text.trim())) return;
+
+      msgBox.textContent = "📢 " + text;
+      msgBox.style.fontSize = fontSize + "px";
+
+      if (v.bgColor) bar.style.background = v.bgColor;
+      if (v.textColor) bar.style.color = v.textColor;
+
+      msgBox.style.animation = "none";
+      void msgBox.offsetWidth;
+      msgBox.style.animation = `marquee-${direction} ${speedSec}s linear infinite`;
+    }
+
+    function applyTimer(d){
+      const box = document.getElementById("timer-box");
+      const bar = document.getElementById("timer-bar");
+      const sec = Number(d?.timeLeft || 0);
+      const m = Math.floor(sec/60).toString().padStart(2,'0');
+      const s = (sec%60).toString().padStart(2,'0');
+      box.textContent = `${m}:${s}`;
+      bar.style.background = (sec <= 0) ? "#95a5a6" : "#e74c3c";
+    }
+
+    /* ========= render players ========= */
+    function renderPlayersBoard(cache){
+      const data = cache || {};
+      const arr = [];
+
+      for(let i=1;i<=PLAYER_COUNT;i++){
+        const pKey = `p${i}`;
+        const pData = data[pKey] || {};
+        const r = pData.res || {};
+        const pts = safeVal(r.time) + safeVal(r.money) + safeVal(r.health) + safeVal(r.knowledge) + safeVal(r.social);
+        const score = safeVal(r.score);
+
+        arr.push({
+          pid:i,
+          name:pData.name || `玩家 ${i}`,
+          avatar:pData.avatar || "",
+          res:r,
+          pts,
+          score,
+          inventory:pData.inventory || {}
+        });
+      }
+
+      arr.sort((a,b)=> (b.score!==a.score) ? (b.score-a.score) : (b.pts-b.pts));
+
+      // ✅ 修正：次排序應該是 pts
+      arr.sort((a,b)=> (b.score!==a.score) ? (b.score-a.score) : (b.pts-a.pts));
+
+      // 左：排行榜（前五 or 全部）
+      const list = document.getElementById("board-list");
+      list.innerHTML = "";
+      const viewArr = showFullRank ? arr : arr.slice(0,5);
+
+      viewArr.forEach((p, idx)=>{
+        const rank = showFullRank ? (idx+1) : (idx+1); // 顯示用還是 1~5 或 1~12
+        const rClass = rank===1?'rank-1':(rank===2?'rank-2':(rank===3?'rank-3':''));
+        list.innerHTML += `
+          <div class="p-row ${rClass}">
+            <div class="rank-num">${rank}</div>
+            <button class="player-name player-link" onclick="openCert(${p.pid})" title="開啟獎狀">
+              ${p.avatar?`<img class="ava" src="${p.avatar}" alt="">`:``}
+              <span class="nm">${p.name}</span>
+            </button>
+            <div class="res-summary">
+              <div class="res-item" style="color:#8e44ad"><span class="res-label">時</span><i class="fas fa-clock"></i>${safeVal(p.res.time)}</div>
+              <div class="res-item" style="color:#f39c12"><span class="res-label">金</span><i class="fas fa-wallet"></i>${safeVal(p.res.money)}</div>
+              <div class="res-item" style="color:#c0392b"><span class="res-label">健</span><i class="fas fa-heartbeat"></i>${safeVal(p.res.health)}</div>
+              <div class="res-item" style="color:#2980b9"><span class="res-label">知</span><i class="fas fa-book"></i>${safeVal(p.res.knowledge)}</div>
+              <div class="res-item" style="color:#27ae60"><span class="res-label">人</span><i class="fas fa-users"></i>${safeVal(p.res.social)}</div>
+              <div class="res-item res-score"><span class="res-label">分</span><i class="fas fa-star"></i>${safeVal(p.res.score)}</div>
+            </div>
+            <div class="total-box"><span class="total-val">${p.pts}</span><span class="pts">PTS</span></div>
+          </div>
+        `;
+      });
+
+      // 右：背包（固定 pid 1..12）
+      const purchases = document.getElementById("purchases-list");
+      purchases.innerHTML = "";
+
+      const fixed = [...arr].sort((a,b)=>a.pid-b.pid);
+      fixed.forEach(p=>{
+        const inv = p.inventory || {};
+        const items = Object.keys(inv).map(k=>inv[k]).filter(Boolean);
+        items.sort((a,b)=> safeVal(b.time)-safeVal(a.time));
+
+        purchases.innerHTML += `
+          <div class="buy-card">
+            <div class="buy-head">
+              <div class="buy-name"><i class="fas fa-user"></i> ${p.name}</div>
+              <div class="buy-count">${items.length} 件</div>
+            </div>
+            <div class="buy-items">
+              ${items.slice(0,12).map(it=>{
+                const nm = it.name || "未命名";
+                const img = (it.imageUrl||"").trim();
+                return `
+                  <div class="chip" title="${nm}">
+                    ${img ? `<img src="${img}" alt="${nm}">` : `<div class="icon">🛍️</div>`}
+                    <span>${nm}</span>
+                  </div>
+                `;
+              }).join("")}
+              ${items.length>12 ? `<div class="chip"><div class="icon">…</div><span>+${items.length-12}</span></div>` : ""}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    /* ========= 手動噴彈幕（一次性） ========= */
+    function sprayDanmakuFromFeed(feedObj){
+      const enabled = (window.__danmakuEnabled !== false);
+      if(!enabled) return;
+
+      const layer = document.getElementById("danmaku-layer");
+      if(!layer) return;
+
+      const maxOn = Number(window.__danmakuMaxOn || 8);
+      const entries = Object.entries(feedObj || {}).map(([k,v])=>v).filter(Boolean);
+      // 依 ts 排序，舊到新噴（避免一次全部重疊）
+      entries.sort((a,b)=>safeVal(a.ts)-safeVal(b.ts));
+
+      // 清掉舊的彈幕（避免疊加）
+      while(layer.firstChild) layer.removeChild(layer.firstChild);
+
+      // 取最後 8~12 個較好看（可調）
+      const batch = entries.slice(-Math.min(12, entries.length));
+      let delay = 0;
+
+      batch.forEach(d=>{
+        setTimeout(()=>{
+          if(layer.children.length >= maxOn){
+            while(layer.children.length >= maxOn){
+              layer.removeChild(layer.firstElementChild);
+            }
+          }
+          const el = document.createElement("div");
+          el.className = "danmaku";
+
+          const topMin = 80;
+          const topMax = Math.max(topMin, window.innerHeight - 80);
+          const top = topMin + Math.floor(Math.random() * Math.max(1, topMax - topMin));
+          el.style.top = `${top}px`;
+
+          const who = d.playerName || `玩家${d.playerId || ''}`;
+          const what = d.itemName || "物品";
+          const img = (d.imageUrl || "").trim();
+
+          el.innerHTML = `
+            ${img ? `<img src="${img}" alt="${what}">` : ""}
+            <span>${who} 達成了（${what}）</span>
+          `;
+          layer.appendChild(el);
+          el.addEventListener("animationend", ()=> el.remove());
+        }, delay);
+        delay += 350; // ✅ 拉開一點，避免同一秒全部重疊
+      });
+    }
+
+    /* ========= 初始狀態 ========= */
+    updateHint();
+    // 不自動更新：預設頁面不抓資料（你要的）
+    // 如果你想「一開啟就先抓一次」，把下一行解除註解：
+    // refreshAll();
+  </script>
+</body>
+</html>
