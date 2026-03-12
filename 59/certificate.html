@@ -147,6 +147,8 @@ html,body{
 
   <div class="stats">
     <div class="stat"><div class="k">⏳ 時間</div><div class="v" id="time">0</div></div>
+      </div>
+    <div class="stats">
     <div class="stat"><div class="k">💰 金錢</div><div class="v" id="money">0</div></div>
     <div class="stat"><div class="k">❤️ 健康</div><div class="v" id="health">0</div></div>
     <div class="stat"><div class="k">📘 知識</div><div class="v" id="knowledge">0</div></div>
@@ -220,4 +222,5 @@ db.ref(`players/p${pid}`).once("value").then(s=>{
 });
 </script>
 </body>
+
 </html>
