@@ -28,7 +28,7 @@ html,body{
 }
 
 .page{
-  max-width:900px;
+  max-width:1000px;
   margin:30px auto;
   padding:40px;
   background:var(--card);
@@ -68,9 +68,33 @@ html,body{
   font-weight:800;
 }
 
-/* 數據 */
-.stats{
+/* 總分獨立 */
+.score-wrap{
   margin-top:40px;
+  display:flex;
+  justify-content:center;
+}
+.score-card{
+  width:min(520px, 100%);
+  background:#f1f5f9;
+  border-radius:20px;
+  padding:24px 20px;
+  text-align:center;
+}
+.score-card .k{
+  font-size:18px;
+  color:var(--muted);
+}
+.score-card .v{
+  margin-top:10px;
+  font-size:56px;
+  font-weight:900;
+  line-height:1;
+}
+
+/* 五大資源 */
+.stats{
+  margin-top:24px;
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:16px;
@@ -81,12 +105,12 @@ html,body{
   padding:18px;
 }
 .stat .k{
-  font-size:14px;
+  font-size:16px;
   color:var(--muted);
 }
 .stat .v{
-  margin-top:6px;
-  font-size:26px;
+  margin-top:8px;
+  font-size:34px;
   font-weight:900;
 }
 
@@ -96,6 +120,7 @@ html,body{
 }
 .ach h3{
   margin-bottom:14px;
+  text-align:center;
 }
 .ach-list{
   display:flex;
@@ -116,8 +141,50 @@ html,body{
   margin-top:50px;
   display:flex;
   justify-content:space-between;
+  gap:12px;
   font-size:14px;
   color:var(--muted);
+  flex-wrap:wrap;
+}
+
+/* 手機 */
+@media (max-width: 768px){
+  .page{
+    margin:16px;
+    padding:24px;
+  }
+
+  .title h1{
+    font-size:30px;
+    letter-spacing:2px;
+  }
+
+  .player{
+    font-size:28px;
+  }
+
+  .role{
+    font-size:18px;
+  }
+
+  .score-card .v{
+    font-size:44px;
+  }
+
+  .stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media (max-width: 520px){
+  .stats{
+    grid-template-columns:1fr;
+  }
+
+  .footer{
+    flex-direction:column;
+    align-items:flex-start;
+  }
 }
 
 /* 列印模式 */
@@ -145,16 +212,21 @@ html,body{
     <div class="role" id="playerTitle">稱號</div>
   </div>
 
+  <!-- 總分獨立 -->
+  <div class="score-wrap">
+    <div class="score-card">
+      <div class="k">🏆 總分</div>
+      <div class="v" id="score">0</div>
+    </div>
+  </div>
+
+  <!-- 五大資源 -->
   <div class="stats">
-      <div class="stat"><div class="k">🏆 總分</div><div class="v" id="score">0</div></div>
-      </div>
-    <div class="stats">
     <div class="stat"><div class="k">⏳ 時間</div><div class="v" id="time">0</div></div>
     <div class="stat"><div class="k">💰 金錢</div><div class="v" id="money">0</div></div>
     <div class="stat"><div class="k">❤️ 健康</div><div class="v" id="health">0</div></div>
     <div class="stat"><div class="k">📘 知識</div><div class="v" id="knowledge">0</div></div>
     <div class="stat"><div class="k">🤝 人際</div><div class="v" id="social">0</div></div>
- 
   </div>
 
   <div class="ach">
@@ -195,14 +267,14 @@ db.ref(`players/p${pid}`).once("value").then(s=>{
   document.getElementById("playerTitle").innerText =
     p.titleCustom || p.roleLabel || p.roleLabelAuto || "冒險者";
 
-  const set = (id,v)=> document.getElementById(id).innerText = Number(v||0);
+  const set = (id,v)=> document.getElementById(id).innerText = Number(v || 0);
 
-  set("time",r.time);
-  set("money",r.money);
-  set("health",r.health);
-  set("knowledge",r.knowledge);
-  set("social",r.social);
-  set("score",r.score);
+  set("time", r.time);
+  set("money", r.money);
+  set("health", r.health);
+  set("knowledge", r.knowledge);
+  set("social", r.social);
+  set("score", r.score);
 
   const inv = p.inventory || {};
   const list = Object.values(inv);
@@ -223,6 +295,4 @@ db.ref(`players/p${pid}`).once("value").then(s=>{
 });
 </script>
 </body>
-
 </html>
-
