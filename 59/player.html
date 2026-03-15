@@ -446,22 +446,56 @@
     opacity:.85;
     pointer-events:none; /* block all clicks inside shop card */
   }
-  #panel-shop .shopDisableOverlay{
-    position:absolute; inset:12px; /* stay within panelHost padding */
-    border-radius: 18px;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    gap:10px;
-    background: rgba(255,255,255,.85);
-    border:1px solid rgba(2,6,23,.10);
-    box-shadow: 0 18px 44px rgba(2,6,23,.12);
-    z-index: 3;
-    pointer-events:auto; /* allow clicks on overlay */
-    text-align:center;
-    padding:14px;
-  }
+ #panel-shop .shopDisableOverlay{
+position:absolute;
+inset:12px;
+border-radius:18px;
+
+display:none;
+align-items:flex-start;
+justify-content:flex-end;
+flex-direction:column;
+gap:8px;
+
+/* 幾乎透明，不遮住商品 */
+background: rgba(255,255,255,.04);
+border:1px dashed rgba(2,6,23,.12);
+box-shadow:none;
+
+z-index:3;
+pointer-events:none; /* overlay 自己也不擋點擊 */
+
+text-align:left;
+padding:14px;
+}
+
+#panel-shop.shopDisabled .shopDisableOverlay{
+display:flex;
+}
+
+.shopDisableOverlay b{
+font-size:14px;
+letter-spacing:.2px;
+
+background:rgba(255,255,255,.9);
+border:1px solid rgba(2,6,23,.1);
+border-radius:12px;
+
+padding:8px 12px;
+box-shadow:0 8px 18px rgba(2,6,23,.08);
+}
+
+.shopDisableOverlay .hint{
+font-size:12px;
+color:var(--muted);
+
+background:rgba(255,255,255,.85);
+border:1px solid rgba(2,6,23,.08);
+border-radius:12px;
+
+padding:8px 12px;
+max-width:90%;
+}
   #panel-shop.shopDisabled .shopDisableOverlay{ display:flex; }
   .shopDisableOverlay b{ font-size:14px; letter-spacing:.2px; }
   .shopDisableOverlay .hint{ font-size:12px; color: var(--muted); line-height:1.35; }
