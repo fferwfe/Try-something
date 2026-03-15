@@ -985,10 +985,14 @@
                 </span>
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-50">-50</button>`:''}
-                  <button class="btn minus sm" data-adj="${i}|${k}|-10">-10</button>
-                  <span class="val" id="p${i}-${k}">0</span>
-                  <button class="btn plus sm" data-adj="${i}|${k}|10">+10</button>
-                  ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|50">+50</button>`:''}
+            <button class="btn minus sm" data-adj="${i}|${k}|-10">-10</button>
+              <button class="btn minus sm" data-adj="${i}|${k}|-5">-5</button>
+
+               <span class="val" id="p${i}-${k}">0</span>
+
+            <button class="btn plus sm" data-adj="${i}|${k}|5">+5</button>
+            <button class="btn plus sm" data-adj="${i}|${k}|10">+10</button>
+             ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|50">+50</button>`:''}
                 </div>
               </div>
             `).join("")}
