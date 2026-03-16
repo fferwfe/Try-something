@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>商店管理 - 人生履歷</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#fff; --row:rgba(2,6,23,0.05);
+      --text:#0f172a; --muted:rgba(15,23,42,0.72); --shadow:rgba(2,6,23,0.12);
+      --blue:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --gray:#64748b; --radius:18px;
+    }
+    html,body{height:100%;margin:0}
+    body{
+      font-family:'Segoe UI','Microsoft JhengHei',system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(900px 420px at 18% 0%, rgba(59,130,246,0.12), transparent 60%),
+        radial-gradient(900px 420px at 82% 0%, rgba(34,197,94,0.10), transparent 60%),
+        var(--bg);
+      color:var(--text); padding:14px; text-align:center;
+    }
+    .wrap{width:100%;max-width:760px;margin:0 auto}
+    .config-card{
+      background:var(--card); padding:24px; border-radius:var(--radius);
+      box-shadow:0 10px 26px var(--shadow); border:1px solid rgba(2,6,23,0.08);
+      margin-bottom:24px;
+    }
+    .status-bar{
+      margin-bottom:12px; padding:16px; border-radius:12px; font-weight:900;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    }
+    .status-bar.open{background:var(--ok);color:#fff}
+    .status-bar.closed{background:var(--danger);color:#fff}
+    .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+    @media (max-width:640px){.toolbar{grid-template-columns:1fr}}
+    input,select{
+      width:100%; padding:12px 16px; border-radius:16px; font-size:16px;
+      background:#fff; color:var(--text); border:1px solid rgba(2,6,23,0.14);
+      box-shadow:0 4px 10px rgba(2,6,23,0.04); margin-bottom:14px; outline:none; box-sizing:border-box;
+    }
+    button{
+      padding:10px 18px; cursor:pointer; border-radius:12px; border:none; font-weight:800;
+      background:var(--row); color:var(--text);
+    }
+    .toggle-btn{width:100%;background:var(--blue);color:#fff;padding:14px}
+    .open-btn{background:var(--ok);color:#fff;padding:14px;width:100%}
+    .close-btn{background:var(--danger);color:#fff;padding:14px;width:100%}
+    .add-btn{background:var(--ok);color:#fff;width:100%;padding:16px;margin-top:8px;font-size:1.05em}
+    .delete-btn{background:var(--danger);color:#fff;font-size:0.9em;padding:8px 12px}
+    .ghost-btn{background:#fff;border:1px solid rgba(2,6,23,0.12)}
+    .warn-btn{background:var(--warn);color:#fff;font-size:0.9em;padding:8px 12px}
+    .ok-btn{background:var(--ok);color:#fff;font-size:0.9em;padding:8px 12px}
+    .muted{color:var(--muted)}
+    .res-setter{
+      display:grid; grid-template-columns:1fr 2fr; align-items:center;
+      margin:10px 0; padding:10px 12px; background:var(--row); border-radius:12px; gap:10px;
+    }
+    .res-setter span{font-weight:700;color:var(--muted);text-align:left}
+    .val{color:var(--blue);font-weight:900;min-width:40px;display:inline-block;font-size:1.15em}
+    .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .shop-item{
+      background:var(--card); padding:16px; border-radius:14px; margin-top:12px;
+      border:1px solid rgba(2,6,23,0.08); box-shadow:0 4px 12px var(--shadow);
+      display:grid; grid-template-columns:72px 1fr auto; gap:12px; align-items:center;
+    }
+    @media (max-width:640px){.shop-item{grid-template-columns:72px 1fr}.item-actions{grid-column:1 / -1;justify-content:flex-start}}
+    .shop-item.disabled{opacity:.72; background:linear-gradient(180deg,#fff,#f8fafc)}
+    .item-info{text-align:left;min-width:0}
+    .item-name{font-weight:900;display:block;margin-bottom:4px;font-size:1.02em}
+    .item-meta{font-size:0.9em;font-weight:600;color:var(--muted);line-height:1.45}
+    .item-img{
+      width:72px;height:72px;object-fit:cover;border-radius:12px;
+      border:1px solid rgba(2,6,23,0.08); box-shadow:0 6px 16px rgba(2,6,23,0.10);
+      background:rgba(2,6,23,0.04);
+    }
+    .item-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+      font-size:12px;font-weight:900;border:1px solid rgba(2,6,23,0.08);margin-bottom:6px;
+    }
+    .badge.ok{background:rgba(34,197,94,.10);color:#166534}
+    .badge.off{background:rgba(239,68,68,.10);color:#991b1b}
+    .empty{
+      background:#fff; padding:18px; border-radius:14px; border:1px dashed rgba(2,6,23,0.15);
+      color:var(--muted);
+    }
+    #gate{position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(8px);
+      display:flex;align-items:center;justify-content:center;z-index:9999;}
+    .gate-card{width:min(360px,92vw);background:var(--card);padding:30px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);}
+    .hint{font-size:13px;line-height:1.5;color:var(--muted)}
+    .section-title{border-left:4px solid var(--blue); padding-left:10px; margin:6px 0 14px; text-align:left}
+  </style>
+</head>
+
+<body data-page="shop">
+
+<div id="gate">
+  <div class="gate-card">
+    <h2 style="margin-top:0;">🛒 商店管理</h2>
+    <p class="hint">請輸入管理員密碼</p>
+    <input id="shopPass" type="password" placeholder="••••••">
+    <button id="btnShopEnter" class="add-btn" style="margin-top:0;">進入系統</button>
+    <div class="hint" style="margin-top:10px;">密碼可在檔案內的 <b>SHOP_ADMIN_PASSWORD</b> 修改。</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1><i class="fas fa-store-cog" style="color:var(--blue);"></i> 商店管理</h1>
+
+  <div id="shop-status" class="status-bar closed">載入中...</div>
+
+  <div class="toolbar">
+    <button class="open-btn" id="btnOpenShop"><i class="fas fa-door-open"></i> 開店</button>
+    <button class="close-btn" id="btnCloseShop"><i class="fas fa-door-closed"></i> 關店</button>
+  </div>
+  <button class="toggle-btn" id="btnToggleShop"><i class="fas fa-power-off"></i> 切換商店開關</button>
+
+  <div class="config-card">
+    <div class="head-row">
+      <h3 style="margin:0;"><i class="fas fa-plus-circle" style="color:var(--ok);"></i> 新增商品</h3>
+      <span class="muted" id="editModeText">新增後預設為「上架」</span>
+    </div>
+
+    <input type="text" id="itemName" placeholder="商品名稱 (如：高級別墅)">
+    <input type="text" id="itemImageUrl" placeholder="圖片網址 (https://...)">
+
+    <select id="itemImageLocal">
+      <option value="">（不選本地圖片）</option>
+    </select>
+
+    <img id="itemImagePreview"
+         style="display:none; width:100%; max-height:180px; object-fit:contain; border-radius:12px; margin-bottom:16px; box-shadow:0 6px 16px rgba(0,0,0,0.12);" />
+
+    <div id="res-inputs"></div>
+
+    <div class="res-setter" style="margin-top:15px; background: rgba(251, 191, 36, 0.1);">
+      <span style="color:var(--warn)"><i class="fas fa-trophy"></i> 獲得分數</span>
+      <div>
+        <button type="button" onclick="updateBonus(-1)">-</button>
+        <span class="val" id="t-score" style="color:var(--warn)">0</span>
+        <button type="button" onclick="updateBonus(1)">+</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="add-btn" id="btnAddItem" style="flex:1;"><i class="fas fa-upload"></i> 確認上架商品</button><button class="ghost-btn" id="btnCancelEdit" style="display:none;flex:1;padding:16px;"><i class="fas fa-xmark"></i> 取消編輯</button></div>
+  </div>
+
+  <div style="text-align:left;">
+    <div class="head-row">
+      <h3 class="section-title">目前商品清單</h3>
+      <span class="muted">每個商品旁邊都有「上架 / 下架 / 刪除」</span>
+    </div>
+    <div id="items-display"></div>
+  </div>
+</div>
+
+<script>
+  const SHOP_ADMIN_PASSWORD = "1234"; // ← 這裡可自行改密碼
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+    authDomain: "try-something-ddd1e.firebaseapp.com",
+    databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "try-something-ddd1e",
+    storageBucket: "try-something-ddd1e.firebasestorage.app",
+    messagingSenderId: "245905464126",
+    appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const RES_KEYS = ["money","health","knowledge","social","time"];
+  const RES_LABELS = {
+    money:"金錢",
+    health:"健康",
+    knowledge:"知識",
+    social:"人際",
+    time:"時間"
+  };
+
+  const t = { money:0, health:0, knowledge:0, social:0, time:0, score:0 };
+  let editingItemId = null;
+  let latestItemsMap = {};
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function updateBonus(delta){
+    t.score = Math.max(0, Number(t.score || 0) + delta);
+    document.getElementById("t-score").textContent = t.score;
+  }
+  window.updateBonus = updateBonus;
+
+  function updateRes(key, delta){
+    t[key] = Math.max(0, Number(t[key] || 0) + delta);
+    document.getElementById("t-" + key).textContent = t[key];
+  }
+  window.updateRes = updateRes;
+
+  function renderResInputs(){
+    const wrap = document.getElementById("res-inputs");
+    wrap.innerHTML = RES_KEYS.map(key => `
+      <div class="res-setter">
+        <span>${RES_LABELS[key]}</span>
+        <div>
+          <button type="button" onclick="updateRes('${key}', -1)">-</button>
+          <span class="val" id="t-${key}">0</span>
+          <button type="button" onclick="updateRes('${key}', 1)">+</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function buildLocalImageOptions(){
+    const sel = document.getElementById("itemImageLocal");
+    const opts = ['<option value="">（不選本地圖片）</option>'];
+    for(let i=1;i<=40;i++){
+      const n = String(i).padStart(3,'0');
+      opts.push(`<option value="./images/shop/${n}.jpg">${n}.jpg</option>`);
+    }
+    sel.innerHTML = opts.join("");
+  }
+
+  function getChosenImage(){
+    const url = document.getElementById("itemImageUrl").value.trim();
+    const local = document.getElementById("itemImageLocal").value.trim();
+    return url || local || "";
+  }
+
+  function refreshPreview(){
+    const src = getChosenImage();
+    const img = document.getElementById("itemImagePreview");
+    if(!src){
+      img.style.display = "none";
+      img.removeAttribute("src");
+      return;
+    }
+    img.src = src;
+    img.style.display = "block";
+  }
+
+  async function setShopEnabled(enabled){
+    await db.ref("system").update({
+      shopEnabled: !!enabled,
+      shopToggleAt: Date.now()
+    });
+  }
+
+  function bindShopStatus(){
+    const statusEl = document.getElementById("shop-status");
+    db.ref("system/shopEnabled").on("value", snap=>{
+      const enabled = snap.val() !== false;
+      statusEl.className = "status-bar " + (enabled ? "open" : "closed");
+      statusEl.innerHTML = enabled
+        ? '✅ 商店開啟（所有玩家可購買）'
+        : '⛔ 商店關閉（所有玩家不可購買）';
+    });
+  }
+
+  function setFormValuesFromItem(item){
+    document.getElementById("itemName").value = item.name || "";
+    const image = item.imageUrl || "";
+    const localSel = document.getElementById("itemImageLocal");
+    const urlInput = document.getElementById("itemImageUrl");
+    if(image && image.startsWith("./images/shop/")){
+      localSel.value = image;
+      urlInput.value = "";
+    }else{
+      urlInput.value = image;
+      localSel.value = "";
+    }
+
+    for(const k of [...RES_KEYS,"score"]){
+      t[k] = 0;
+    }
+    const cost = (item.cost && typeof item.cost === "object") ? item.cost : {};
+    for(const k of RES_KEYS){
+      t[k] = Number(cost[k] || 0);
+      const el = document.getElementById("t-" + k);
+      if(el) el.textContent = String(t[k]);
+    }
+    t.score = Number(item.bonus || 0);
+    const scoreEl = document.getElementById("t-score");
+    if(scoreEl) scoreEl.textContent = String(t.score);
+
+    refreshPreview();
+  }
+
+  function clearForm(){
+    editingItemId = null;
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemImageUrl").value = "";
+    document.getElementById("itemImageLocal").value = "";
+    for(const k of [...RES_KEYS,"score"]){
+      t[k] = 0;
+      const el = document.getElementById("t-" + k);
+      if(el) el.textContent = "0";
+    }
+    document.getElementById("btnAddItem").innerHTML = '<i class="fas fa-upload"></i> 確認上架商品';
+    document.getElementById("btnCancelEdit").style.display = "none";
+    document.getElementById("editModeText").textContent = '新增後預設為「上架」';
+    refreshPreview();
+  }
+
+  async function saveItem(){
+    const name = document.getElementById("itemName").value.trim();
+    const image = getChosenImage();
+    if(!name) return alert("請輸入商品名稱");
+
+    const cost = {};
+    for(const key of RES_KEYS){
+      const v = Number(t[key] || 0);
+      if(v > 0) cost[key] = v;
+    }
+
+    const payload = {
+      name,
+      imageUrl: image,
+      cost,
+      bonus: Number(t.score || 0),
+      updatedAt: Date.now()
+    };
+
+    if(editingItemId){
+      await db.ref("shop/items/" + editingItemId).update(payload);
+      alert("✅ 商品已更新，不用重新上架");
+    }else{
+      payload.enabled = true;
+      payload.createdAt = Date.now();
+      await db.ref("shop/items").push(payload);
+      alert("✅ 商品已上架");
+    }
+
+    clearForm();
+  }
+
+  async function editItem(id){
+    const item = latestItemsMap[id];
+    if(!item) return alert("找不到商品資料");
+    editingItemId = id;
+    setFormValuesFromItem(item);
+    document.getElementById("btnAddItem").innerHTML = '<i class="fas fa-floppy-disk"></i> 儲存商品修改';
+    document.getElementById("btnCancelEdit").style.display = "block";
+    document.getElementById("editModeText").textContent = '目前正在編輯已上架商品：' + (item.name || id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  window.editItem = editItem;
+
+  function formatCost(cost){
+    const obj = cost && typeof cost === "object" ? cost : {};
+    const parts = Object.keys(obj)
+      .filter(k => Number(obj[k] || 0) > 0)
+      .map(k => `${RES_LABELS[k] || k}:${Number(obj[k] || 0)}`);
+    return parts.length ? parts.join(" / ") : "免費";
+  }
+
+  async function setItemEnabled(id, enabled){
+    await db.ref("shop/items/" + id).update({
+      enabled: !!enabled,
+      updatedAt: Date.now()
+    });
+  }
+  window.setItemEnabled = setItemEnabled;
+
+  async function deleteItem(id){
+    if(!confirm("確定刪除這個商品？")) return;
+    await db.ref("shop/items/" + id).remove();
+  }
+  window.deleteItem = deleteItem;
+
+  function bindItems(){
+    const list = document.getElementById("items-display");
+    db.ref("shop/items").on("value", snap=>{
+      const obj = snap.val() || {};
+      const items = Object.entries(obj)
+        .map(([id, v]) => ({ id, ...(v || {}) }))
+        .sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      latestItemsMap = {};
+      items.forEach(it => { latestItemsMap[it.id] = it; });
+
+      if(!items.length){
+        list.innerHTML = `<div class="empty">目前沒有商品</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(it=>{
+        const enabled = it.enabled !== false;
+        const badge = enabled
+          ? `<span class="badge ok"><i class="fas fa-circle-check"></i> 上架中</span>`
+          : `<span class="badge off"><i class="fas fa-circle-minus"></i> 已下架</span>`;
+        const img = it.imageUrl
+          ? `<img class="item-img" src="${esc(it.imageUrl)}" alt="" onerror="this.style.visibility='hidden'">`
+          : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;">🛍️</div>`;
+
+        return `
+          <div class="shop-item ${enabled ? '' : 'disabled'}">
+            ${img}
+            <div class="item-info">
+              ${badge}
+              <span class="item-name">${esc(it.name || it.id)}</span>
+              <div class="item-meta">代價：${esc(formatCost(it.cost))}</div>
+              <div class="item-meta">分數：${Number(it.bonus || 0)}</div>
+            </div>
+            <div class="item-actions">
+              <button class="ghost-btn" onclick="editItem('${esc(it.id)}')"><i class="fas fa-pen"></i> 編輯</button>
+              ${enabled
+                ? `<button class="warn-btn" onclick="setItemEnabled('${esc(it.id)}', false)"><i class="fas fa-eye-slash"></i> 下架</button>`
+                : `<button class="ok-btn" onclick="setItemEnabled('${esc(it.id)}', true)"><i class="fas fa-eye"></i> 上架</button>`
+              }
+              <button class="delete-btn" onclick="deleteItem('${esc(it.id)}')"><i class="fas fa-trash"></i> 刪除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    });
+  }
+
+  function bindGate(){
+    const gate = document.getElementById("gate");
+    const pass = document.getElementById("shopPass");
+    const enter = () => {
+      if(pass.value === SHOP_ADMIN_PASSWORD){
+        gate.style.display = "none";
+      }else{
+        alert("密碼錯誤");
+      }
+    };
+    document.getElementById("btnShopEnter").addEventListener("click", enter);
+    pass.addEventListener("keydown", e => { if(e.key === "Enter") enter(); });
+  }
+
+  document.getElementById("btnOpenShop").addEventListener("click", ()=> setShopEnabled(true));
+  document.getElementById("btnCloseShop").addEventListener("click", ()=> setShopEnabled(false));
+  document.getElementById("btnToggleShop").addEventListener("click", async ()=>{
+    const cur = (await db.ref("system/shopEnabled").get()).val();
+    await setShopEnabled(cur === false);
+  });
+  document.getElementById("btnAddItem").addEventListener("click", saveItem);
+  document.getElementById("btnCancelEdit").addEventListener("click", clearForm);
+  document.getElementById("itemImageUrl").addEventListener("input", refreshPreview);
+  document.getElementById("itemImageLocal").addEventListener("change", refreshPreview);
+
+  bindGate();
+  renderResInputs();
+  buildLocalImageOptions();
+  refreshPreview();
+  bindShopStatus();
+  bindItems();
+</script>
+</body>
+</html>
