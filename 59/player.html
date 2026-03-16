@@ -513,7 +513,12 @@ max-width:90%;
   /* ===== inventory ===== */
   .achGrid{display:grid;grid-template-columns: repeat(3, minmax(0,1fr));gap:10px}
   .ach{border:1px solid rgba(2,6,23,.10);background: rgba(2,6,23,.03);border-radius:14px;padding:10px 8px;text-align:center;}
-  .ach .icon{font-size:20px}
+  .ach .icon{
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:60px;
+}
   .ach .name{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.2}
   .empty{color:var(--muted);font-size:13px;padding:6px 2px}
 
@@ -1396,26 +1401,43 @@ function bindAchievements(){
   const emptyEl = document.getElementById("achievements-empty");
 
   db.ref(`players/p${myId}/inventory`).on("value", s=>{
-    const data = s.val();
-    const items = [];
-    if(data && typeof data==="object"){
-      for(const key of Object.keys(data)){
-        const it = data[key];
-        if(it && it.name) items.push(it.name);
-      }
-    }
+
+    const data = s.val() || {};
+    const items = Object.values(data);
+
     if(!items.length){
-      listEl.innerHTML = "";
+      listEl.innerHTML="";
       emptyEl.classList.remove("hide");
       return;
     }
+
     emptyEl.classList.add("hide");
-    listEl.innerHTML = items.map(name=>`
+
+    listEl.innerHTML = items.map(it=>{
+
+      const name = it.name || "未命名";
+      const qty = Number(it.qty || 1);
+      const img = it.imageUrl || "";
+
+      return `
       <div class="ach">
-        <div class="icon">🏅</div>
-        <div class="name">${escapeHtml(String(name))}</div>
+
+        <div class="icon">
+          ${
+            img
+            ? `<img src="${img}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;">`
+            : "🏅"
+          }
+        </div>
+
+        <div class="name">${escapeHtml(name)}</div>
+
+        <div class="chip">x${qty}</div>
+
       </div>
-    `).join("");
+      `;
+
+    }).join("");
   });
 }
 
@@ -1532,7 +1554,18 @@ window.buyItem = async (itemId)=>{
     });
   }
 
-  await db.ref(`players/p${myId}/inventory`).push({ name, imageUrl: imgSrc, time: Date.now() });
+  const invKey = sanitizeKey(itemId || name);
+
+await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
+  const old = cur || {};
+
+  return {
+    name: name,
+    imageUrl: imgSrc || "",
+    qty: Number(old.qty || 0) + 1,
+    updatedAt: Date.now()
+  };
+});
 
   await db.ref("purchaseFeed").push({
     playerId: myId,
