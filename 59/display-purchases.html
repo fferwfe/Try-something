@@ -191,12 +191,20 @@
       renderPlayersBoard(_lastPlayersCache || {});
     });
 
-    /* ========= 手動更新：一次性讀取 ========= */
+    /* ========= 輕量更新（15 玩家版） ========= */
     let _lastPlayersCache = null;
+    let _refreshBusy = false;
+    let _refreshTimer = null;
+    let _lastFeedKey = "";
 
-    async function refreshAll(){
-      btnRefresh.disabled = true;
-      btnRefresh.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 更新中…';
+    async function refreshAll(opts = {}){
+      const silent = !!opts.silent;
+      if(_refreshBusy) return;
+      _refreshBusy = true;
+      if(!silent){
+        btnRefresh.disabled = true;
+        btnRefresh.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 更新中…';
+      }
       try{
         // 1) controls
         const controlsSnap = await db.ref("controls").get();
@@ -218,18 +226,31 @@
         // 5) purchaseFeed（一次性抓最近 20 筆，噴一次彈幕）
         const feedSnap = await db.ref("purchaseFeed").limitToLast(20).get();
         const feedVal = feedSnap.val() || {};
-        sprayDanmakuFromFeed(feedVal);
+        const feedKeys = Object.keys(feedVal);
+        const newestFeedKey = feedKeys.length ? feedKeys.sort().slice(-1)[0] : "";
+        if(newestFeedKey && newestFeedKey !== _lastFeedKey){
+          sprayDanmakuFromFeed(feedVal);
+        }
+        _lastFeedKey = newestFeedKey;
 
       }catch(err){
         console.error(err);
         alert("更新失敗：" + (err?.message || err));
       }finally{
-        btnRefresh.disabled = false;
-        btnRefresh.innerHTML = '<i class="fas fa-rotate"></i> 更新';
+        _refreshBusy = false;
+        if(!silent){
+          btnRefresh.disabled = false;
+          btnRefresh.innerHTML = '<i class="fas fa-rotate"></i> 更新';
+        }
       }
     }
 
-    btnRefresh.addEventListener("click", refreshAll);
+    btnRefresh.addEventListener("click", ()=>refreshAll({ silent:false }));
+
+    function startAutoRefresh(){
+      if(_refreshTimer) clearInterval(_refreshTimer);
+      _refreshTimer = setInterval(()=> refreshAll({ silent:true }), 8000);
+    }
 
     /* ========= apply: controls / marquee / timer ========= */
     function applyControls(c){
@@ -333,34 +354,41 @@
         `;
       });
 
-      // 右：背包（固定 pid 1..12）
+      // 右：背包（固定 pid 1..15）
       const purchases = document.getElementById("purchases-list");
       purchases.innerHTML = "";
 
       const fixed = [...arr].sort((a,b)=>a.pid-b.pid);
       fixed.forEach(p=>{
         const inv = p.inventory || {};
-        const items = Object.keys(inv).map(k=>inv[k]).filter(Boolean);
-        items.sort((a,b)=> safeVal(b.time)-safeVal(a.time));
+        const groupedItems = Object.keys(inv).map(k=>({
+          key:k,
+          ...(inv[k] || {})
+        })).filter(Boolean);
+
+        groupedItems.sort((a,b)=> safeVal(b.updatedAt || b.time)-safeVal(a.updatedAt || a.time));
+
+        const totalQty = groupedItems.reduce((sum,it)=> sum + Math.max(1, safeVal(it.qty || 1)), 0);
 
         purchases.innerHTML += `
           <div class="buy-card">
             <div class="buy-head">
               <div class="buy-name"><i class="fas fa-user"></i> ${p.name}</div>
-              <div class="buy-count">${items.length} 件</div>
+              <div class="buy-count">${totalQty} 件</div>
             </div>
             <div class="buy-items">
-              ${items.slice(0,12).map(it=>{
+              ${groupedItems.slice(0,12).map(it=>{
                 const nm = it.name || "未命名";
                 const img = (it.imageUrl||"").trim();
+                const qty = Math.max(1, safeVal(it.qty || 1));
                 return `
-                  <div class="chip" title="${nm}">
+                  <div class="chip" title="${nm} ×${qty}">
                     ${img ? `<img src="${img}" alt="${nm}">` : `<div class="icon">🛍️</div>`}
-                    <span>${nm}</span>
+                    <span>${nm} ×${qty}</span>
                   </div>
                 `;
               }).join("")}
-              ${items.length>12 ? `<div class="chip"><div class="icon">…</div><span>+${items.length-12}</span></div>` : ""}
+              ${groupedItems.length>12 ? `<div class="chip"><div class="icon">…</div><span>+${groupedItems.length-12} 種</span></div>` : ""}
             </div>
           </div>
         `;
