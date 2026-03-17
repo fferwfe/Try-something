@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>知識大挑戰｜闖關版</title>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+  <style>
+    :root{
+      --bg1:#eef5ff;
+      --bg2:#f8fbff;
+      --card:#ffffff;
+      --line:#dbe7ff;
+      --text:#183153;
+      --muted:#6b7a90;
+      --blue:#1a73e8;
+      --blue2:#4ea1ff;
+      --orange:#ff9800;
+      --green:#20b15a;
+      --red:#e74c3c;
+      --gold:#ffb300;
+      --shadow:0 18px 40px rgba(26,115,232,.12);
+      --radius:22px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    body{
+      font-family:"Microsoft JhengHei", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, #dbeaff 0%, transparent 30%),
+        radial-gradient(circle at top right, #e8f2ff 0%, transparent 25%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      padding:18px;
+    }
+
+    .app{
+      width:min(760px, 100%);
+      background:rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      border:1px solid rgba(255,255,255,.65);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .top-deco{
+      height:10px;
+      background:linear-gradient(90deg, var(--blue), var(--blue2), var(--gold), var(--orange), var(--red));
+    }
+
+    .screen{
+      padding:24px;
+      display:none;
+    }
+    .screen.active{ display:block; }
+
+    .hero{
+      text-align:center;
+      padding:10px 6px 4px;
+    }
+    .hero h1{
+      margin:8px 0 10px;
+      font-size:2rem;
+      line-height:1.2;
+      color:var(--blue);
+    }
+    .hero p{
+      margin:0 auto 14px;
+      color:var(--muted);
+      line-height:1.7;
+      max-width:560px;
+    }
+
+    .badge-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+      margin:18px 0 8px;
+    }
+    .badge{
+      background:#f1f7ff;
+      border:1px solid var(--line);
+      color:#28558f;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:700;
+      font-size:.95rem;
+    }
+
+    .panel{
+      background:var(--card);
+      border:1px solid #edf2ff;
+      border-radius:var(--radius);
+      padding:18px;
+      margin-top:16px;
+      box-shadow:0 8px 24px rgba(29,78,216,.06);
+    }
+
+    .section-title{
+      margin:0 0 10px;
+      font-weight:900;
+      font-size:1.05rem;
+      color:#24497d;
+    }
+
+    .rule-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .rule-card{
+      background:#f8fbff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .rule-card strong{
+      display:block;
+      margin-bottom:6px;
+      color:#234c8c;
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      border-radius:16px;
+      padding:16px 18px;
+      font-size:1.05rem;
+      font-weight:900;
+      cursor:pointer;
+      transition:.18s ease;
+      width:100%;
+    }
+    .btn:hover{ transform:translateY(-1px); }
+    .btn:active{ transform:translateY(0); }
+
+    .btn-primary{
+      background:linear-gradient(135deg, var(--blue), var(--blue2));
+      color:#fff;
+      box-shadow:0 10px 22px rgba(26,115,232,.24);
+    }
+
+    .btn-orange{
+      background:linear-gradient(135deg, #ff9800, #ffb74d);
+      color:#fff;
+      box-shadow:0 10px 22px rgba(255,152,0,.22);
+    }
+
+    .btn-ghost{
+      background:#f4f8ff;
+      color:#235087;
+      border:1px solid var(--line);
+    }
+
+    .btn-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-top:16px;
+    }
+
+    .quiz-top{
+      display:grid;
+      gap:14px;
+    }
+
+    .status-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+
+    .status-card{
+      background:#f8fbff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px 10px;
+      text-align:center;
+    }
+    .status-card .k{
+      color:var(--muted);
+      font-size:.84rem;
+      margin-bottom:6px;
+      font-weight:700;
+    }
+    .status-card .v{
+      font-size:1.15rem;
+      font-weight:900;
+      color:#20487e;
+    }
+
+    .progress-wrap{
+      display:grid;
+      gap:10px;
+    }
+
+    .progress-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      font-weight:900;
+      color:#295389;
+    }
+
+    .bar{
+      width:100%;
+      height:14px;
+      background:#e7eefc;
+      border-radius:999px;
+      overflow:hidden;
+    }
+
+    .bar > div{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      transition:width .25s ease;
+    }
+
+    #time-bar{
+      background:linear-gradient(90deg, #20b15a, #ffb300, #ef5350);
+      width:100%;
+    }
+
+    #stage-bar{
+      background:linear-gradient(90deg, #1a73e8, #69adff);
+      width:0%;
+    }
+
+    .question-box{
+      background:linear-gradient(180deg, #ffffff, #fbfdff);
+      border:1px solid #e9f0ff;
+      border-radius:26px;
+      padding:20px;
+      box-shadow:0 10px 24px rgba(23,72,156,.06);
+    }
+
+    .stage-banner{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:#edf5ff;
+      border:1px solid var(--line);
+      color:#24508a;
+      font-size:.92rem;
+      font-weight:900;
+      margin-bottom:14px;
+    }
+
+    .question{
+      font-size:1.45rem;
+      font-weight:900;
+      line-height:1.65;
+      margin-bottom:18px;
+      color:#1e3557;
+    }
+
+    .options{
+      display:grid;
+      gap:12px;
+    }
+
+    .opt-btn{
+      width:100%;
+      text-align:left;
+      border:2px solid #e7eefb;
+      background:#fff;
+      border-radius:18px;
+      padding:15px 16px;
+      font-size:1rem;
+      line-height:1.5;
+      cursor:pointer;
+      transition:.18s ease;
+      color:#1d3557;
+      font-weight:700;
+    }
+    .opt-btn:hover:not(:disabled){
+      border-color:#8ab8ff;
+      background:#f3f8ff;
+      transform:translateY(-1px);
+    }
+    .opt-btn:disabled{ cursor:default; }
+
+    .opt-btn.correct{
+      background:#eaf8ef !important;
+      border-color:#20b15a !important;
+      color:#136b36 !important;
+    }
+
+    .opt-btn.wrong{
+      background:#fdeeee !important;
+      border-color:#e74c3c !important;
+      color:#9d2c21 !important;
+    }
+
+    .result-msg{
+      min-height:32px;
+      text-align:center;
+      margin-top:16px;
+      font-weight:900;
+      font-size:1.08rem;
+    }
+
+    .legend{
+      margin-top:14px;
+      color:var(--muted);
+      text-align:center;
+      line-height:1.7;
+      font-size:.95rem;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(14,31,58,.35);
+      backdrop-filter: blur(4px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:999;
+    }
+    .overlay.show{ display:flex; }
+
+    .overlay-card{
+      width:min(420px, 100%);
+      background:#fff;
+      border-radius:28px;
+      padding:28px 24px;
+      text-align:center;
+      box-shadow:0 24px 60px rgba(0,0,0,.16);
+      animation:popIn .28s ease;
+    }
+
+    @keyframes popIn{
+      from{ transform:scale(.92) translateY(8px); opacity:0; }
+      to{ transform:scale(1) translateY(0); opacity:1; }
+    }
+
+    .overlay-emoji{
+      font-size:3rem;
+      margin-bottom:10px;
+    }
+
+    .overlay-title{
+      font-size:1.55rem;
+      font-weight:900;
+      color:#22508a;
+      margin-bottom:8px;
+    }
+
+    .overlay-desc{
+      color:var(--muted);
+      line-height:1.7;
+      margin-bottom:18px;
+    }
+
+    .final-head{
+      text-align:center;
+      padding-top:6px;
+    }
+
+    .final-head h2{
+      font-size:2rem;
+      color:var(--blue);
+      margin:8px 0 10px;
+    }
+
+    .timeout{
+      color:var(--red);
+      font-size:1.25rem;
+      font-weight:900;
+      margin-bottom:10px;
+    }
+
+    .score-ring{
+      width:180px;
+      height:180px;
+      margin:18px auto;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at center, white 57%, transparent 58%),
+        conic-gradient(var(--blue) 0deg, var(--blue2) 0deg, #e8eefc 0deg);
+      box-shadow:0 14px 30px rgba(26,115,232,.14);
+    }
+
+    .score-ring-inner{
+      text-align:center;
+    }
+
+    .score-ring-inner .big{
+      font-size:2.2rem;
+      font-weight:900;
+      color:#19457c;
+      line-height:1;
+    }
+    .score-ring-inner .small{
+      margin-top:6px;
+      color:var(--muted);
+      font-weight:700;
+    }
+
+    .final-rank{
+      text-align:center;
+      font-size:1.45rem;
+      font-weight:900;
+      color:#234f88;
+      margin-bottom:12px;
+    }
+
+    .final-msg{
+      text-align:center;
+      color:var(--muted);
+      line-height:1.8;
+      max-width:560px;
+      margin:0 auto 12px;
+    }
+
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .summary-card{
+      background:#f8fbff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px 10px;
+      text-align:center;
+    }
+    .summary-card .k{
+      color:var(--muted);
+      font-size:.84rem;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    .summary-card .v{
+      color:#1d497f;
+      font-size:1.12rem;
+      font-weight:900;
+    }
+
+    .footer-tip{
+      margin-top:16px;
+      text-align:center;
+      color:var(--muted);
+      font-size:.94rem;
+      line-height:1.7;
+    }
+
+    @media (max-width: 720px){
+      .screen{ padding:18px; }
+      .hero h1{ font-size:1.72rem; }
+      .question{ font-size:1.18rem; }
+      .status-grid, .summary-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .rule-grid{ grid-template-columns:1fr; }
+      .btn-row{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-deco"></div>
+
+    <section class="screen active" id="start-screen">
+      <div class="hero">
+        <div style="font-size:3rem;">📘⏱️</div>
+        <h1>知識大挑戰</h1>
+        <p>
+          這是一個結合生活知識、認知判斷與觀察理解的闖關測驗。
+          全程固定 <strong>50 題</strong>、總限時 <strong>300 秒</strong>，共分成 <strong>5 關</strong>。
+        </p>
+      </div>
+
+      <div class="badge-row">
+        <div class="badge">固定 50 題</div>
+        <div class="badge">總限時 300 秒</div>
+        <div class="badge">共 5 關</div>
+        <div class="badge">每關 10 題</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">遊戲規則</div>
+        <div class="rule-grid">
+          <div class="rule-card"><strong>① 闖關模式</strong>共 50 題，分成 5 關，每 10 題一關。</div>
+          <div class="rule-card"><strong>② 計時機制</strong>總共 300 秒，時間到會自動結算成績。</div>
+          <div class="rule-card"><strong>③ 作答方式</strong>每題只有 1 個正確答案，答完才能進入下一題。</div>
+          <div class="rule-card"><strong>④ 最終評級</strong>依正確題數給予稱號，例如：知識王者、挑戰高手。</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">評級標準</div>
+        <div class="rule-grid">
+          <div class="rule-card"><strong>45–50 題</strong>👑 知識王者</div>
+          <div class="rule-card"><strong>35–44 題</strong>🌟 挑戰高手</div>
+          <div class="rule-card"><strong>25–34 題</strong>👍 不錯的觀察者</div>
+          <div class="rule-card"><strong>0–24 題</strong>🙂 再接再厲</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="startGame()">開始挑戰</button>
+        <button class="btn btn-ghost" onclick="toggleSound()"><span id="sound-btn-text">音效：開啟</span></button>
+      </div>
+
+      <div class="footer-tip">目前已由 Player 頁面導入。完成後可回玩家頁。</div>
+    </section>
+
+    <section class="screen" id="quiz-screen">
+      <div class="quiz-top">
+        <div class="status-grid">
+          <div class="status-card"><div class="k">目前關卡</div><div class="v" id="stage-text">第 1 關</div></div>
+          <div class="status-card"><div class="k">題目進度</div><div class="v" id="progress-text">1 / 50</div></div>
+          <div class="status-card"><div class="k">目前得分</div><div class="v" id="score-text">0</div></div>
+          <div class="status-card"><div class="k">剩餘秒數</div><div class="v" id="time-text">300</div></div>
+        </div>
+
+        <div class="panel progress-wrap">
+          <div class="progress-head"><span>總時間</span><span id="time-label">300 秒</span></div>
+          <div class="bar"><div id="time-bar"></div></div>
+          <div class="progress-head" style="margin-top:6px;"><span>本關進度</span><span id="stage-progress-text">1 / 10</span></div>
+          <div class="bar"><div id="stage-bar"></div></div>
+        </div>
+
+        <div class="question-box">
+          <div class="stage-banner" id="stage-banner">🏁 第 1 關｜暖身關</div>
+          <div class="question" id="question-text"></div>
+          <div class="options" id="option-container"></div>
+          <div class="result-msg" id="result-msg"></div>
+          <button class="btn btn-orange" id="next-btn" style="display:none; margin-top:14px;" onclick="nextQuestion()">下一題</button>
+          <div class="legend">總限時 300 秒，時間到會直接結算。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="final-screen">
+      <div class="final-head">
+        <div id="timeout-msg" class="timeout" style="display:none;">⏰ 時間到，挑戰結束</div>
+        <div style="font-size:3rem;">🏆</div>
+        <h2 id="final-title">挑戰完成</h2>
+      </div>
+
+      <div class="score-ring" id="score-ring">
+        <div class="score-ring-inner">
+          <div class="big" id="final-score">0 / 50</div>
+          <div class="small">答對題數</div>
+        </div>
+      </div>
+
+      <div class="final-rank" id="final-rank">🙂 再接再厲</div>
+      <div class="final-msg" id="final-msg"></div>
+
+      <div class="summary-grid">
+        <div class="summary-card"><div class="k">正確題數</div><div class="v" id="sum-correct">0</div></div>
+        <div class="summary-card"><div class="k">錯誤題數</div><div class="v" id="sum-wrong">0</div></div>
+        <div class="summary-card"><div class="k">剩餘秒數</div><div class="v" id="sum-time">0</div></div>
+        <div class="summary-card"><div class="k">完成題數</div><div class="v" id="sum-reached">0</div></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="restartGame()">重新挑戰</button>
+        <button class="btn btn-ghost" onclick="goStart()">回玩家頁</button>
+      </div>
+
+      <div class="footer-tip" id="player-info-tip">玩家：-</div>
+    </section>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-card">
+      <div class="overlay-emoji" id="overlay-emoji">🎉</div>
+      <div class="overlay-title" id="overlay-title">準備開始！</div>
+      <div class="overlay-desc" id="overlay-desc">全程 50 題，總限時 300 秒。</div>
+      <button class="btn btn-primary" onclick="closeOverlay()">繼續</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+      authDomain: "try-something-ddd1e.firebaseapp.com",
+      databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "try-something-ddd1e",
+      storageBucket: "try-something-ddd1e.firebasestorage.app",
+      messagingSenderId: "245905464126",
+      appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f",
+      measurementId: "G-CG44LW3L84"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function getNowTime(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mi = String(d.getMinutes()).padStart(2, "0");
+      const ss = String(d.getSeconds()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function getPlayerQuizPath(pid){
+      return `players/p${pid}/quiz/knowledgeChallenge`;
+    }
+
+    function getPlayerInfo(){
+      const params = new URLSearchParams(location.search);
+      const pid = params.get("pid") || localStorage.getItem("pid") || sessionStorage.getItem("pid") || "guest";
+      const playerName = params.get("name") || localStorage.getItem("playerName") || sessionStorage.getItem("playerName") || `玩家${pid}`;
+      return { pid, playerName };
+    }
+
+    async function getQuizMeta(){
+      const { pid } = getPlayerInfo();
+      try{
+        const snap = await db.ref(getPlayerQuizPath(pid)).get();
+        return snap.val() || {};
+      }catch(e){
+        console.error("讀取測驗狀態失敗：", e);
+        return {};
+      }
+    }
+
+    async function lockQuizOnStart(){
+      const { pid, playerName } = getPlayerInfo();
+      const ref = db.ref(getPlayerQuizPath(pid));
+      const tx = await ref.transaction(cur => {
+        cur = cur || {};
+        if(cur.hasStarted || cur.hasPlayed) return;
+        return {
+          ...cur,
+          hasStarted: true,
+          startedAt: getNowTime(),
+          startedAtTs: Date.now(),
+          playerName
+        };
+      });
+      return tx.committed;
+    }
+
+    async function saveQuizResultToBackend(result){
+  const { pid, playerName } = getPlayerInfo();
+  const ts = Date.now();
+
+  const latestPayload = {
+    hasStarted: true,
+    hasPlayed: true,
+    playerName,
+    latestScore: result.correct,
+    latestWrong: result.wrong,
+    latestReached: result.reached,
+    latestTimeLeft: result.timeLeft,
+    latestRankTitle: result.rankTitle,
+    latestIsTimeout: result.isTimeout,
+    latestFinishedAt: getNowTime(),
+    latestFinishedAtTs: ts
+  };
+
+  const historyPayload = {
+    pid,
+    playerName,
+    quizKey: "knowledge_challenge",
+    quizTitle: "知識大挑戰",
+    totalQuestions: result.totalQuestions,
+    correct: result.correct,
+    wrong: result.wrong,
+    reached: result.reached,
+    timeLeft: result.timeLeft,
+    isTimeout: result.isTimeout,
+    rankTitle: result.rankTitle,
+    finishedAt: getNowTime(),
+    finishedAtTs: ts
+  };
+
+  // 🔹 歷史紀錄
+  await db.ref(`quizResults/p${pid}/${ts}`).set(historyPayload);
+
+  // 🔹 玩家測驗狀態
+  await db.ref(getPlayerQuizPath(pid)).update(latestPayload);
+
+  // 🔥🔥🔥 重點：寫到 test（給 super 用）
+  await db.ref(`players/p${pid}/test`).set(result.correct);
+
+  console.log("✅ 分數已寫入 players/p" + pid + "/test =", result.correct);
+}
+
+    const allQuestions = [
+      {"q":"1. 人類是如何感覺時間的？","o":["A. 透過心跳","B. 透過眼睛","C. 大腦推算","D. 天生內建時鐘"],"a":"C"},
+      {"q":"2. 哪種情況最容易覺得時間過很快？","o":["A. 等公車","B. 專心玩遊戲","C. 發呆","D. 看時鐘"],"a":"B"},
+      {"q":"3. 一心多用時，大腦實際上在做什麼？","o":["A. 同時處理","B. 忽略其中一件","C. 快速切換","D. 自動加速"],"a":"C"},
+      {"q":"4. 為什麼滑手機常常不知不覺過很久？","o":["A. 手會累","B. 光線影響","C. 重複刺激","D. 螢幕太小"],"a":"C"},
+      {"q":"5. 夾紅豆這類動作會影響哪一種能力？","o":["A. 記憶力","B. 時間判斷","C. 視力","D. 聽力"],"a":"B"},
+      {"q":"6. 人一天平均眨眼大約幾次？","o":["A. 約100次","B. 約1000次","C. 約15000次","D. 約50000次"],"a":"C"},
+      {"q":"7. 為什麼我們不太會感覺到自己眨眼？","o":["A. 太快","B. 大腦補畫面","C. 眼睛關太緊","D. 習慣了"],"a":"B"},
+      {"q":"8. 站著等人通常會覺得時間？","o":["A. 比較快","B. 比較慢","C. 沒差","D. 看心情"],"a":"B"},
+      {"q":"9. 人對時間最不準確的時候通常是？","o":["A. 放鬆","B. 專心","C. 緊張","D. 睡前"],"a":"C"},
+      {"q":"10. 以下哪個情況最容易讓時間感覺變慢？","o":["A. 玩遊戲","B. 聽音樂","C. 等待","D. 聊天"],"a":"C"},
+      {"q":"11. 熱的食物聞起來比較香主要原因是？","o":["A. 顏色","B. 油脂","C. 分子擴散較快","D. 心理作用"],"a":"C"},
+      {"q":"12. 為什麼考試時常覺得時間過很快？","o":["A. 題目少","B. 專注度高","C. 太緊張","D. 鐘壞了"],"a":"B"},
+      {"q":"13. 人類其實最不擅長的是？","o":["A. 記臉","B. 多工處理","C. 語言","D. 運動"],"a":"B"},
+      {"q":"14. 哪個行為最容易讓人低估時間？","o":["A. 數秒","B. 看鐘","C. 手部操作","D. 發呆"],"a":"C"},
+      {"q":"15. 背景音樂會影響時間感主要因為？","o":["A. 記憶力","B. 注意力分配","C. 聽力","D. 視力"],"a":"B"},
+      {"q":"16. 當你覺得時間過得很慢通常是因為？","o":["A. 沒事做","B. 正在專心","C. 很快樂","D. 睡覺"],"a":"A"},
+      {"q":"17. 哪種情緒常會讓人感覺時間變慢？","o":["A. 快樂","B. 恐懼","C. 平靜","D. 放鬆"],"a":"B"},
+      {"q":"18. 「望梅止渴」主要影響的是？","o":["A. 聽覺","B. 視覺","C. 想像力","D. 觸覺"],"a":"C"},
+      {"q":"19. 人在什麼情況下最容易產生時間錯覺？","o":["A. 專注","B. 睡覺","C. 運動","D. 聊天"],"a":"A"},
+      {"q":"20. 大腦處理資訊量增加時時間感會？","o":["A. 變快","B. 變慢","C. 不變","D. 消失"],"a":"B"},
+      {"q":"21. 當你感到無聊時大腦通常會？","o":["A. 停止運作","B. 尋找刺激","C. 變得準確","D. 進入睡眠"],"a":"B"},
+      {"q":"22. 為什麼滑社群媒體常常停不下來？","o":["A. 螢幕亮","B. 持續刺激","C. 手會累","D. 字太小"],"a":"B"},
+      {"q":"23. 「心流」狀態下時間感會？","o":["A. 變慢","B. 變快","C. 消失","D. 變準確"],"a":"B"},
+      {"q":"24. 哪個活動最容易讓人忘記時間？","o":["A. 等車","B. 專心創作","C. 看時鐘","D. 無聊"],"a":"B"},
+      {"q":"25. 為什麼小時候覺得一年很長？","o":["A. 記憶多","B. 沒事做","C. 動作慢","D. 睡得多"],"a":"A"},
+      {"q":"26. 玩遊戲時常感覺時間？","o":["A. 變慢","B. 變快","C. 不變","D. 消失"],"a":"B"},
+      {"q":"27. 注意力不集中會導致時間感？","o":["A. 變快","B. 變慢","C. 變準確","D. 消失"],"a":"A"},
+      {"q":"28. 人在壓力大時時間感通常？","o":["A. 變快","B. 變慢","C. 不變","D. 消失"],"a":"B"},
+      {"q":"29. 多工處理對時間判斷影響？","o":["A. 更準","B. 更不準","C. 沒影響","D. 變慢"],"a":"B"},
+      {"q":"30. 哪種感官對時間節奏最敏感？","o":["A. 視覺","B. 聽覺","C. 嗅覺","D. 觸覺"],"a":"B"},
+      {"q":"31. 哪種情境會讓人感覺時間過很慢？","o":["A. 排隊","B. 聊天","C. 玩遊戲","D. 看電影"],"a":"A"},
+      {"q":"32. 為什麼無聊時常會一直看時間？","o":["A. 想確認時間","B. 大腦專注時間","C. 習慣","D. 太安靜"],"a":"A"},
+      {"q":"33. 人在運動時時間感通常？","o":["A. 變快","B. 變慢","C. 不變","D. 消失"],"a":"B"},
+      {"q":"34. 咖啡因可能讓人覺得時間？","o":["A. 變慢","B. 變快","C. 不變","D. 消失"],"a":"B"},
+      {"q":"35. 哪種環境容易讓時間過很快？","o":["A. 熟悉環境","B. 吵雜環境","C. 空曠環境","D. 黑暗環境"],"a":"A"},
+      {"q":"36. 以下哪個是時間判斷常見錯誤？","o":["A. 高估","B. 低估","C. 忽略","D. 以上皆是"],"a":"D"},
+      {"q":"37. 人類對時間的感覺屬於？","o":["A. 客觀","B. 固定","C. 主觀","D. 精準"],"a":"C"},
+      {"q":"38. 哪個最容易讓人忘記時間？","o":["A. 等人","B. 專注創作","C. 看鐘","D. 無聊"],"a":"B"},
+      {"q":"39. 為什麼下課前幾分鐘特別漫長？","o":["A. 疲勞","B. 想離開","C. 注意時間","D. 以上皆是"],"a":"D"},
+      {"q":"40. 哪一項能幫助時間判斷更準？","o":["A. 分心","B. 多工","C. 外在提示","D. 疲勞"],"a":"C"},
+      {"q":"41. 人最容易分心的時候是？","o":["A. 精神好","B. 疲累","C. 運動後","D. 剛睡醒"],"a":"B"},
+      {"q":"42. 以下哪個與時間錯覺無關？","o":["A. 專注","B. 情緒","C. 注意力","D. 血型"],"a":"D"},
+      {"q":"43. 為什麼排隊時會覺得時間很慢？","o":["A. 無聊","B. 專注時間","C. 不動","D. 以上皆是"],"a":"D"},
+      {"q":"44. 哪個情況會讓時間感覺變慢？","o":["A. 緊張","B. 投入","C. 專心","D. 興奮"],"a":"A"},
+      {"q":"45. 哪一種情境最容易產生錯覺？","o":["A. 單調","B. 熟悉","C. 重複","D. 以上皆是"],"a":"D"},
+      {"q":"46. 為什麼做實驗要控制變因？","o":["A. 比較快","B. 比較準","C. 比較簡單","D. 比較好玩"],"a":"B"},
+      {"q":"47. 注意力被打斷後恢復通常需要？","o":["A. 馬上","B. 幾秒","C. 一段時間","D. 不會恢復"],"a":"C"},
+      {"q":"48. 以下哪個最符合大腦運作？","o":["A. 永遠專注","B. 容易分心","C. 不會疲勞","D. 完全理性"],"a":"B"},
+      {"q":"49. 為什麼重複動作會讓人放空？","o":["A. 無聊","B. 大腦省力","C. 肌肉記憶","D. 太累"],"a":"B"},
+      {"q":"50. 這個活動主要在測什麼？","o":["A. 手眼協調","B. 記憶力","C. 時間感知","D. 反應速度"],"a":"C"}
+    ];
+
+    const TOTAL_QUESTIONS = 50;
+    const QUESTIONS_PER_STAGE = 10;
+    const TOTAL_TIME = 300;
+
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let answered = false;
+    let soundEnabled = true;
+    let gameEnded = false;
+    let pendingStageMessage = false;
+    let totalSecondsLeft = TOTAL_TIME;
+    let timerInterval = null;
+
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const finalScreen = document.getElementById('final-screen');
+    const questionText = document.getElementById('question-text');
+    const optionContainer = document.getElementById('option-container');
+    const resultMsg = document.getElementById('result-msg');
+    const nextBtn = document.getElementById('next-btn');
+    const progressText = document.getElementById('progress-text');
+    const stageText = document.getElementById('stage-text');
+    const scoreText = document.getElementById('score-text');
+    const timeText = document.getElementById('time-text');
+    const timeLabel = document.getElementById('time-label');
+    const timeBar = document.getElementById('time-bar');
+    const stageBar = document.getElementById('stage-bar');
+    const stageProgressText = document.getElementById('stage-progress-text');
+    const stageBanner = document.getElementById('stage-banner');
+    const overlay = document.getElementById('overlay');
+    const overlayEmoji = document.getElementById('overlay-emoji');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayDesc = document.getElementById('overlay-desc');
+    const soundBtnText = document.getElementById('sound-btn-text');
+
+    function shuffleArray(arr){
+      const copy = [...arr];
+      for(let i = copy.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    async function startGame(){
+      const meta = await getQuizMeta();
+
+      if(meta.hasStarted || meta.hasPlayed){
+        showOverlay("🔒", "本測驗已完成", "每位玩家僅限作答一次，你已使用本次作答機會。");
+        return;
+      }
+
+      const locked = await lockQuizOnStart();
+      if(!locked){
+        showOverlay("🔒", "本測驗已鎖定", "此帳號已無法再次開始測驗。");
+        return;
+      }
+
+      currentQuestions = shuffleArray(allQuestions).slice(0, TOTAL_QUESTIONS);
+      currentIndex = 0;
+      score = 0;
+      answered = false;
+      gameEnded = false;
+      pendingStageMessage = false;
+      totalSecondsLeft = TOTAL_TIME;
+
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      showScreen('quiz');
+      updateTopStatus();
+      showQuestion();
+      startTimer();
+      showOverlay("🚀", "挑戰開始！", `全程 ${TOTAL_QUESTIONS} 題，總限時 ${TOTAL_TIME} 秒。`);
+      playStartSound();
+    }
+
+    function showScreen(name){
+      startScreen.classList.remove('active');
+      quizScreen.classList.remove('active');
+      finalScreen.classList.remove('active');
+      if(name === 'start') startScreen.classList.add('active');
+      if(name === 'quiz') quizScreen.classList.add('active');
+      if(name === 'final') finalScreen.classList.add('active');
+    }
+
+    function getStageNumber(index){ return Math.floor(index / QUESTIONS_PER_STAGE) + 1; }
+    function getStageName(stage){ return ({1:"暖身關",2:"專注關",3:"挑戰關",4:"進階關",5:"終極關"})[stage] || "挑戰關"; }
+
+    function updateTopStatus(){
+      const safeIndex = Math.min(currentIndex, TOTAL_QUESTIONS - 1);
+      const stage = getStageNumber(safeIndex);
+      const inStageIndex = (safeIndex % QUESTIONS_PER_STAGE) + 1;
+      const stagePercent = Math.max((inStageIndex / QUESTIONS_PER_STAGE) * 100, 0);
+      const timePercent = Math.max((totalSecondsLeft / TOTAL_TIME) * 100, 0);
+
+      progressText.textContent = `${Math.min(currentIndex + 1, TOTAL_QUESTIONS)} / ${TOTAL_QUESTIONS}`;
+      stageText.textContent = `第 ${stage} 關`;
+      scoreText.textContent = score;
+      timeText.textContent = totalSecondsLeft;
+      timeLabel.textContent = `${totalSecondsLeft} 秒`;
+      timeBar.style.width = `${timePercent}%`;
+      stageProgressText.textContent = `${inStageIndex} / ${QUESTIONS_PER_STAGE}`;
+      stageBar.style.width = `${stagePercent}%`;
+      stageBanner.textContent = `🏁 第 ${stage} 關｜${getStageName(stage)}`;
+    }
+
+    function startTimer(){
+      updateTopStatus();
+      timerInterval = setInterval(() => {
+        if(gameEnded) return;
+        totalSecondsLeft--;
+        if(totalSecondsLeft < 0) totalSecondsLeft = 0;
+        updateTopStatus();
+        if(totalSecondsLeft <= 10 && totalSecondsLeft > 0) playTickSound();
+        if(totalSecondsLeft <= 0){
+          clearInterval(timerInterval);
+          timerInterval = null;
+          endGame(true);
+        }
+      }, 1000);
+    }
+
+    function showQuestion(){
+      if(gameEnded) return;
+      answered = false;
+      nextBtn.style.display = 'none';
+      resultMsg.innerHTML = '';
+      updateTopStatus();
+      const qObj = currentQuestions[currentIndex];
+      questionText.textContent = qObj.q;
+      optionContainer.innerHTML = '';
+      qObj.o.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => selectAnswer(btn, opt);
+        optionContainer.appendChild(btn);
+      });
+    }
+
+    function selectAnswer(clickedBtn, optionText){
+      if(answered || gameEnded) return;
+      answered = true;
+      const qObj = currentQuestions[currentIndex];
+      const correctLetter = qObj.a;
+      const selectedLetter = optionText.trim().charAt(0);
+      const buttons = document.querySelectorAll('.opt-btn');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        const letter = btn.textContent.trim().charAt(0);
+        if(letter === correctLetter) btn.classList.add('correct');
+      });
+      if(selectedLetter === correctLetter){
+        score++;
+        clickedBtn.classList.add('correct');
+        resultMsg.textContent = `✅ 答對了！`;
+        resultMsg.style.color = '#15803d';
+        playCorrectSound();
+      }else{
+        clickedBtn.classList.add('wrong');
+        resultMsg.textContent = `❌ 答錯了！正確答案是 ${correctLetter}`;
+        resultMsg.style.color = '#b42318';
+        playWrongSound();
+      }
+      updateTopStatus();
+      if(currentIndex === TOTAL_QUESTIONS - 1){
+        setTimeout(() => endGame(false), 700);
+      }else{
+        nextBtn.style.display = 'block';
+      }
+    }
+
+    function nextQuestion(){
+      if(gameEnded) return;
+      const justFinishedStage = ((currentIndex + 1) % QUESTIONS_PER_STAGE === 0);
+      const finishedStageNumber = getStageNumber(currentIndex);
+      currentIndex++;
+      if(currentIndex >= TOTAL_QUESTIONS){ endGame(false); return; }
+      if(justFinishedStage){
+        pendingStageMessage = true;
+        const nextStage = finishedStageNumber + 1;
+        showOverlay("🎉", `恭喜通過第 ${finishedStageNumber} 關！`, `你即將進入第 ${nextStage} 關｜${getStageName(nextStage)}`);
+        playStageSound();
+      }else{
+        showQuestion();
+      }
+    }
+
+    function closeOverlay(){
+      overlay.classList.remove('show');
+      if(pendingStageMessage && !gameEnded){
+        pendingStageMessage = false;
+        showQuestion();
+      }
+    }
+
+    function showOverlay(emoji, title, desc){
+      overlayEmoji.textContent = emoji;
+      overlayTitle.textContent = title;
+      overlayDesc.textContent = desc;
+      overlay.classList.add('show');
+    }
+
+    async function endGame(isTimeout = false){
+      if(gameEnded) return;
+      gameEnded = true;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      overlay.classList.remove('show');
+      showScreen('final');
+
+      const reached = answered ? currentIndex + 1 : currentIndex;
+      const wrong = Math.max(reached - score, 0);
+
+      document.getElementById('timeout-msg').style.display = isTimeout ? 'block' : 'none';
+      document.getElementById('final-title').textContent = isTimeout ? '時間到，挑戰結束' : '挑戰完成';
+      document.getElementById('final-score').textContent = `${score} / ${TOTAL_QUESTIONS}`;
+      document.getElementById('sum-correct').textContent = score;
+      document.getElementById('sum-wrong').textContent = wrong;
+      document.getElementById('sum-time').textContent = totalSecondsLeft;
+      document.getElementById('sum-reached').textContent = reached;
+
+      const rankInfo = getRank(score);
+      document.getElementById('final-rank').textContent = `${rankInfo.emoji} ${rankInfo.title}`;
+      document.getElementById('final-msg').textContent = rankInfo.msg;
+      updateScoreRing(score);
+      playFinishSound();
+
+      try{
+        await saveQuizResultToBackend({
+          totalQuestions: TOTAL_QUESTIONS,
+          correct: score,
+          wrong,
+          reached,
+          timeLeft: totalSecondsLeft,
+          isTimeout,
+          rankTitle: rankInfo.title
+        });
+        console.log("測驗成績已寫入後台");
+      }catch(err){
+        console.error("寫入測驗成績失敗：", err);
+      }
+    }
+
+    function getRank(scoreValue){
+      if(scoreValue >= 45) return { emoji:"👑", title:"知識王者", msg:"你的表現非常出色，作答穩定、判斷清楚，整體知識掌握度很高。" };
+      if(scoreValue >= 35) return { emoji:"🌟", title:"挑戰高手", msg:"你在整體作答上很有水準，答題節奏和判斷能力都相當不錯。" };
+      if(scoreValue >= 25) return { emoji:"👍", title:"不錯的觀察者", msg:"你已具備不錯的知識與理解能力，再多挑戰幾次，表現會更穩。" };
+      return { emoji:"🙂", title:"再接再厲", msg:"這次先熟悉題型就好，再玩一次，通常就會有明顯進步。" };
+    }
+
+    function updateScoreRing(scoreValue){
+      const degree = (scoreValue / TOTAL_QUESTIONS) * 360;
+      const ring = document.getElementById('score-ring');
+      ring.style.background = `radial-gradient(circle at center, white 57%, transparent 58%), conic-gradient(var(--blue) 0deg, var(--blue2) ${degree}deg, #e8eefc ${degree}deg)`;
+    }
+
+    function restartGame(){ startGame(); }
+
+    function goStart(){
+      clearInterval(timerInterval);
+      timerInterval = null;
+      overlay.classList.remove('show');
+      location.href = 'player.html';
+    }
+
+    function toggleSound(){
+      soundEnabled = !soundEnabled;
+      soundBtnText.textContent = `音效：${soundEnabled ? '開啟' : '關閉'}`;
+    }
+
+    function beep(freq=440, duration=120, type='sine', volume=0.03){
+      if(!soundEnabled) return;
+      try{
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if(!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        oscillator.type = type;
+        oscillator.frequency.value = freq;
+        gainNode.gain.value = volume;
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration / 1000);
+        oscillator.stop(ctx.currentTime + duration / 1000 + 0.01);
+        setTimeout(() => ctx.close(), duration + 120);
+      }catch(e){}
+    }
+
+    function playCorrectSound(){ beep(740, 90, 'triangle', 0.035); setTimeout(() => beep(960, 110, 'triangle', 0.035), 90); }
+    function playWrongSound(){ beep(260, 140, 'sawtooth', 0.03); setTimeout(() => beep(190, 180, 'sawtooth', 0.028), 70); }
+    function playStageSound(){ beep(660, 80, 'triangle', 0.03); setTimeout(() => beep(880, 80, 'triangle', 0.03), 90); setTimeout(() => beep(1100, 120, 'triangle', 0.03), 180); }
+    function playStartSound(){ beep(520, 80, 'triangle', 0.03); setTimeout(() => beep(700, 100, 'triangle', 0.03), 90); }
+    function playFinishSound(){ beep(720, 100, 'triangle', 0.03); setTimeout(() => beep(900, 100, 'triangle', 0.03), 100); setTimeout(() => beep(1120, 180, 'triangle', 0.03), 220); }
+    function playTickSound(){ beep(880, 60, 'square', 0.02); }
+
+    (function initPlayerTip(){
+      const { pid, playerName } = getPlayerInfo();
+      document.getElementById('player-info-tip').textContent = `玩家：${playerName}（p${pid}）`;
+    })();
+  </script>
+</body>
+</html>
