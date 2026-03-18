@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>商品販售頁</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --line:#e5e7eb;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --pri:#4f46e5;
+      --pri2:#7c3aed;
+      --ok:#16a34a;
+      --danger:#dc2626;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --r:18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background:linear-gradient(180deg,#f8faff 0%, #f2f4f8 100%);
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width:1400px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .topbar{
+      background:linear-gradient(135deg,var(--pri),var(--pri2));
+      color:#fff;
+      border-radius:24px;
+      padding:24px;
+      box-shadow:var(--shadow);
+      margin-bottom:20px;
+    }
+
+    .topbar h1{
+      margin:0 0 8px;
+      font-size:28px;
+    }
+
+    .topbar p{
+      margin:0;
+      opacity:.92;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.6fr 0.9fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+    }
+
+    .panel-head{
+      padding:18px 18px 8px;
+      font-weight:700;
+      font-size:18px;
+    }
+
+    .panel-body{
+      padding:18px;
+    }
+
+    .banner{
+      width:100%;
+      height:180px;
+      border-radius:16px;
+      background:linear-gradient(135deg,#dbeafe,#ede9fe);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#374151;
+      font-size:22px;
+      font-weight:700;
+      border:1px dashed #c7d2fe;
+      margin-bottom:16px;
+    }
+
+    .filters{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .chip{
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      font-size:14px;
+    }
+
+    .chip.active{
+      background:linear-gradient(135deg,var(--pri),var(--pri2));
+      color:#fff;
+      border-color:transparent;
+    }
+
+    .search{
+      width:100%;
+      margin-bottom:16px;
+    }
+
+    .search input{
+      width:100%;
+      height:44px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      padding:0 14px;
+      font-size:15px;
+      outline:none;
+    }
+
+    .goods-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+    }
+
+    .goods-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      background:#fff;
+      transition:.2s ease;
+    }
+
+    .goods-card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 8px 18px rgba(0,0,0,.06);
+    }
+
+    .goods-pic{
+      width:100%;
+      aspect-ratio: 4 / 3;
+      border-radius:14px;
+      background:linear-gradient(135deg,#e0e7ff,#ddd6fe);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#4338ca;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+
+    .goods-name{
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+
+    .goods-desc{
+      font-size:14px;
+      color:var(--muted);
+      min-height:38px;
+      margin-bottom:10px;
+    }
+
+    .goods-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+
+    .price{
+      font-size:20px;
+      font-weight:800;
+      color:var(--danger);
+    }
+
+    .qty-box{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:12px;
+      padding:10px 14px;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .btn-add{
+      background:linear-gradient(135deg,var(--pri),var(--pri2));
+      color:#fff;
+    }
+
+    .btn-lite{
+      background:#eef2ff;
+      color:#4338ca;
+    }
+
+    .btn-danger{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+      position:sticky;
+      top:20px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+    }
+
+    .stat{
+      background:#f9fafb;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .stat-label{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:6px;
+    }
+
+    .stat-value{
+      font-size:22px;
+      font-weight:800;
+    }
+
+    .cart-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height:300px;
+      overflow:auto;
+    }
+
+    .cart-item{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+
+    .cart-info{
+      flex:1;
+    }
+
+    .cart-name{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+
+    .cart-sub{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .cart-actions{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .mini-btn{
+      width:30px;
+      height:30px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      background:#eef2ff;
+      color:#4338ca;
+    }
+
+    .summary{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px dashed var(--line);
+    }
+
+    .sum-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:15px;
+    }
+
+    .sum-row.total{
+      font-size:20px;
+      font-weight:800;
+      color:#111827;
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    .field label{
+      display:block;
+      font-size:14px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      outline:none;
+      background:#fff;
+    }
+
+    .field textarea{
+      min-height:90px;
+      resize:vertical;
+    }
+
+    .submit-wrap{
+      display:flex;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .submit-wrap .btn{
+      flex:1;
+      height:46px;
+    }
+
+    .empty{
+      color:var(--muted);
+      text-align:center;
+      padding:20px 0;
+    }
+
+    @media (max-width: 980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .side{
+        position:static;
+      }
+    }
+
+    @media (max-width: 640px){
+      .goods-grid{
+        grid-template-columns:1fr;
+      }
+      .topbar h1{
+        font-size:24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>商品販售頁</h1>
+      <p>可依你的草圖調整成：商品展示區＋購物車統計區＋聯絡下單區</p>
+    </div>
+
+    <div class="layout">
+      <!-- 左邊：商品區 -->
+      <div class="panel">
+        <div class="panel-body">
+          <div class="banner">主視覺 / 活動橫幅 / 熱門商品區</div>
+
+          <div class="filters">
+            <button class="chip active" onclick="filterCategory('全部', this)">全部</button>
+            <button class="chip" onclick="filterCategory('熱門', this)">熱門</button>
+            <button class="chip" onclick="filterCategory('飲料', this)">飲料</button>
+            <button class="chip" onclick="filterCategory('點心', this)">點心</button>
+            <button class="chip" onclick="filterCategory('生活', this)">生活</button>
+          </div>
+
+          <div class="search">
+            <input type="text" id="searchInput" placeholder="搜尋商品名稱..." oninput="renderProducts()" />
+          </div>
+
+          <div class="goods-grid" id="goodsGrid"></div>
+        </div>
+      </div>
+
+      <!-- 右邊：統計 / 購物車 / 聯絡 -->
+      <div class="side">
+        <div class="panel">
+          <div class="panel-head">統計</div>
+          <div class="panel-body">
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-label">商品數量</div>
+                <div class="stat-value" id="statKinds">0</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">購買件數</div>
+                <div class="stat-value" id="statQty">0</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">小計金額</div>
+                <div class="stat-value" id="statSubtotal">0</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">運費</div>
+                <div class="stat-value" id="statShipping">60</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">已選商品</div>
+          <div class="panel-body">
+            <div class="cart-list" id="cartList"></div>
+
+            <div class="summary">
+              <div class="sum-row">
+                <span>商品小計</span>
+                <span>$<span id="sumSubtotal">0</span></span>
+              </div>
+              <div class="sum-row">
+                <span>運費</span>
+                <span>$<span id="sumShipping">60</span></span>
+              </div>
+              <div class="sum-row total">
+                <span>總計</span>
+                <span>$<span id="sumTotal">60</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">填寫資料</div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div class="field">
+                <label>姓名</label>
+                <input type="text" id="customerName" placeholder="請輸入姓名" />
+              </div>
+
+              <div class="field">
+                <label>電話</label>
+                <input type="text" id="customerPhone" placeholder="請輸入電話" />
+              </div>
+
+              <div class="field">
+                <label>Line / 聯絡方式</label>
+                <input type="text" id="customerLine" placeholder="請輸入 Line ID 或其他聯絡方式" />
+              </div>
+
+              <div class="field">
+                <label>付款方式</label>
+                <select id="paymentType">
+                  <option>現金</option>
+                  <option>轉帳</option>
+                  <option>Line Pay</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>備註</label>
+                <textarea id="customerNote" placeholder="例如：少冰、少糖、指定取貨時間"></textarea>
+              </div>
+            </div>
+
+            <div class="submit-wrap">
+              <button class="btn btn-lite" onclick="clearCart()">清空購物車</button>
+              <button class="btn btn-add" onclick="submitOrder()">送出訂單</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const products = [
+      { id: 1, name: "招牌紅茶", price: 35, category: "飲料", desc: "經典人氣商品，適合日常飲用。" },
+      { id: 2, name: "奶茶", price: 50, category: "飲料", desc: "香濃奶香，口感滑順。" },
+      { id: 3, name: "雞蛋糕", price: 45, category: "點心", desc: "外酥內軟，熱熱吃最好吃。" },
+      { id: 4, name: "薯條", price: 60, category: "點心", desc: "酥脆可口，適合搭配飲料。" },
+      { id: 5, name: "保溫瓶", price: 280, category: "生活", desc: "實用型商品，外出攜帶方便。" },
+      { id: 6, name: "帆布袋", price: 180, category: "生活", desc: "簡約好看，日常通勤可用。" },
+      { id: 7, name: "人氣套餐", price: 99, category: "熱門", desc: "飲料加點心的熱門搭配。" },
+      { id: 8, name: "限定組合", price: 199, category: "熱門", desc: "期間限定特價組合。" }
+    ];
+
+    let cart = [];
+    let currentCategory = "全部";
+
+    function filterCategory(category, el) {
+      currentCategory = category;
+      document.querySelectorAll(".chip").forEach(btn => btn.classList.remove("active"));
+      el.classList.add("active");
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const keyword = document.getElementById("searchInput").value.trim();
+      const grid = document.getElementById("goodsGrid");
+
+      const filtered = products.filter(p => {
+        const matchCategory = currentCategory === "全部" || p.category === currentCategory;
+        const matchKeyword = p.name.includes(keyword);
+        return matchCategory && matchKeyword;
+      });
+
+      grid.innerHTML = filtered.map(p => `
+        <div class="goods-card">
+          <div class="goods-pic">商品圖片</div>
+          <div class="goods-name">${p.name}</div>
+          <div class="goods-desc">${p.desc}</div>
+          <div class="goods-row">
+            <div class="price">$${p.price}</div>
+            <button class="btn btn-add" onclick="addToCart(${p.id})">加入</button>
+          </div>
+        </div>
+      `).join("");
+
+      if (!filtered.length) {
+        grid.innerHTML = `<div class="empty">查無符合商品</div>`;
+      }
+    }
+
+    function addToCart(id) {
+      const item = cart.find(x => x.id === id);
+      if (item) {
+        item.qty += 1;
+      } else {
+        const product = products.find(p => p.id === id);
+        cart.push({ ...product, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function changeQty(id, delta) {
+      const item = cart.find(x => x.id === id);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cart = cart.filter(x => x.id !== id);
+      }
+      renderCart();
+    }
+
+    function removeItem(id) {
+      cart = cart.filter(x => x.id !== id);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartList = document.getElementById("cartList");
+      const shipping = cart.length ? 60 : 0;
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+      const total = subtotal + shipping;
+
+      if (!cart.length) {
+        cartList.innerHTML = `<div class="empty">目前尚未加入商品</div>`;
+      } else {
+        cartList.innerHTML = cart.map(item => `
+          <div class="cart-item">
+            <div class="cart-info">
+              <div class="cart-name">${item.name}</div>
+              <div class="cart-sub">$${item.price} × ${item.qty} = $${item.price * item.qty}</div>
+            </div>
+            <div class="cart-actions">
+              <button class="mini-btn" onclick="changeQty(${item.id}, -1)">-</button>
+              <span>${item.qty}</span>
+              <button class="mini-btn" onclick="changeQty(${item.id}, 1)">+</button>
+              <button class="mini-btn" style="background:#fee2e2;color:#b91c1c;" onclick="removeItem(${item.id})">×</button>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      document.getElementById("statKinds").textContent = cart.length;
+      document.getElementById("statQty").textContent = totalQty;
+      document.getElementById("statSubtotal").textContent = subtotal;
+      document.getElementById("statShipping").textContent = shipping;
+      document.getElementById("sumSubtotal").textContent = subtotal;
+      document.getElementById("sumShipping").textContent = shipping;
+      document.getElementById("sumTotal").textContent = total;
+    }
+
+    function submitOrder() {
+      const name = document.getElementById("customerName").value.trim();
+      const phone = document.getElementById("customerPhone").value.trim();
+      const line = document.getElementById("customerLine").value.trim();
+      const payment = document.getElementById("paymentType").value;
+      const note = document.getElementById("customerNote").value.trim();
+
+      if (!cart.length) {
+        alert("請先加入商品");
+        return;
+      }
+      if (!name || !phone) {
+        alert("請填寫姓名與電話");
+        return;
+      }
+
+      const shipping = cart.length ? 60 : 0;
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      const total = subtotal + shipping;
+
+      const orderData = {
+        customer: { name, phone, line, payment, note },
+        items: cart,
+        subtotal,
+        shipping,
+        total,
+        createdAt: new Date().toLocaleString()
+      };
+
+      console.log("送出訂單資料：", orderData);
+
+      alert(
+        `訂單已送出！\n\n` +
+        `姓名：${name}\n` +
+        `電話：${phone}\n` +
+        `付款：${payment}\n` +
+        `總金額：$${total}`
+      );
+    }
+
+    renderProducts();
+    renderCart();
+  </script>
+</body>
+</html>
