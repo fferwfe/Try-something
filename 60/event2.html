@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>人生履歷｜隨機事件（獨立頁）</title>
 
-  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
   <style>
@@ -227,7 +225,7 @@
 
     <div class="grid2">
 
-      <!-- LEFT -->
+      <!-- LEFT：事件庫管理 + 配發 -->
       <div>
 
         <!-- 事件庫管理 -->
@@ -245,19 +243,18 @@
 
           <div class="collapse open">
             <div class="row">
-              <label>事件庫來源</label>
-              <select id="event_pool">
+              <label>管理事件庫來源（存檔到哪裡）</label>
+              <select id="event_pool_manage">
                 <option value="single">個人事件庫（events/single）</option>
                 <option value="group">整組事件庫（events/group）</option>
                 <option value="special">特殊事件庫（events/special）</option>
               </select>
-              <div class="mini">目前新增 / 載入 / 刪除 / 清單顯示 / 派發，皆以這個事件庫為主。</div>
             </div>
 
             <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label>事件 eid（留空自動）</label>
-                <input id="ev_eid" placeholder="例如 e001 / g001 / s001（留空可自動產生）">
+                <input id="ev_eid" placeholder="例如 e001 / g001 / s001">
               </div>
               <div>
                 <label>確認按鈕文字（玩家端）</label>
@@ -312,7 +309,7 @@
             </div>
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-              <button class="btn blue" id="btnSaveEvent"><i class="fa-solid fa-floppy-disk"></i> 存到目前事件庫</button>
+              <button class="btn blue" id="btnSaveEvent"><i class="fa-solid fa-floppy-disk"></i> 存到目前管理事件庫</button>
               <button class="btn gray" id="btnClearEvent"><i class="fa-solid fa-eraser"></i> 清空表單</button>
             </div>
           </div>
@@ -332,6 +329,15 @@
           </div>
 
           <div class="collapse open">
+            <div class="row">
+              <label>派發事件庫來源（從哪個事件庫出事件）</label>
+              <select id="event_pool_assign">
+                <option value="single">個人事件庫（events/single）</option>
+                <option value="group">整組事件庫（events/group）</option>
+                <option value="special">特殊事件庫（events/special）</option>
+              </select>
+            </div>
+
             <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label>玩家 pid（1~15）</label>
@@ -344,11 +350,11 @@
             </div>
 
             <div class="row">
-              <label>選擇要派發的事件（來自目前事件庫）</label>
+              <label>選擇要派發的事件（來自派發事件庫）</label>
               <select id="assign_eid">
                 <option value="">（尚無事件）</option>
               </select>
-              <div class="mini">右側清單也可直接按「派發給左側選的玩家」。</div>
+              <div class="mini">右側事件庫清單也可直接按「派發給左側選的玩家」。</div>
             </div>
 
             <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -370,7 +376,7 @@
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
               <button class="btn warn" id="btnAssignSelected"><i class="fa-solid fa-paper-plane"></i> 派發「已選事件」給玩家</button>
-              <button class="btn warn" id="btnAutoAssign"><i class="fa-solid fa-shuffle"></i> 從目前事件庫自動分配</button>
+              <button class="btn warn" id="btnAutoAssign"><i class="fa-solid fa-shuffle"></i> 從派發事件庫自動分配</button>
               <button class="btn gray" id="btnResetClaims"><i class="fa-solid fa-rotate"></i> 重置不重複鎖</button>
             </div>
 
@@ -383,7 +389,7 @@
 
       </div>
 
-      <!-- RIGHT -->
+      <!-- RIGHT：事件庫清單 + 完成申請 -->
       <div>
 
         <div class="card" style="border-left:6px solid var(--gray);" data-collapsible="panel_event_list">
@@ -442,7 +448,7 @@
     /***********************
      * Collapsible
      ***********************/
-    const COLLAPSE_KEY = "event_cards_collapsed_v2";
+    const COLLAPSE_KEY = "event_cards_collapsed_v3";
     let __collapsed = {};
     try{ __collapsed = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "{}") || {}; }catch(e){ __collapsed = {}; }
 
@@ -524,8 +530,12 @@
      ***********************/
     const MAX_P = 15;
 
-    function getSelectedPool(){
-      return $("event_pool")?.value || "single";
+    function getManagePool(){
+      return $("event_pool_manage")?.value || "single";
+    }
+
+    function getAssignPool(){
+      return $("event_pool_assign")?.value || "single";
     }
 
     function poolPrefix(pool){
@@ -552,10 +562,11 @@
     let currentEventsRef = null;
 
     function updatePoolBadges(){
-      const pool = getSelectedPool();
-      if($("poolTagManage")) $("poolTagManage").textContent = pool;
-      if($("poolTagAssign")) $("poolTagAssign").textContent = pool;
-      if($("poolTagList")) $("poolTagList").textContent = pool;
+      const managePool = getManagePool();
+      const assignPool = getAssignPool();
+      if($("poolTagManage")) $("poolTagManage").textContent = managePool;
+      if($("poolTagAssign")) $("poolTagAssign").textContent = assignPool;
+      if($("poolTagList")) $("poolTagList").textContent = assignPool;
     }
 
     function initPidOptions(){
@@ -570,7 +581,7 @@
     }
 
     function readEventForm(){
-      const pool = getSelectedPool();
+      const pool = getManagePool();
       const eid = ($("ev_eid").value || "").trim() || autoEidByPool(pool);
 
       const payload = {
@@ -639,7 +650,7 @@
     }
 
     function watchEvents(){
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
       updatePoolBadges();
 
       if(currentEventsRef){
@@ -657,10 +668,10 @@
     function renderEventList(){
       const list = $("eventList");
       const ids = Object.keys(eventsCache || {});
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
 
       if(!ids.length){
-        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（${escapeHtml(pool)} 目前尚無事件）</div><div class="hint">請在左側新增並存到目前事件庫。</div></div>`;
+        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（${escapeHtml(pool)} 目前尚無事件）</div><div class="hint">請先在這個事件庫建立事件。</div></div>`;
         return;
       }
 
@@ -697,6 +708,7 @@
     window.loadEventToForm = (eid)=>{
       const ev = eventsCache[eid];
       if(!ev) return;
+
       setIfExists("ev_eid", eid);
       setIfExists("ev_title", ev.title || "");
       setIfExists("ev_impactText", ev.impactText || "");
@@ -719,13 +731,11 @@
       setIfExists("f_social", f.social||0);
       setIfExists("f_score", f.score||0);
 
-      if($("assign_eid")) $("assign_eid").value = eid;
-
-      alert(`已載入 ${eid}`);
+      alert(`已載入 ${eid}（注意：載入來源是目前派發事件庫）`);
     };
 
     window.deleteEvent = async (eid)=>{
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
       if(!confirm(`確定刪除 ${pool}/${eid}？`)) return;
       await db.ref(`${eventsPath(pool)}/${eid}`).remove();
       await claimRef(pool, eid).remove();
@@ -767,6 +777,7 @@
 
     async function assignEventToPlayer(pid, eid, minutes, force, meta){
       const pool = meta?.pool || "single";
+
       const evSnap = await db.ref(`${eventsPath(pool)}/${eid}`).get();
       const ev = evSnap.val();
       if(!ev) return {ok:false, reason:"event_not_found"};
@@ -789,12 +800,14 @@
         });
       }else{
         const tx = await claimRef(pool, eid).transaction(curr=>{
-          if(curr === null) return {
-            claimedBy:`p${pid}`,
-            claimedAt: Date.now(),
-            forced:false,
-            pool
-          };
+          if(curr === null){
+            return {
+              claimedBy:`p${pid}`,
+              claimedAt: Date.now(),
+              forced:false,
+              pool
+            };
+          }
           return;
         });
         if(!tx.committed){
@@ -831,7 +844,7 @@
     }
 
     window.assignThis = async (eid)=>{
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
       const pid = Number($("ev_pid").value);
       const minutes = Math.max(1, num($("ev_minutes").value));
       const force = $("ev_forceMode").value === "1";
@@ -862,7 +875,7 @@
     }
 
     async function autoAssignAll(){
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
       const minutes = Math.max(1, num($("ev_minutes").value));
       const force = $("ev_forceModeAuto").value === "1";
       const ids = Object.keys(eventsCache || {});
@@ -895,6 +908,7 @@
         else if(r.reason==="player_has_pending") results.push(`p${pid}:（跳過：已有 pending）`);
         else results.push(`p${pid}:（失敗：${r.reason||"unknown"}）`);
       }
+
       alert("自動分配完成：\n" + results.join("\n"));
     }
 
@@ -1163,14 +1177,14 @@
     $("btnClearEvent").addEventListener("click", clearEventForm);
 
     $("btnAssignSelected").addEventListener("click", async ()=>{
-      const pool = getSelectedPool();
+      const pool = getAssignPool();
       const pid = Number($("ev_pid").value);
       const minutes = Math.max(1, num($("ev_minutes").value));
       const force = $("ev_forceMode").value === "1";
       const eid = ($("assign_eid").value || "").trim();
 
       if(!eid){
-        alert("目前事件庫沒有事件可派發。請先新增事件並存檔。");
+        alert("派發事件庫目前沒有事件可派發。請先建立事件。");
         return;
       }
 
@@ -1189,8 +1203,13 @@
     $("btnAutoAssign").addEventListener("click", autoAssignAll);
     $("btnResetClaims").addEventListener("click", resetClaims);
 
-    $("event_pool").addEventListener("change", ()=>{
+    $("event_pool_manage").addEventListener("change", ()=>{
+      updatePoolBadges();
       clearEventForm();
+    });
+
+    $("event_pool_assign").addEventListener("change", ()=>{
+      updatePoolBadges();
       watchEvents();
     });
 
