@@ -1741,14 +1741,23 @@ if(!_eventInitDone){
       return;
     }
 
-    if(ev.status === "fail"){
+if(ev.status === "fail"){
   const isAbandon = ev.failReason === "abandon";
 
   if(isAbandon){
+    playSfx("reject");
     alert("❌ 已放棄本輪任務（押金不返還）");
   }else{
     alert("❌ 任務失敗 / 或逾時");
   }
+
+  await db.ref(`players/p${myId}/activeEvent`).remove();
+  hideEventModal();
+  hideBanner();
+  hideTimer();
+  stopCountdown();
+  return;
+}
 
   await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
   hideEventModal();
@@ -1775,16 +1784,7 @@ if(!_eventInitDone){
   });
 };
 
-  document.getElementById("bannerHideBtn").onclick = async ()=>{
-    if(!currentEvent) return;
 
-    await db.ref(`players/p${myId}/activeEvent`).update({
-      uiState:"hidden",
-      hiddenAt:Date.now()
-    });
-
-    hideBanner();
-  };
 
   document.getElementById("bannerDoneBtn").onclick = async ()=>{
     if(!currentEvent || currentEvent.status !== "pending"){
@@ -1897,7 +1897,13 @@ function showBanner(ev){
 function hideBanner(){ document.getElementById("eventBanner").style.display="none"; }
 
 function updateTimerFromEvent(ev){
-  if(ev.status==="pending" && ev.deadlineTs){
+  if(!ev || !ev.deadlineTs){
+    hideTimer();
+    stopCountdown();
+    return;
+  }
+
+  if(ev.status==="pending"){
     document.getElementById("timerStrip").style.display = "flex";
     document.getElementById("evtPoolPill").innerText = "時段：" + (ev.pool || "-");
     document.getElementById("evtIdPill").innerText   = "事件：" + (ev.eid || "-");
@@ -1906,8 +1912,8 @@ function updateTimerFromEvent(ev){
     hideTimer();
     stopCountdown();
   }
-  const remainMs = deadlineTs - Date.now();
-const remainSec = Math.floor(remainMs / 1000);
+}
+
 const ek = getEventKey(ev);
 
 if(remainSec <= 60 && remainSec > 0){
