@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>人生履歷｜隨機事件（獨立頁）</title>
 
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
   <style>
@@ -197,7 +199,10 @@
   <div class="wrap">
     <h1>🎲 隨機事件系統（獨立頁）</h1>
     <div class="hint" style="text-align:left; max-width:1180px; margin:0 auto 10px;">
-      事件庫：<code>/events/single</code>、<code>/events/group</code>、<code>/events/special</code>｜
+      事件庫：
+      <code>/events/single</code>、
+      <code>/events/group</code>、
+      <code>/events/special</code>｜
       玩家事件：<code>/players/p{pid}/activeEvent</code>｜
       去重鎖：<code>/eventClaims/global</code>
     </div>
@@ -209,7 +214,6 @@
           <h2><i class="fa-solid fa-people-group"></i> 玩家事件狀態總覽（p1~p15）</h2>
           <span class="tag violet">即時狀態</span>
         </div>
-
         <button type="button" class="btn gray smallBtn" data-card-toggle="panel_status">
           <i class="fa-solid fa-chevron-up"></i> 收合
         </button>
@@ -243,11 +247,11 @@
 
           <div class="collapse open">
             <div class="row">
-              <label>管理事件庫來源（存檔到哪裡）</label>
+              <label>管理事件庫來源（存到哪裡）</label>
               <select id="event_pool_manage">
-                <option value="single">個人事件庫（events/single）</option>
-                <option value="group">整組事件庫（events/group）</option>
-                <option value="special">特殊事件庫（events/special）</option>
+                <option value="single">single（個人事件庫）</option>
+                <option value="group">group（整組事件庫）</option>
+                <option value="special">special（特殊事件庫）</option>
               </select>
             </div>
 
@@ -330,11 +334,11 @@
 
           <div class="collapse open">
             <div class="row">
-              <label>派發事件庫來源（從哪個事件庫出事件）</label>
+              <label>派發事件庫來源（從哪個事件庫派發）</label>
               <select id="event_pool_assign">
-                <option value="single">個人事件庫（events/single）</option>
-                <option value="group">整組事件庫（events/group）</option>
-                <option value="special">特殊事件庫（events/special）</option>
+                <option value="single">single（個人事件庫）</option>
+                <option value="group">group（整組事件庫）</option>
+                <option value="special">special（特殊事件庫）</option>
               </select>
             </div>
 
@@ -431,6 +435,7 @@
   </div>
 
   <script>
+    // Firebase init
     const firebaseConfig = {
       apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
       authDomain: "try-something-ddd1e.firebaseapp.com",
@@ -448,7 +453,7 @@
     /***********************
      * Collapsible
      ***********************/
-    const COLLAPSE_KEY = "event_cards_collapsed_v3";
+    const COLLAPSE_KEY = "event_cards_collapsed_v4";
     let __collapsed = {};
     try{ __collapsed = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "{}") || {}; }catch(e){ __collapsed = {}; }
 
@@ -495,6 +500,7 @@
      * 小工具
      ***********************/
     function num(v){ return Number(v||0)||0; }
+
     function compactObj(o){
       const out={};
       Object.keys(o).forEach(k=>{
@@ -503,6 +509,17 @@
       });
       return out;
     }
+
+    function poolPrefix(pool){
+      if(pool === "group") return "g";
+      if(pool === "special") return "s";
+      return "e";
+    }
+
+    function autoEidByPool(pool){
+      return poolPrefix(pool) + Math.random().toString(16).slice(2,8);
+    }
+
     function shuffle(arr){
       for(let i=arr.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
@@ -510,6 +527,7 @@
       }
       return arr;
     }
+
     function escapeHtml(s){
       return String(s ?? "")
         .replaceAll("&","&amp;")
@@ -518,6 +536,7 @@
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
+
     function fmtObj(o){
       if(!o || typeof o!=="object") return "";
       const pairs = Object.entries(o).filter(([,v])=>Number(v||0)!==0);
@@ -538,23 +557,13 @@
       return $("event_pool_assign")?.value || "single";
     }
 
-    function poolPrefix(pool){
-      if(pool === "group") return "g";
-      if(pool === "special") return "s";
-      return "e";
-    }
-
-    function autoEidByPool(pool){
-      const prefix = poolPrefix(pool);
-      return prefix + Math.random().toString(16).slice(2,8);
-    }
-
     function eventsPath(pool){
       return `events/${pool || "single"}`;
     }
 
     const globalClaimsPath = ()=>"eventClaims/global";
-    const claimRef = (pool, eid)=>db.ref(`${globalClaimsPath()}/${pool}__${eid}`);
+    const claimKey = (pool, eid)=>`${pool}__${eid}`;
+    const claimRef = (pool, eid)=>db.ref(`${globalClaimsPath()}/${claimKey(pool, eid)}`);
     const activePath = (pid)=>`players/p${pid}/activeEvent`;
     const resPath = (pid)=>`players/p${pid}/res`;
 
@@ -564,6 +573,7 @@
     function updatePoolBadges(){
       const managePool = getManagePool();
       const assignPool = getAssignPool();
+
       if($("poolTagManage")) $("poolTagManage").textContent = managePool;
       if($("poolTagAssign")) $("poolTagAssign").textContent = assignPool;
       if($("poolTagList")) $("poolTagList").textContent = assignPool;
@@ -610,7 +620,8 @@
 
         updatedAt: Date.now()
       };
-      return {eid, payload, pool};
+
+      return { eid, payload, pool };
     }
 
     function setIfExists(id, val){
@@ -671,7 +682,7 @@
       const pool = getAssignPool();
 
       if(!ids.length){
-        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（${escapeHtml(pool)} 目前尚無事件）</div><div class="hint">請先在這個事件庫建立事件。</div></div>`;
+        list.innerHTML = `<div class="item"><div style="font-weight:1000;">（${escapeHtml(pool)} 目前尚無事件）</div><div class="hint">請先在這個事件庫建立事件，或切換派發事件庫。</div></div>`;
         return;
       }
 
@@ -731,7 +742,7 @@
       setIfExists("f_social", f.social||0);
       setIfExists("f_score", f.score||0);
 
-      alert(`已載入 ${eid}（注意：載入來源是目前派發事件庫）`);
+      alert(`已載入 ${eid}（來源：目前派發事件庫）`);
     };
 
     window.deleteEvent = async (eid)=>{
@@ -835,6 +846,7 @@
 
         assignedBy: meta?.assignedBy || "admin",
         assignedMode: meta?.assignedMode || (force ? "force" : "manual"),
+
         costApplied: false
       };
 
@@ -857,7 +869,7 @@
 
       if(r.ok) alert(`✅ 已派發：p${pid} ← ${pool}/${eid}${force?"（強制覆蓋）":""}`);
       else if(r.reason==="player_has_pending") alert("⚠️ 玩家已有 pending 事件（未覆蓋）。把強制模式改成是即可覆蓋。");
-      else if(r.reason==="already_claimed") alert("⚠️ 這個事件已被 claim（不重複鎖）。要改派請按重置不重複鎖或用強制模式覆蓋。");
+      else if(r.reason==="already_claimed") alert("⚠️ 這個事件已被 claim（不重複鎖）。要改派請重置不重複鎖，或用強制模式覆蓋。");
       else alert("派發失敗：" + (r.reason||"unknown"));
     };
 
@@ -880,6 +892,7 @@
       const force = $("ev_forceModeAuto").value === "1";
       const ids = Object.keys(eventsCache || {});
       if(!ids.length) return alert(`${pool} 事件庫裡沒有事件，先新增。`);
+
       shuffle(ids);
 
       const results = [];
@@ -1166,11 +1179,12 @@
       setInterval(flush, 30000);
     }
 
-    // Bind
+    // Bind buttons
     $("btnSaveEvent").addEventListener("click", async ()=>{
       const {eid, payload, pool} = readEventForm();
       await db.ref(`${eventsPath(pool)}/${eid}`).set(payload);
       setIfExists("ev_eid", eid);
+      updatePoolBadges();
       alert(`✅ 已存到事件庫：${pool}/${eid}`);
     });
 
