@@ -1698,35 +1698,28 @@ function bindActiveEvent(){
     }
 
     // 新事件開始音效（pending 新事件只播一次）
-const ek = getEventKey(ev);
+    const ek = getEventKey(ev);
+    if(!_eventInitDone){
+      _eventInitDone = true;
+      _lastStartKeyPlayed = ek || null;
+      _playedOneMinForKey = null;
+    }else{
+      if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
+        _lastStartKeyPlayed = ek;
+        _playedOneMinForKey = null;
+        showEventModal(ev);
+        playSfx("start");
+      }
+    }
 
-if(!_eventInitDone){
-  _eventInitDone = true;
-  _lastStartKeyPlayed = ek || null;
-  _playedOneMinForKey = null;
-}else{
-  if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
-    _lastStartKeyPlayed = ek;
-    _playedOneMinForKey = null;
-
-    // 🔥 這行很重要（你可能沒呼叫 UI）
-    showEventModal(ev);
-
-    playSfx("start");
-  }
-}
-
-    // ✅ 只顯示 / 倒數 / 音效，不做押金或返還
     updateTimerFromEvent(ev);
 
-    const uiState = (ev.uiState || "active");
-
-   if(ev.status === "pending"){
-  showEventModal(ev);   // 🔥 一定要有
-  showBanner(ev);       // 🔥 一定要有
-  _prevEventStatus = "pending";
-  return;
-}
+    if(ev.status === "pending"){
+      showEventModal(ev);
+      showBanner(ev);
+      _prevEventStatus = "pending";
+      return;
+    }
 
     if(ev.status === "success"){
       if(_prevEventStatus !== "success") playSfx("done");
@@ -1741,50 +1734,40 @@ if(!_eventInitDone){
       return;
     }
 
-if(ev.status === "fail"){
-  const isAbandon = ev.failReason === "abandon";
+    if(ev.status === "fail"){
+      const isAbandon = ev.failReason === "abandon";
 
-  if(isAbandon){
-    playSfx("reject");
-    alert("❌ 已放棄本輪任務（押金不返還）");
-  }else{
-    alert("❌ 任務失敗 / 或逾時");
-  }
+      if(isAbandon){
+        playSfx("reject");
+        alert("❌ 已放棄本輪任務（押金不返還）");
+      }else{
+        alert("❌ 任務失敗 / 或逾時");
+      }
 
-  await db.ref(`players/p${myId}/activeEvent`).remove();
-  hideEventModal();
-  hideBanner();
-  hideTimer();
-  stopCountdown();
-  return;
-}
-
-  await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
-  hideEventModal();
-  hideBanner();
-  hideTimer();
-  stopCountdown();
-  _prevEventStatus = "fail";
-  return;
-}
+      await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
+      hideEventModal();
+      hideBanner();
+      hideTimer();
+      stopCountdown();
+      _prevEventStatus = "fail";
+      return;
+    }
 
     _prevEventStatus = ev.status || null;
   });
 
   document.getElementById("bannerHideBtn").onclick = async ()=>{
-  if(!currentEvent) return;
+    if(!currentEvent) return;
 
-  if(!confirm("確定要放棄任務？（押金將不返還）")) return;
+    if(!confirm("確定要放棄任務？（押金將不返還）")) return;
 
-  await db.ref(`players/p${myId}/activeEvent`).update({
-    status: "fail",
-    failReason: "abandon",
-    abandonedAt: Date.now(),
-    abandonedBy: "player"
-  });
-};
-
-
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      status: "fail",
+      failReason: "abandon",
+      abandonedAt: Date.now(),
+      abandonedBy: "player"
+    });
+  };
 
   document.getElementById("bannerDoneBtn").onclick = async ()=>{
     if(!currentEvent || currentEvent.status !== "pending"){
@@ -1808,7 +1791,17 @@ if(ev.status === "fail"){
     playSfx("submit");
     alert("✅ 已送出完成申請，等待管理員確認。");
   };
+
+  document.getElementById("bannerOpenBtn").onclick = ()=>{
+    if(!currentEvent){
+      alert("目前沒有任務可查看。");
+      return;
+    }
+    showEventModal(currentEvent, true);
+    showTab("task");
+  };
 }
+
 
 function showEventModal(ev, silent=false){
   document.getElementById("evtTitle").innerText = ev.title || "隨機事件";
@@ -1916,13 +1909,8 @@ function updateTimerFromEvent(ev){
 
 const ek = getEventKey(ev);
 
-if(remainSec <= 60 && remainSec > 0){
-  if(_playedOneMinForKey !== ek){
-    playSfx("oneMin");
-    _playedOneMinForKey = ek;
-  }
-}
-}
+
+
 function hideTimer(){ document.getElementById("timerStrip").style.display="none"; }
 
 function startCountdown(deadlineTs){
