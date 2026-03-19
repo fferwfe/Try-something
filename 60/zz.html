@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>初始化事件庫</title>
+<title>事件庫匯入工具</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
@@ -11,93 +11,93 @@
 <style>
 body{
   font-family:"Microsoft JhengHei";
-  background:#0f172a;
-  color:#fff;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
+  background:#f6f8fb;
+  padding:20px;
+}
+.card{
+  background:#fff;
+  padding:20px;
+  border-radius:16px;
+  max-width:800px;
+  margin:auto;
+  box-shadow:0 10px 25px rgba(0,0,0,0.1);
+}
+textarea{
+  width:100%;
+  height:350px;
+  margin-top:10px;
+  font-family:monospace;
 }
 button{
-  padding:20px 30px;
-  font-size:18px;
+  margin-top:10px;
+  padding:10px 15px;
   border:none;
-  border-radius:12px;
-  background:#22c55e;
-  color:#fff;
+  border-radius:10px;
   cursor:pointer;
 }
+.blue{background:#2563eb;color:#fff;}
+.green{background:#16a34a;color:#fff;}
 </style>
 </head>
 
 <body>
 
-<button onclick="initEvents()">🚀 一鍵匯入36個人生事件</button>
+<div class="card">
+  <h2>🔥 事件庫一鍵匯入</h2>
+
+  <label>選擇事件庫</label>
+  <select id="pool">
+    <option value="single">single</option>
+    <option value="group">group</option>
+    <option value="special">special</option>
+  </select>
+
+  <textarea id="jsonInput" placeholder="貼上事件JSON"></textarea>
+
+  <button class="blue" onclick="formatJSON()">格式化</button>
+  <button class="green" onclick="importData()">匯入Firebase</button>
+
+  <div id="status"></div>
+</div>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
   authDomain: "try-something-ddd1e.firebaseapp.com",
   databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "try-something-ddd1e",
+  projectId: "try-something-ddd1e"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-function initEvents(){
+function formatJSON(){
+  try{
+    const obj = JSON.parse(document.getElementById("jsonInput").value);
+    document.getElementById("jsonInput").value = JSON.stringify(obj,null,2);
+    setStatus("✅ JSON正確");
+  }catch(e){
+    setStatus("❌ JSON錯誤");
+  }
+}
 
-const events = {
+async function importData(){
+  try{
+    const pool = document.getElementById("pool").value;
+    const data = JSON.parse(document.getElementById("jsonInput").value);
 
-e001:{title:"人生事件｜迷路危機",desc:"迷失方向",taskHint:"到指定地點拍照",confirmText:"同意",cost:{time:20},refund:{knowledge:10}},
-e002:{title:"人生事件｜突發支援",desc:"幫助他人",taskHint:"幫助玩家並合照",confirmText:"同意",cost:{time:15},refund:{social:10}},
-e003:{title:"人生事件｜手機失效",desc:"失去工具",taskHint:"3分鐘不能用手機",confirmText:"同意",cost:{knowledge:10},refund:{time:10}},
-e004:{title:"人生事件｜被困住",desc:"無法移動",taskHint:"原地30秒",confirmText:"同意",cost:{time:10},refund:{time:5}},
-e005:{title:"人生事件｜社交拓展",desc:"建立人際",taskHint:"與3人互動拍照",confirmText:"同意",cost:{social:5},refund:{social:15}},
-e006:{title:"人生事件｜趕時間",desc:"時間壓力",taskHint:"快速移動",confirmText:"同意",cost:{health:10},refund:{time:15}},
-e007:{title:"人生事件｜被誤會",desc:"需要解釋",taskHint:"向管理員說明",confirmText:"同意",cost:{social:10},refund:{social:15}},
-e008:{title:"人生事件｜選擇困難",desc:"做選擇",taskHint:"選一個行動",confirmText:"同意",cost:{money:10},refund:{knowledge:10}},
-e009:{title:"人生事件｜團隊合作",desc:"合作任務",taskHint:"找2人完成",confirmText:"同意",cost:{time:10},refund:{social:15}},
-e010:{title:"人生事件｜跌倒再起",desc:"遇挫折",taskHint:"完成動作",confirmText:"同意",cost:{health:10},refund:{health:15}},
+    if(!confirm("確定覆蓋 events/"+pool+" ?")) return;
 
-e011:{title:"人生事件｜走錯路",desc:"回頭重來",taskHint:"回到起點再出發",confirmText:"同意",cost:{time:20},refund:{knowledge:10}},
-e012:{title:"人生事件｜臨時考驗",desc:"能力測試",taskHint:"完成管理員挑戰",confirmText:"同意",cost:{knowledge:10},refund:{score:10}},
-e013:{title:"人生事件｜找資源",desc:"尋找機會",taskHint:"找到指定物品拍照",confirmText:"同意",cost:{time:10},refund:{money:15}},
-e014:{title:"人生事件｜陌生互動",desc:"突破舒適圈",taskHint:"與陌生人互動",confirmText:"同意",cost:{social:10},refund:{social:20}},
-e015:{title:"人生事件｜錯過機會",desc:"等待",taskHint:"等待1分鐘",confirmText:"同意",cost:{time:15},refund:{knowledge:10}},
-e016:{title:"人生事件｜健康警訊",desc:"身體負擔",taskHint:"完成運動任務",confirmText:"同意",cost:{health:10},refund:{health:20}},
-e017:{title:"人生事件｜停滯人生",desc:"卡住",taskHint:"原地停30秒",confirmText:"同意",cost:{time:10},refund:{time:5}},
-e018:{title:"人生事件｜緊急支援",desc:"幫助他人",taskHint:"移動到玩家位置",confirmText:"同意",cost:{time:15},refund:{social:15}},
+    await db.ref("events/"+pool).set(data);
 
-e019:{title:"人生事件｜資源流失",desc:"金錢損失",taskHint:"完成補救任務",confirmText:"同意",cost:{money:20},refund:{money:10}},
-e020:{title:"人生事件｜學習機會",desc:"提升自己",taskHint:"回答問題",confirmText:"同意",cost:{time:10},refund:{knowledge:20}},
-e021:{title:"人生事件｜重新定位",desc:"找回方向",taskHint:"繞場一圈",confirmText:"同意",cost:{time:15},refund:{knowledge:10}},
-e022:{title:"人生事件｜記錄人生",desc:"留下紀錄",taskHint:"拍照任務",confirmText:"同意",cost:{time:5},refund:{social:10}},
-e023:{title:"人生事件｜合作失敗",desc:"重新合作",taskHint:"再找人完成任務",confirmText:"同意",cost:{social:15},refund:{social:20}},
-e024:{title:"人生事件｜時間壓迫",desc:"時間不足",taskHint:"限時完成",confirmText:"同意",cost:{time:20},refund:{time:10}},
+    setStatus("🔥 匯入成功 → events/"+pool);
+  }catch(e){
+    setStatus("❌ 失敗："+e.message);
+  }
+}
 
-e025:{title:"人生事件｜突破舒適圈",desc:"需要勇氣",taskHint:"做不習慣的事",confirmText:"同意",cost:{health:5},refund:{score:15}},
-e026:{title:"人生事件｜判斷錯誤",desc:"重新修正",taskHint:"再完成一次任務",confirmText:"同意",cost:{knowledge:10},refund:{knowledge:15}},
-e027:{title:"人生事件｜體力消耗",desc:"疲勞",taskHint:"完成體力挑戰",confirmText:"同意",cost:{health:15},refund:{health:10}},
-e028:{title:"人生事件｜資源交換",desc:"交易行為",taskHint:"與玩家交換條件",confirmText:"同意",cost:{money:10},refund:{social:10}},
-e029:{title:"人生事件｜被拉入合作",desc:"加入團隊",taskHint:"一起完成任務",confirmText:"同意",cost:{time:10},refund:{social:15}},
-e030:{title:"人生事件｜忽略提醒",desc:"錯過資訊",taskHint:"補做任務",confirmText:"同意",cost:{time:15},refund:{knowledge:10}},
-
-e031:{title:"人生事件｜命運安排",desc:"不可選擇",taskHint:"接受挑戰",confirmText:"同意",cost:{time:10},refund:{score:10}},
-e032:{title:"人生事件｜壓力測試",desc:"高壓環境",taskHint:"在干擾下完成任務",confirmText:"同意",cost:{health:10},refund:{score:15}},
-e033:{title:"人生事件｜社交突破",desc:"突破人際",taskHint:"與陌生人互動",confirmText:"同意",cost:{social:10},refund:{social:20}},
-e034:{title:"人生事件｜方向選擇",desc:"做決定",taskHint:"選擇路線完成",confirmText:"同意",cost:{time:10},refund:{knowledge:10}},
-e035:{title:"人生事件｜重新挑戰",desc:"再次嘗試",taskHint:"再做一次任務",confirmText:"同意",cost:{health:10},refund:{score:15}},
-e036:{title:"人生事件｜第二次機會",desc:"重新開始",taskHint:"再次挑戰",confirmText:"同意",cost:{time:10},refund:{score:20}}
-
-};
-
-if(!confirm("確定要匯入36個事件？（會覆蓋events）")) return;
-
-db.ref("events").set(events).then(()=>{
-  alert("✅ 匯入完成！");
-});
-
+function setStatus(msg){
+  document.getElementById("status").innerText = msg;
 }
 </script>
 
