@@ -11,12 +11,21 @@
 - 跑馬燈 marquee
 - ✅ Simple Upload：Storage 上傳 + RTDB 索引（不含最近20筆清單）
 ========================= -->
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>人生履歷｜Player（單頁 Nav｜超完整整合）</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#2563eb" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="人生履歷" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
+
+<title>人生履歷</title>
+
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
 
 <!-- Firebase (compat) -->
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -616,7 +625,117 @@ min-height:60px;
     .iconResIc{ width:28px;height:28px; border-radius:13px; }
     .achGrid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
   }
+    
+  html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.app {
+  position: relative;
+}
+
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(255,255,255,.10), transparent 80px),
+    radial-gradient(800px 240px at 50% -20px, rgba(255,255,255,.18), transparent 60%);
+  z-index: 0;
+}
+
+.app > * {
+  position: relative;
+  z-index: 1;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(18px);
+}
+
+.panelHost {
+  border-radius: 24px;
+  backdrop-filter: blur(18px);
+}
+
+.nav {
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,.35);
+  box-shadow:
+    0 18px 40px rgba(2,6,23,.18),
+    inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.navBtn {
+  transition: transform .18s ease, opacity .18s ease, background .18s ease;
+}
+
+.navBtn:active {
+  transform: scale(.94);
+}
+
+.card,
+.panelCard,
+.row,
+.bannerCard {
+  box-shadow:
+    0 12px 30px rgba(2,6,23,.08),
+    0 2px 8px rgba(2,6,23,.05);
+}
+
+#login.card {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+button,
+.btn,
+.navBtn,
+.shopBuyBtn,
+.mini-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus,
+.btn:focus,
+.navBtn:focus,
+.shopBuyBtn:focus,
+.mini-btn:focus,
+input:focus,
+select:focus {
+  outline: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--sab) + 6px);
+  transform: translateX(-50%);
+  width: 120px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(15,23,42,.16);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+
+
 </style>
+
+
 </head>
 
 <body class="tab-role">
@@ -796,7 +915,7 @@ min-height:60px;
                 <div class="t">完成回報</div>
                 <div class="d">按「我完成了」會送出完成申請，等待管理員同意才返還押金。</div>
               </div>
-              <button class="btn sec" type="button" onclick="alert('知道了齁。')">了解</button>
+              <button class="btn sec" type="button" onclick="showGameToast('知道了齁')">了解</button>
             </div>
           </div>
         </div>
@@ -966,11 +1085,73 @@ async function ensureAnonAuth(){
   }
 }
 
+function showGameToast(msg){
+  const old = document.getElementById("gameToast");
+  if(old) old.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "gameToast";
+  toast.textContent = msg;
+  toast.style.position = "fixed";
+  toast.style.left = "50%";
+  toast.style.bottom = "110px";
+  toast.style.transform = "translateX(-50%)";
+  toast.style.padding = "10px 16px";
+  toast.style.borderRadius = "999px";
+  toast.style.background = "rgba(15,23,42,.90)";
+  toast.style.color = "#fff";
+  toast.style.fontWeight = "1000";
+  toast.style.fontSize = "13px";
+  toast.style.boxShadow = "0 12px 30px rgba(2,6,23,.22)";
+  toast.style.zIndex = "10000";
+  toast.style.opacity = "0";
+  toast.style.transition = "all .22s ease";
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(()=>{
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(-50%) translateY(-4px)";
+  });
+
+  if(_lastToastTimer) clearTimeout(_lastToastTimer);
+  _lastToastTimer = setTimeout(()=>{
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(-50%) translateY(8px)";
+    setTimeout(()=>toast.remove(), 220);
+  }, 1500);
+}
+
+function setDoneBtnStateByEvent(ev){
+  const btn = document.getElementById("bannerDoneBtn");
+  if(!btn) return;
+
+  if(!ev || ev.status !== "pending"){
+    btn.disabled = true;
+    btn.textContent = "我完成了";
+    return;
+  }
+
+  const fr = ev.finishRequest || null;
+
+  if(fr && fr.status === "pending"){
+    btn.disabled = true;
+    btn.textContent = "審核中…";
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "我完成了";
+}
+
 /* ========= state ========= */
 let myId=null,myName="";
 let radar=null;
 let currentEvent=null;
 let countdownTimer=null;
+
+let _eventModalSeenKey = null;      // 這個事件是否已看過
+let _eventManualOpen = false;       // 是否玩家手動點開
+let _lastToastTimer = null;
 
 let myPurchases = {};
 let _shopBound = false;
@@ -1670,6 +1851,7 @@ async function refundEventDepositIfNeeded(ev){
 let _eventBound=false;
 let _eventInitDone=false;
 
+
 function bindActiveEvent(){
   if(_eventBound) return;
   _eventBound = true;
@@ -1678,10 +1860,10 @@ function bindActiveEvent(){
     const ev = s.val();
     currentEvent = ev || null;
 
-    // 被駁回音效：finishRequest.status 剛變成 rejected 才播
     const frStatus = ev?.finishRequest?.status || null;
     if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
       playSfx("reject");
+      showGameToast("未通過，請再確認任務內容");
     }
     _prevFinishReqStatus = frStatus;
 
@@ -1690,6 +1872,8 @@ function bindActiveEvent(){
       _prevFinishReqStatus = null;
       _playedPopupForKey = null;
       _playedOneMinForKey = null;
+      _eventModalSeenKey = null;
+      _eventManualOpen = false;
       hideEventModal();
       hideBanner();
       hideTimer();
@@ -1697,17 +1881,20 @@ function bindActiveEvent(){
       return;
     }
 
-    // 新事件開始音效（pending 新事件只播一次）
     const ek = getEventKey(ev);
+
+    // 新事件來時，重設「是否已看過」
     if(!_eventInitDone){
       _eventInitDone = true;
       _lastStartKeyPlayed = ek || null;
       _playedOneMinForKey = null;
+      _eventModalSeenKey = null;
     }else{
       if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
         _lastStartKeyPlayed = ek;
         _playedOneMinForKey = null;
-        showEventModal(ev);
+        _eventModalSeenKey = null;
+        _eventManualOpen = false;
         playSfx("start");
       }
     }
@@ -1715,8 +1902,15 @@ function bindActiveEvent(){
     updateTimerFromEvent(ev);
 
     if(ev.status === "pending"){
-      showEventModal(ev);
       showBanner(ev);
+      setDoneBtnStateByEvent(ev);
+
+      // ✅ 只在「第一次看到新任務」時自動跳一次
+      if(ek && _eventModalSeenKey !== ek){
+        _eventModalSeenKey = ek;
+        showEventModal(ev, false);
+      }
+
       _prevEventStatus = "pending";
       return;
     }
@@ -1724,7 +1918,7 @@ function bindActiveEvent(){
     if(ev.status === "success"){
       if(_prevEventStatus !== "success") playSfx("done");
 
-      alert("🎉 管理員已同意：任務完成");
+      showGameToast("任務完成，管理員已通過");
       await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
       hideEventModal();
       hideBanner();
@@ -1739,9 +1933,9 @@ function bindActiveEvent(){
 
       if(isAbandon){
         playSfx("reject");
-        alert("❌ 已放棄本輪任務（押金不返還）");
+        showGameToast("本輪任務已放棄");
       }else{
-        alert("❌ 任務失敗 / 或逾時");
+        showGameToast("任務失敗或逾時");
       }
 
       await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
@@ -1759,29 +1953,33 @@ function bindActiveEvent(){
   document.getElementById("bannerHideBtn").onclick = async ()=>{
     if(!currentEvent) return;
 
-    if(!confirm("確定要放棄任務？（押金將不返還）")) return;
-
     await db.ref(`players/p${myId}/activeEvent`).update({
       status: "fail",
       failReason: "abandon",
       abandonedAt: Date.now(),
       abandonedBy: "player"
     });
+
+    hideEventModal();
+    showGameToast("已放棄本輪任務");
   };
 
   document.getElementById("bannerDoneBtn").onclick = async ()=>{
     if(!currentEvent || currentEvent.status !== "pending"){
-      return alert("目前沒有可回報的任務。");
+      showGameToast("目前沒有可回報的任務");
+      return;
     }
 
     const fr = currentEvent.finishRequest || null;
     if(fr && fr.status === "pending"){
-      return alert("你已送出完成申請，等待管理員確認。");
+      showGameToast("已送出完成申請");
+      return;
     }
 
     await db.ref(`players/p${myId}/activeEvent`).update({
       playerDone:true,
       playerDoneAt:Date.now(),
+      uiState:"pending",
       finishRequest:{
         status:"pending",
         requestedAt:Date.now()
@@ -1789,14 +1987,27 @@ function bindActiveEvent(){
     });
 
     playSfx("submit");
-    alert("✅ 已送出完成申請，等待管理員確認。");
+    hideEventModal();          // ✅ 按完成後直接關掉
+    showBanner({
+      ...currentEvent,
+      finishRequest:{
+        status:"pending",
+        requestedAt:Date.now()
+      }
+    });
+    setDoneBtnStateByEvent({
+      ...currentEvent,
+      finishRequest:{ status:"pending" }
+    });
+    showGameToast("已送出完成申請");
   };
 
   document.getElementById("bannerOpenBtn").onclick = ()=>{
     if(!currentEvent){
-      alert("目前沒有任務可查看。");
+      showGameToast("目前沒有任務可查看");
       return;
     }
+    _eventManualOpen = true;
     showEventModal(currentEvent, true);
     showTab("task");
   };
