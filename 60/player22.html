@@ -322,26 +322,34 @@
   #radarChart{ width:100%!important; height:100%!important; display:block; }
 
   /* ===== panel host ===== */
-  .panelHost{
-    flex:1;
-    min-height:0;
-    padding:10px;
-    background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72));
-    overflow:auto;
-    -webkit-overflow-scrolling: touch;
-  }
+ .panelHost{
+  flex:1;
+  min-height:0;
+  padding:10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.74));
+  border:1px solid rgba(255,255,255,.38);
+  box-shadow:
+    0 16px 42px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.26);
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+}
   .panel{ display:none; }
   .panel.show{ display:block; }
 
   .panelCard{
-    border-radius: 18px;
-    background: rgba(255,255,255,.92);
-    border:1px solid rgba(2,6,23,.08);
-    box-shadow: 0 18px 40px rgba(2,6,23,.10);
-    padding: 12px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.88));
+  border:1px solid rgba(2,6,23,.08);
+  box-shadow:
+    0 18px 40px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.55);
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
   }
 
   .panelTitle{
@@ -399,24 +407,87 @@
   .btn.bad{background: rgba(220,38,38,.95); color:#fff}
   .btn:disabled{opacity:.55;cursor:not-allowed}
 
-  /* ===== marquee ===== */
-  #notice-bar{
-    background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
-    color:#fff;
-    border-radius:14px;
-    overflow:hidden;
-    display:none;
-    border:1px solid rgba(255,255,255,.22);
-    box-shadow: 0 10px 24px rgba(2,6,23,.14);
-  }
-  #notice-text{
-    display:inline-block;
-    padding:10px 0 10px 100%;
-    font-weight:1000;
-    animation: var(--mq-anim) var(--mq-sec) linear infinite;
-  }
-  @keyframes marquee-left{from{transform:translateX(0)}to{transform:translateX(-100%)}}
-  @keyframes marquee-right{from{transform:translateX(0)}to{transform:translateX(100%)}}
+/* ===== marquee（橫式公告條優化版） ===== */
+#notice-bar{
+  display:none;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  min-height:50px;
+  padding:8px 10px;
+  border-radius:16px;
+  overflow:hidden;
+  position:relative;
+
+  background:
+    linear-gradient(135deg, rgba(59,130,246,.96), rgba(34,197,94,.82));
+  color:#fff;
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:
+    0 12px 28px rgba(2,6,23,.14),
+    inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+#notice-bar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(to right, rgba(255,255,255,.16), transparent 16%, transparent 84%, rgba(255,255,255,.10)),
+    radial-gradient(280px 80px at 18% 50%, rgba(255,255,255,.18), transparent 65%);
+}
+
+.noticeTag{
+  position:relative;
+  z-index:1;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:74px;
+  height:34px;
+  padding:0 12px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:1100;
+  letter-spacing:.5px;
+  color:#fff;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+  backdrop-filter: blur(10px);
+}
+
+.noticeTrack{
+  position:relative;
+  z-index:1;
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+#notice-text{
+  display:inline-block;
+  padding-left:100%;
+  font-weight:1000;
+  font-size:14px;
+  line-height:34px;
+  letter-spacing:.2px;
+  text-shadow: 0 1px 6px rgba(0,0,0,.12);
+  will-change: transform;
+  animation: var(--mq-anim) var(--mq-sec) linear infinite;
+}
+
+@keyframes marquee-left{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(-100%); }
+}
+@keyframes marquee-right{
+  from{ transform: translateX(-100%); }
+  to{ transform: translateX(0); }
+}
 
   /* ===== event timer strip + banner ===== */
   .timerStrip{
@@ -867,7 +938,12 @@ body::after {
           <div class="panelCard">
             <div class="panelTitle"><b>🎯 任務</b><span>事件 / 跑馬燈 / 倒數</span></div>
 
-            <div id="notice-bar"><span id="notice-text"></span></div>
+           <div id="notice-bar">
+  <div class="noticeTag">📢 公告</div>
+  <div class="noticeTrack">
+    <div id="notice-text"></div>
+  </div>
+</div>
 
             <div class="timerStrip" id="timerStrip">
               <div><b>⏱️ 任務倒數</b></div>
@@ -1425,9 +1501,9 @@ async function join(){
 }
 
 /* ========= marquee ========= */
-let _marqueeBound=false;
 function bindMarquee(){
-  if(_marqueeBound) return; _marqueeBound=true;
+  if(_marqueeBound) return;
+  _marqueeBound = true;
 
   const bar = document.getElementById("notice-bar");
   const text = document.getElementById("notice-text");
@@ -1435,24 +1511,36 @@ function bindMarquee(){
   db.ref("marquee").on("value", (snap)=>{
     const v = snap.val() || {};
     const enabled = (v.enabled !== false);
-    const msg = String(v.text||"").trim();
-    const speedSec = Math.max(3, Number(v.speedSec ?? 10));
+    const msg = String(v.text || "").trim();
+    const speedSec = Math.max(6, Number(v.speedSec ?? 14));
     const dir = (v.direction === "right") ? "right" : "left";
-    const fontSize = Math.max(12, Number(v.fontSize ?? 22));
+    const fontSize = Math.max(12, Number(v.fontSize ?? 14));
 
     if(!enabled || !msg){
-      bar.style.display="none";
+      bar.style.display = "none";
       return;
     }
-    bar.style.display="block";
-    text.textContent = msg + "　　";
+
+    bar.style.display = "flex";
+
+    // 多補幾次文字，讓橫式跑馬燈更連續
+    text.textContent = `${msg}　　✦　　${msg}　　✦　　${msg}　　`;
     text.style.fontSize = fontSize + "px";
 
     document.documentElement.style.setProperty("--mq-sec", `${speedSec}s`);
     document.documentElement.style.setProperty("--mq-anim", `marquee-${dir}`);
 
-    if(v.bgColor) bar.style.background = v.bgColor;
-    if(v.textColor) bar.style.color = v.textColor;
+    if(v.bgColor){
+      bar.style.background = v.bgColor;
+    }else{
+      bar.style.background = "linear-gradient(135deg, rgba(59,130,246,.96), rgba(34,197,94,.82))";
+    }
+
+    if(v.textColor){
+      text.style.color = v.textColor;
+    }else{
+      text.style.color = "#fff";
+    }
 
     text.style.animation = "none";
     void text.offsetWidth;
