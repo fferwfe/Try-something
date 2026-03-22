@@ -603,6 +603,243 @@
       justify-content:center;
     }
   }
+  
+    .player-shell{
+    border-radius:24px;
+    overflow:hidden;
+    border:1px solid rgba(86,110,139,.12);
+    background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(243,248,253,.96));
+    box-shadow:0 14px 34px rgba(76,102,136,.12);
+  }
+
+  .player-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    padding:16px 18px;
+    border-bottom:1px solid rgba(86,110,139,.08);
+    background:linear-gradient(135deg, rgba(255,255,255,.55), rgba(233,243,252,.92));
+  }
+
+  .player-maininfo{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    min-width:280px;
+  }
+
+  .player-avatar-wrap{
+    position:relative;
+  }
+
+  .player-avatar-wrap::after{
+    content:"";
+    position:absolute;
+    inset:-4px;
+    border-radius:22px;
+    background:linear-gradient(135deg, rgba(91,157,246,.18), rgba(155,135,245,.16));
+    z-index:0;
+  }
+
+  .player-avatar-wrap .pava{
+    position:relative;
+    z-index:1;
+    width:68px;
+    height:68px;
+    border-radius:20px;
+  }
+
+  .player-namebox{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .player-name-main{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    font-size:1.12rem;
+    font-weight:1000;
+    color:var(--text);
+  }
+
+  .player-subtitle{
+    color:var(--text2);
+    font-size:.94rem;
+    font-weight:900;
+  }
+
+  .player-top-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .player-body{
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .player-section{
+    background:linear-gradient(180deg, rgba(255,255,255,.74), rgba(240,246,252,.96));
+    border:1px solid rgba(86,110,139,.08);
+    border-radius:18px;
+    padding:12px;
+  }
+
+  .player-section-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:1000;
+    color:var(--text);
+    margin-bottom:10px;
+  }
+
+  .player-res-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px;
+  }
+
+  .player-res-card{
+    background:linear-gradient(180deg, #ffffff, #eef5fb);
+    border:1px solid rgba(86,110,139,.10);
+    border-radius:18px;
+    padding:12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85);
+  }
+
+  .player-res-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+  }
+
+  .player-res-name{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:1000;
+    font-size:.98rem;
+  }
+
+  .player-res-num{
+    font-size:1.55rem;
+    font-weight:1000;
+    color:#c88b16;
+    text-align:center;
+    padding:10px 12px;
+    border-radius:16px;
+    background:linear-gradient(180deg, #ffffff, #edf5fc);
+    border:1px solid rgba(91,157,246,.12);
+    margin-bottom:10px;
+  }
+
+  .player-btn-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+  }
+
+  .player-btn-group .btn.sm{
+    min-width:54px;
+  }
+
+  .player-meta-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  .quiz-inline-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,250,238,.96), rgba(255,245,221,.92));
+    border:1px solid rgba(244,182,63,.22);
+  }
+
+  .quiz-inline-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:1000;
+    color:#8b640f;
+  }
+
+  .quiz-inline-score{
+    font-size:1.6rem;
+    font-weight:1000;
+    color:#c88b16;
+    min-width:72px;
+    text-align:center;
+  }
+
+  .player-focus{
+    box-shadow:
+      0 0 0 2px rgba(91,157,246,.18),
+      0 18px 42px rgba(76,102,136,.18) !important;
+  }
+
+  @media (max-width: 900px){
+    .player-res-grid{
+      grid-template-columns:1fr;
+    }
+
+    .player-meta-row{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media (max-width: 640px){
+    .player-topbar{
+      padding:14px;
+    }
+
+    .player-maininfo{
+      width:100%;
+    }
+
+    .player-top-actions{
+      width:100%;
+      justify-content:flex-start;
+    }
+
+    .player-avatar-wrap .pava{
+      width:62px;
+      height:62px;
+      border-radius:18px;
+    }
+
+    .player-name-main{
+      font-size:1.04rem;
+    }
+
+    .quiz-inline-card{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .quiz-inline-score{
+      width:100%;
+      text-align:left;
+    }
+  }
 </style>
 </head>
 
@@ -901,6 +1138,56 @@
           <div class="hint">✅ 預覽 URL 取得已改成「限流並行 + 快取」，避免一次打爆 Storage。</div>
 
           <div id="uploadsList" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <!-- 玩家快速選擇 -->
+      <div class="card" style="border-left-color:#7c9cff;" data-collapsible="panel_player_picker">
+        <div class="card-head">
+          <h3 class="label-text"><i class="fa-solid fa-user-gear"></i> 玩家快速選擇</h3>
+          <div class="card-tools">
+            <button class="btn toggle sm" data-card-toggle="panel_player_picker">
+              <i class="fa-solid fa-chevron-up"></i> 收合
+            </button>
+          </div>
+        </div>
+
+        <div class="collapse open">
+          <div class="res-row" style="align-items:flex-end;">
+            <div style="min-width:220px;">
+              <div class="label-text"><i class="fa-solid fa-list"></i> 指定玩家</div>
+              <div class="hint">選擇後只展開該玩家卡片</div>
+            </div>
+
+            <div style="flex:1;min-width:220px;">
+              <select id="focusPlayerSelect" style="margin:0;">
+                <option value="1">p1</option>
+                <option value="2">p2</option>
+                <option value="3">p3</option>
+                <option value="4">p4</option>
+                <option value="5">p5</option>
+                <option value="6">p6</option>
+                <option value="7">p7</option>
+                <option value="8">p8</option>
+                <option value="9">p9</option>
+                <option value="10">p10</option>
+                <option value="11">p11</option>
+                <option value="12">p12</option>
+                <option value="13">p13</option>
+                <option value="14">p14</option>
+                <option value="15">p15</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn blue sm" id="btnFocusPlayer">
+                <i class="fa-solid fa-crosshairs"></i> 定位玩家
+              </button>
+              <button class="btn ghost sm" id="btnShowAllPlayers">
+                <i class="fa-solid fa-users"></i> 顯示全部
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
