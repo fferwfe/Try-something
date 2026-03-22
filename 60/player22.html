@@ -1197,6 +1197,36 @@ select,
 textarea{
   font-size:16px;
 }
+
+.stat-card{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+
+  padding: 10px;
+  border-radius: 16px;
+
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(10px);
+}
+
+.stat-item{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 12px;
+}
+
+.stat-item span{
+  font-size: 18px;
+}
+
+.stat-item b{
+  font-size: 14px;
+  margin-top: 2px;
+}
 </style>
 
 
