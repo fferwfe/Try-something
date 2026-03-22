@@ -1660,10 +1660,13 @@
     const tEl = $(`p${pid}-title`);
     if(tEl) tEl.innerText = title || "-";
 
-    Object.keys(resConfig).forEach(k => {
+        Object.keys(resConfig).forEach(k => {
       const el = $(`p${pid}-${k}`);
       if (el) el.innerText = d?.res?.[k] ?? 0;
     });
+
+    const quizEl = $(`p${pid}-quizScore`);
+    if (quizEl) quizEl.innerText = d?.test ?? 0;
 
     const lastSeen = d?.lastSeen || 0;
     const online = lastSeen && (now() - lastSeen) <= 60000;
@@ -1725,7 +1728,7 @@
   // =========================
   let __playerRendered = false;
 
-  function renderPlayerList() {
+    function renderPlayerList() {
     if (__playerRendered) return;
     __playerRendered = true;
 
@@ -1735,26 +1738,27 @@
 
     for (let i=1; i<=PLAYER_COUNT; i++) {
       const html = `
-        <div class="card" style="border-left-color:rgba(255,255,255,.22);">
-          <div class="player-head">
-            <div class="player-left">
-              <div class="pinfo">
+        <div class="card player-shell" id="playerCardWrap-${i}" data-player-card="${i}" style="border-left-color:rgba(91,157,246,.30);">
+          <div class="player-topbar">
+            <div class="player-maininfo">
+              <div class="player-avatar-wrap">
                 <div class="pava">
                   <img id="p${i}-avatarImg" alt="avatar">
                   <span id="p${i}-avatarFallback">${i}</span>
                 </div>
+              </div>
 
-                <div style="flex:1;min-width:0;">
-                  <div class="pname">
-                    👤 <span id="p${i}-n">-</span>
-                    <span class="badge" id="p${i}-online">-</span>
-                  </div>
-                  <div class="ptitle">稱號：<b id="p${i}-title">-</b></div>
+              <div class="player-namebox">
+                <div class="player-name-main">
+                  <span>👤</span>
+                  <span id="p${i}-n">-</span>
+                  <span class="badge" id="p${i}-online">-</span>
                 </div>
+                <div class="player-subtitle">稱號：<b id="p${i}-title">-</b></div>
               </div>
             </div>
 
-            <div class="player-right">
+            <div class="player-top-actions">
               <span class="seat-mini">
                 <i class="fa-solid fa-chair"></i>
                 <span>SeatLock：</span>
@@ -1781,56 +1785,30 @@
             </div>
           </div>
 
-          <div class="collapse open" id="p${i}-panel" style="margin-top:12px;">
-            <div class="hint" style="margin:0 0 10px 0;">
-              <span class="mark"><i class="fa-solid fa-screwdriver-wrench"></i> 玩家資源加減超控面板</span>
-            </div>
+          <div class="collapse open player-body" id="p${i}-panel">
 
-            <div class="res-row">
-              <div class="label-text"><i class="fa-solid fa-crown"></i> 自訂稱號</div>
-              <div style="flex:1;min-width:260px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <input id="p${i}-titleIn" class="inv-input" placeholder="輸入稱號（儲存後同步到玩家/顯示）" style="flex:1;min-width:220px;">
-                <button class="btn violet sm" data-settitle="${i}"><i class="fa-solid fa-floppy-disk"></i> 儲存</button>
+            <div class="quiz-inline-card">
+              <div class="quiz-inline-title">
+                <i class="fa-solid fa-book"></i> 測驗成績
               </div>
+              <div class="quiz-inline-score" id="p${i}-quizScore">0</div>
             </div>
 
-${Object.keys(resConfig).map(k => `
-  <div class="res-row">
-    <div class="player-resource-block">
+            <div class="player-meta-row">
+              <div class="player-section">
+                <div class="player-section-title">
+                  <i class="fa-solid fa-crown"></i> 自訂稱號
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                  <input id="p${i}-titleIn" class="inv-input" placeholder="輸入稱號（儲存後同步到玩家/顯示）" style="flex:1;min-width:220px;">
+                  <button class="btn violet sm" data-settitle="${i}"><i class="fa-solid fa-floppy-disk"></i> 儲存</button>
+                </div>
+              </div>
 
-      <div class="player-resource-title" style="color:${resConfig[k].color}">
-        <i class="fas ${resConfig[k].icon}"></i> ${resConfig[k].name}
-      </div>
-
-      <div class="res-pad">
-        <div class="res-pad-row">
-          ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-100">-100</button>`:''}
-          ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-50">-50</button>`:''}
-          <button class="btn minus sm" data-adj="${i}|${k}|-10">-10</button>
-          <button class="btn minus sm" data-adj="${i}|${k}|-5">-5</button>
-          <button class="btn minus sm" data-adj="${i}|${k}|-1">-1</button>
-        </div>
-
-        <div class="res-pad-value">
-          <span class="val big-val" id="p${i}-${k}">0</span>
-        </div>
-
-        <div class="res-pad-row">
-          <button class="btn plus sm" data-adj="${i}|${k}|1">+1</button>
-          <button class="btn plus sm" data-adj="${i}|${k}|5">+5</button>
-          <button class="btn plus sm" data-adj="${i}|${k}|10">+10</button>
-          ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|50">+50</button>`:''}
-          ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|100">+100</button>`:''}
-        </div>
-      </div>
-
-    </div>
-  </div>
-`).join("")}
-
-            <div class="res-row" style="align-items:flex-start;">
-              <div class="label-text"><i class="fa-solid fa-bag-shopping"></i> 人生背包</div>
-              <div style="flex:1;min-width:260px;">
+              <div class="player-section">
+                <div class="player-section-title">
+                  <i class="fa-solid fa-bag-shopping"></i> 人生背包
+                </div>
                 <div id="p${i}-inv-display"></div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
                   <input id="p${i}-inv-in" class="inv-input" placeholder="輸入道具名稱" style="flex:1;min-width:220px;">
@@ -1838,6 +1816,43 @@ ${Object.keys(resConfig).map(k => `
                 </div>
               </div>
             </div>
+
+            <div class="player-section">
+              <div class="player-section-title">
+                <i class="fa-solid fa-sliders"></i> 資源控制
+              </div>
+
+              <div class="player-res-grid">
+                ${Object.keys(resConfig).map(k => `
+                  <div class="player-res-card">
+                    <div class="player-res-head">
+                      <div class="player-res-name" style="color:${resConfig[k].color}">
+                        <i class="fas ${resConfig[k].icon}"></i> ${resConfig[k].name}
+                      </div>
+                    </div>
+
+                    <div class="player-res-num" id="p${i}-${k}">0</div>
+
+                    <div class="player-btn-group">
+                      ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-100">-100</button>`:''}
+                      ${k!=='score'?`<button class="btn minus10 sm" data-adj="${i}|${k}|-50">-50</button>`:''}
+                      <button class="btn minus sm" data-adj="${i}|${k}|-10">-10</button>
+                      <button class="btn minus sm" data-adj="${i}|${k}|-5">-5</button>
+                      <button class="btn minus sm" data-adj="${i}|${k}|-1">-1</button>
+                    </div>
+
+                    <div class="player-btn-group" style="margin-top:8px;">
+                      <button class="btn plus sm" data-adj="${i}|${k}|1">+1</button>
+                      <button class="btn plus sm" data-adj="${i}|${k}|5">+5</button>
+                      <button class="btn plus sm" data-adj="${i}|${k}|10">+10</button>
+                      ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|50">+50</button>`:''}
+                      ${k!=='score'?`<button class="btn plus10 sm" data-adj="${i}|${k}|100">+100</button>`:''}
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+
           </div>
         </div>
       `;
@@ -1850,6 +1865,7 @@ ${Object.keys(resConfig).map(k => `
       }
       applyPlayerCollapse(i);
     }
+  }
   }
 
   // =========================
