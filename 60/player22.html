@@ -1198,34 +1198,103 @@ textarea{
   font-size:16px;
 }
 
-.stat-card{
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-
-  padding: 10px;
-  border-radius: 16px;
-
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(10px);
+.mid-stat-card{
+  width:100%;
+  min-width:0;
+  border-radius:22px;
+  padding:10px 8px;
+  border:1px solid rgba(15,23,42,.06);
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(245,248,255,.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.75),
+    0 8px 18px rgba(15,23,42,.04);
+  overflow:hidden;
 }
 
-.stat-item{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 12px;
+.mid-stat-grid{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap:0;
+  width:100%;
+  min-width:0;
+  align-items:stretch;
 }
 
-.stat-item span{
-  font-size: 18px;
+.mid-stat-item{
+  min-width:0;
+  text-align:center;
+  padding:4px 4px 2px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
 }
 
-.stat-item b{
-  font-size: 14px;
-  margin-top: 2px;
+.mid-stat-item:not(:last-child)::after{
+  content:"";
+  position:absolute;
+  right:0;
+  top:18%;
+  width:1px;
+  height:64%;
+  background: linear-gradient(to bottom, transparent, rgba(15,23,42,.08), transparent);
+}
+
+.mid-stat-icon{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  margin:0 auto 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  color:#fff;
+  background: linear-gradient(135deg,#4f8cff,#ffb020);
+  box-shadow:0 8px 16px rgba(79,140,255,.16);
+}
+
+.mid-stat-value{
+  font-size:20px;
+  font-weight:1000;
+  color:#111827;
+  line-height:1.1;
+}
+
+.mid-stat-label{
+  margin-top:2px;
+  font-size:11px;
+  font-weight:900;
+  color:rgba(17,24,39,.52);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+@media (max-width: 520px){
+  .mid-stat-card{
+    padding:8px 4px;
+  }
+
+  .mid-stat-item{
+    padding:4px 2px 2px;
+  }
+
+  .mid-stat-icon{
+    width:30px;
+    height:30px;
+    font-size:14px;
+    margin-bottom:5px;
+  }
+
+  .mid-stat-value{
+    font-size:17px;
+  }
+
+  .mid-stat-label{
+    font-size:10px;
+  }
 }
 </style>
 
@@ -2130,11 +2199,11 @@ function bindRes(){
 
     document.getElementById("scoreTop").innerText = myRes.score || 0;
 
-    ["money","health","knowledge","social","time"].forEach(k=>{
-      const el = document.getElementById(k);
-      if(el) el.innerText = myRes[k] || 0;
-      setBar(k, myRes[k] || 0);
-    });
+   document.getElementById("moneyVal").innerText = myRes.money || 0;
+document.getElementById("healthVal").innerText = myRes.health || 0;
+document.getElementById("knowledgeVal").innerText = myRes.knowledge || 0;
+document.getElementById("socialVal").innerText = myRes.social || 0;
+document.getElementById("timeVal").innerText = myRes.time || 0;
 
     const r = {
       money: myRes.money || 0,
