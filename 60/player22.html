@@ -95,19 +95,27 @@
   .hide{display:none!important;}
 
   .app{
-    height: 100svh;
-    height: 100vh;
-    padding-top: calc(10px + var(--sat));
-    padding-bottom: calc(var(--navH) + 10px + var(--sab));
-    padding-left: 10px;
-    padding-right: 10px;
-    display:flex;
-    flex-direction:column;
-    gap: var(--gap);
-    max-width: 560px;
-    margin: 0 auto;
-    position: relative;
+  min-height: 100vh;
+  height: 100dvh;
+  padding-top: calc(10px + var(--sat));
+  padding-bottom: calc(var(--navH) + 10px + var(--sab));
+  padding-left: 10px;
+  padding-right: 10px;
+  display:flex;
+  flex-direction:column;
+  gap: var(--gap);
+  max-width: 560px;
+  margin: 0 auto;
+  position: relative;
+}
+@supports (-webkit-touch-callout: none){
+  html, body{
+    min-height: -webkit-fill-available;
   }
+  .app{
+    min-height: -webkit-fill-available;
+  }
+}
 
   .app::before{
     content:"";
@@ -260,22 +268,18 @@
   }
 
   .titleCard{
-    padding:16px;
-    display:grid;
-    grid-template-columns: 92px minmax(0,1fr) 132px;
-    gap:16px;
-    align-items:center;
-    background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(247,250,255,.92));
-    border:1px solid rgba(15,23,42,.08);
-    border-radius:26px;
-    box-shadow:
-      0 18px 40px rgba(15,23,42,.08),
-      inset 0 1px 0 rgba(255,255,255,.8);
-      .titleCard > .avatar,
-      .titleCard > #me{
-      grid-column:1;
+  padding:16px;
+  display:grid;
+  grid-template-columns: 92px minmax(0,1fr) 132px;
+  gap:16px;
+  align-items:center;
 }
-  }
+
+.titleCard > .avatar,
+.titleCard > #me{
+  grid-column:1;
+}
+  
 
 
   .avatar{
@@ -294,8 +298,18 @@
     display:block;
   }
   
-  #me{
-  margin: top 50px /* 78px頭像 + 一點間距 */
+.profileCol{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-width:92px;
+}
+
+#me{
+  margin-top:8px;
+  text-align:center;
+  width:100%;
 }
 
   .avatar img{
@@ -693,45 +707,52 @@
 
   /* ===== 跑馬燈：永遠一排 ===== */
 
-  #notice-bar{
-    display:none;
-    width:100%;
-    height:44px;
-    border-radius:14px;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,.22);
-    box-shadow: 0 10px 24px rgba(2,6,23,.14);
-    background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
-    position:relative;
-    white-space:nowrap;
-  }
+ #notice-bar{
+  display:none;
+  width:100%;
+  height:44px;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow: 0 10px 24px rgba(2,6,23,.14);
+  background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
+  position:relative;
+  white-space:nowrap;
+}
 
-  #notice-text{
-    position:absolute;
-    left:0;
-    top:50%;
-    display:inline-block;
-    transform:translateY(-50%);
-    white-space:nowrap;
-    word-break:keep-all;
-    line-height:1;
-    padding-left:100%;
-    font-weight:1000;
-    will-change:transform;
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
-    animation: var(--mq-anim) var(--mq-sec) linear infinite;
-  }
+#notice-text{
+  position:absolute;
+  top:50%;
+  left:100%;
+  display:inline-block;
+  transform:translateY(-50%);
+  white-space:nowrap;
+  word-break:keep-all;
+  line-height:1;
+  font-weight:1000;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  animation: marquee-left var(--mq-sec) linear infinite;
+}
 
-  @keyframes marquee-left{
-    from{ transform: translate(0, -50%); }
-    to{ transform: translate(-100%, -50%); }
+@keyframes marquee-left{
+  from{
+    transform: translate(0, -50%);
   }
+  to{
+    transform: translate(calc(-100% - 100vw), -50%);
+  }
+}
 
-  @keyframes marquee-right{
-    from{ transform: translate(0, -50%); }
-    to{ transform: translate(100%, -50%); }
+@keyframes marquee-right{
+  from{
+    transform: translate(0, -50%);
   }
+  to{
+    transform: translate(100vw, -50%);
+  }
+}
 
   .timerStrip{
     margin-top:10px;
@@ -1118,19 +1139,6 @@
     pointer-events: none;
   }
 
-  @media (max-width:520px){
-    .titleCard{
-      grid-template-columns: 92px minmax(0,1fr);
-      gap:12px;
-    }
-
-    .roleTitle{
-  left:-118px;
-  top:82px;
-  width:126px;
-  font-size:15px;
-}
-
     .scorePills{
       grid-column: 1 / -1;
       width:100%;
@@ -1173,7 +1181,22 @@
     .navBtn .ic{ width: 32px; height:32px; }
     .navBtn{ padding: 9px 6px; }
     .achGrid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-  }
+  
+
+  button,
+.navBtn,
+.btn,
+.shopBuyBtn,
+.mini-btn{
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select,
+textarea{
+  font-size:16px;
+}
 </style>
 
 
@@ -1487,7 +1510,10 @@ function showTab(key){
 
   const host = document.querySelector(".panelHost");
   if(host) host.scrollTop = 0;
+    if(key === "shop") queueRenderShop();
+
 }
+
 document.querySelectorAll(".navBtn").forEach(btn=>{
   btn.addEventListener("click", ()=> showTab(btn.dataset.tab));
 });
@@ -1604,6 +1630,18 @@ let _shopBound = false;
 let _shopItemsCache = {};
 let _purchasesBound = false;
 
+let _shopRenderQueued = false;
+
+function queueRenderShop(){
+  if(_shopRenderQueued) return;
+  _shopRenderQueued = true;
+
+  requestAnimationFrame(()=>{
+    _shopRenderQueued = false;
+    renderShop();
+  });
+}
+
 /* ========= SFX（事件音效） =========
    你要換音效：直接替換檔案即可（不用改程式）
    - 事件開始：assets/sfx/event_start.wav
@@ -1616,52 +1654,100 @@ let _purchasesBound = false;
    注意：手機瀏覽器通常要先有一次點擊互動才允許播放音效
 */
 const SFX = {
-  start:  new Audio('music/start.mp3'),
-  popup:  new Audio('music/popup.mp3'),
-  submit: new Audio('music/submit.mp3'),
-  oneMin: new Audio('music/1min.mp3'),
-  done:   new Audio('music/done.mp3'),
-  reject: new Audio('music/reject.mp3'),
+  start:  new Audio("music/start.mp3"),
+  popup:  new Audio("music/popup.mp3"),
+  submit: new Audio("music/submit.mp3"),
+  oneMin: new Audio("music/1min.mp3"),
+  done:   new Audio("music/done.mp3"),
+  reject: new Audio("music/reject.mp3"),
 };
+
 Object.values(SFX).forEach(a=>{
-  a.preload = 'auto';
+  a.preload = "auto";
   a.volume = 0.9;
+  a.playsInline = true;
+  if(a.setAttribute){
+    a.setAttribute("playsinline", "true");
+    a.setAttribute("webkit-playsinline", "true");
+  }
 });
-let _sfxUnlocked=false;
+
+let _sfxUnlocked = false;
+let _sfxEnabled = true;
+
 function unlockSfxOnce(){
-  if(_sfxUnlocked) return;
-  _sfxUnlocked=true;
-  Object.values(SFX).forEach(a=>{
-    const v=a.volume;
-    a.volume=0;
-    a.play().then(()=>{ a.pause(); a.currentTime=0; }).catch(()=>{});
-    a.volume=v;
+  if(_sfxUnlocked) return Promise.resolve(true);
+
+  const jobs = Object.values(SFX).map(a=>{
+    try{
+      const oldVol = a.volume;
+      a.volume = 0;
+      a.currentTime = 0;
+      const p = a.play();
+      if(p && typeof p.then === "function"){
+        return p.then(()=>{
+          a.pause();
+          a.currentTime = 0;
+          a.volume = oldVol;
+          return true;
+        }).catch(()=>{
+          a.pause();
+          a.currentTime = 0;
+          a.volume = oldVol;
+          return false;
+        });
+      }else{
+        a.pause();
+        a.currentTime = 0;
+        a.volume = oldVol;
+        return Promise.resolve(true);
+      }
+    }catch(e){
+      return Promise.resolve(false);
+    }
+  });
+
+  return Promise.all(jobs).then(results=>{
+    _sfxUnlocked = results.some(Boolean);
+    return _sfxUnlocked;
   });
 }
 
-
-
 function playSfx(key){
+  if(!_sfxEnabled) return;
   const a = SFX[key];
   if(!a) return;
 
-  try{
-    if(a.readyState === 0){
-      a.load();
-    }
+  const doPlay = ()=>{
+    try{
+      if(a.readyState === 0) a.load();
+      a.pause();
+      a.currentTime = 0;
+      const p = a.play();
+      if(p && typeof p.catch === "function"){
+        p.catch(()=>{});
+      }
+    }catch(e){}
+  };
 
-    a.pause();
-    a.currentTime = 0;
-
-    const p = a.play();
-    if(p && typeof p.catch === "function"){
-      p.catch(err=>{
-        console.warn("SFX blocked:", key);
-      });
-    }
-  }catch(e){
-    console.warn("SFX error:", key);
+  if(_sfxUnlocked){
+    doPlay();
+    return;
   }
+
+  unlockSfxOnce().then(ok=>{
+    if(ok) doPlay();
+  });
+}
+
+function bindSfxUnlock(){
+  const onceUnlock = ()=>{
+    unlockSfxOnce();
+  };
+
+  document.addEventListener("click", onceUnlock, { once:true, passive:true });
+  document.addEventListener("touchstart", onceUnlock, { once:true, passive:true });
+  document.addEventListener("pointerdown", onceUnlock, { once:true, passive:true });
 }
 
 document.addEventListener("visibilitychange", ()=>{
@@ -1670,8 +1756,10 @@ document.addEventListener("visibilitychange", ()=>{
   }
 });
 
-window.addEventListener("focus", unlockSfxOnce);
-window.addEventListener("pageshow", unlockSfxOnce);
+window.addEventListener("focus", ()=> unlockSfxOnce());
+window.addEventListener("pageshow", ()=> unlockSfxOnce());
+
+bindSfxUnlock();
 
 function getEventKey(ev){
   return ev?.assignId || ev?.eid || null;
@@ -1935,8 +2023,13 @@ function bindMarquee(){
     if(textColor) bar.style.color = textColor;
 
     text.style.animation = "none";
-    void text.offsetWidth;
-    text.style.animation = `var(--mq-anim) var(--mq-sec) linear infinite`;
+void text.offsetWidth;
+
+if(dir === "right"){
+  text.style.animation = `marquee-right ${speedSec}s linear infinite`;
+}else{
+  text.style.animation = `marquee-left ${speedSec}s linear infinite`;
+}
   });
 }
 
@@ -1996,6 +2089,7 @@ function initRadar(){
 
 /* ========= resources ========= */
   
+
 function bindRes(){
   db.ref(`players/p${myId}/res`).on("value", s=>{
     const data = s.val() || {};
@@ -2034,16 +2128,15 @@ function bindRes(){
         ? String(window.__customTitle).trim()
         : autoTitle;
 
-    document.getElementById("titleText").innerText =
-      "稱號：" + shownTitle +
-      ((window.__customTitle && String(window.__customTitle).trim()) ? "（管理員設定）" : "");
-
+    document.getElementById("titleText").innerText = "稱號：" + shownTitle;
     document.getElementById("topTitle").innerText = "稱號：" + shownTitle;
 
     db.ref(`players/p${myId}`).update({
       roleLabelAuto: autoTitle,
       roleLabel: autoTitle
     }).catch(()=>{});
+
+    queueRenderShop();
   });
 }
 
@@ -2136,6 +2229,7 @@ function normalizeImgSrc(raw){
 
 /* ========= global shop switch (system/shopEnabled) ========= */
 let __shopEnabled = true;
+
 function bindGlobalShopSwitch(){
   db.ref("system/shopEnabled").off("value");
   db.ref("system/shopEnabled").on("value", (snap)=>{
@@ -2143,24 +2237,24 @@ function bindGlobalShopSwitch(){
     __shopEnabled = enabled;
     window.__shopClosedBySystem = !enabled;
     setShopDisabled(!enabled);
+
     const hint = document.getElementById("shopSysHint");
     if(hint){
       hint.textContent = enabled ? "✅ 系統：商店開啟" : "⛔ 系統：商店關閉";
     }
-    renderShop();
+
+    queueRenderShop();
   });
 }
-
-function bindShop(){
+  function bindShop(){
   if(_shopBound) return;
   _shopBound = true;
 
   db.ref("shop/items").on("value", s=>{
     _shopItemsCache = s.val() || {};
-    renderShop();
+    queueRenderShop();
   });
 }
-
 function renderShop(){
   const list = document.getElementById("shopList");
   const empty = document.getElementById("shopEmpty");
@@ -3041,4 +3135,4 @@ window.addEventListener("pageshow", resyncActiveEvent);
 
 </script>
 </body>
-</html>
+</html>>
