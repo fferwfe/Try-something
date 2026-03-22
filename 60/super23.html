@@ -1526,7 +1526,8 @@
     list.innerHTML = "";
 
     for (let i=1; i<=PLAYER_COUNT; i++) {
-     <div class="player-card" id="p${i}">
+    const html = `
+      <div class="player-card" id="p${i}">
     
     <!-- 🔹 上方：第幾組 + 名字 -->
     <div class="pname" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
