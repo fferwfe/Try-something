@@ -1526,19 +1526,30 @@
     list.innerHTML = "";
 
     for (let i=1; i<=PLAYER_COUNT; i++) {
-      const html = `
-        <div class="card" style="border-left-color:rgba(255,255,255,.22);">
-          <div class="player-head">
-            <div class="player-left">
-              <div class="pinfo">
-                <div class="pava">
-                  <img id="p${i}-avatarImg" alt="avatar">
-                  <span id="p${i}-avatarFallback">${i}</span>
-                </div>
+     <div class="player-card" id="p${i}">
+    
+    <!-- 🔹 上方：第幾組 + 名字 -->
+    <div class="pname" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      
+      <!-- 第幾組 -->
+      <span style="
+        display:inline-flex;
+        align-items:center;
+        padding:6px 12px;
+        border-radius:999px;
+        background:linear-gradient(180deg, rgba(96,165,250,.25), rgba(56,189,248,.15));
+        border:1px solid rgba(96,165,250,.35);
+        color:#eff6ff;
+        font-weight:900;
+        font-size:13px;
+        letter-spacing:.5px;
+      ">
+        第 ${i} 組
+      </span>
 
-                <div style="flex:1;min-width:0;">
-                  <div class="pname">
-                    👤 <span id="p${i}-n">-</span>
+      <!-- 玩家名稱 -->
+      👤 <span id="p${i}-n">-</span>
+
                     <span class="badge" id="p${i}-online">-</span>
                   </div>
                   <div class="ptitle">稱號：<b id="p${i}-title">-</b></div>
