@@ -42,12 +42,12 @@
     --bg1:#edf5ff;
     --bg2:#fff7e7;
 
-    --card: rgba(255,255,255,.90);
-    --card2: rgba(255,255,255,.96);
-    --stroke: rgba(15,23,42,.08);
+    --card:rgba(255,255,255,.90);
+    --card2:rgba(255,255,255,.96);
+    --stroke:rgba(15,23,42,.08);
 
     --text:#0f172a;
-    --muted: rgba(15,23,42,.58);
+    --muted:rgba(15,23,42,.58);
 
     --pri:#3b82f6;
     --pri2:#22c55e;
@@ -57,35 +57,35 @@
     --bad:#dc2626;
     --warn:#f59e0b;
 
-    --sat: env(safe-area-inset-top, 0px);
-    --sab: env(safe-area-inset-bottom, 0px);
+    --sat:env(safe-area-inset-top, 0px);
+    --sab:env(safe-area-inset-bottom, 0px);
 
-    --navH: 88px;
-    --topH: 56px;
-    --gap: 10px;
-    --r: 20px;
+    --navH:88px;
+    --topH:56px;
+    --gap:10px;
+    --r:20px;
 
     --mq-sec:10s;
-    --mq-anim: marquee-left;
+    --mq-anim:marquee-left;
   }
 
   *{ box-sizing:border-box; }
   html,body{ height:100%; }
 
-  html, body{
-    overscroll-behavior: none;
-    touch-action: manipulation;
+  html,body{
+    overscroll-behavior:none;
+    touch-action:manipulation;
   }
 
   body{
     margin:0;
     color:var(--text);
-    font-family: system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;
+    font-family:system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;
     background:
       radial-gradient(900px 520px at 16% 10%, rgba(59,130,246,.20), transparent 58%),
       radial-gradient(860px 520px at 88% 18%, rgba(245,158,11,.18), transparent 58%),
       radial-gradient(860px 620px at 48% 92%, rgba(34,197,94,.14), transparent 60%),
-      linear-gradient(135deg, var(--bg0), var(--bg1) 55%, var(--bg2));
+      linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
     overflow:hidden;
     user-select:none;
     -webkit-user-select:none;
@@ -96,22 +96,30 @@
 
   .app{
     min-height:100vh;
+    min-height:100dvh;
     height:100dvh;
-    padding-top: calc(10px + var(--sat));
-    padding-bottom: calc(var(--navH) + 10px + var(--sab));
+    padding-top:calc(10px + var(--sat));
     padding-left:10px;
     padding-right:10px;
+    padding-bottom:calc(var(--navH) + 24px + var(--sab));
     display:flex;
     flex-direction:column;
     gap:var(--gap);
     max-width:560px;
     margin:0 auto;
     position:relative;
+    overflow:hidden;
   }
 
   @supports (-webkit-touch-callout: none){
-    html, body{ min-height:-webkit-fill-available; }
-    .app{ min-height:-webkit-fill-available; }
+    html,body{
+      height:-webkit-fill-available;
+      min-height:-webkit-fill-available;
+    }
+    .app{
+      min-height:-webkit-fill-available;
+      height:-webkit-fill-available;
+    }
   }
 
   .app::before{
@@ -145,7 +153,7 @@
     z-index:20;
     overflow:hidden;
     flex:0 0 auto;
-    backdrop-filter: blur(18px);
+    backdrop-filter:blur(18px);
   }
   body.tab-role .topBar{ display:flex; }
 
@@ -153,7 +161,7 @@
     content:"";
     position:absolute;
     inset:-1px;
-    background: radial-gradient(420px 120px at 30% 40%, rgba(255,255,255,.38), transparent 65%);
+    background:radial-gradient(420px 120px at 30% 40%, rgba(255,255,255,.38), transparent 65%);
     pointer-events:none;
   }
 
@@ -171,7 +179,7 @@
 
   .card{
     border-radius:var(--r);
-    background:linear-gradient(180deg, var(--card), rgba(255,255,255,.78));
+    background:linear-gradient(180deg,var(--card),rgba(255,255,255,.78));
     border:1px solid var(--stroke);
     box-shadow:
       0 12px 30px rgba(2,6,23,.08),
@@ -241,8 +249,17 @@
     box-shadow:0 6px 12px rgba(2,6,23,.10);
   }
 
-  .mini-btn.danger{ background:rgba(220,38,38,.92); color:#fff; border:none; }
-  .mini-btn.blue{ background:rgba(59,130,246,.92); color:#fff; border:none; }
+  .mini-btn.danger{
+    background:rgba(220,38,38,.92);
+    color:#fff;
+    border:none;
+  }
+
+  .mini-btn.blue{
+    background:rgba(59,130,246,.92);
+    color:#fff;
+    border:none;
+  }
 
   #game{
     display:flex;
@@ -250,31 +267,28 @@
     gap:var(--gap);
     min-height:0;
     flex:1;
+    overflow:hidden;
   }
 
-
-.roleHeader{
-  display:none;
-  flex-direction:column;
-  gap:12px;
-}
-
-body.tab-role .roleHeader{
-  display:flex;
-}
+  .roleHeader{
+    display:none;
+    flex-direction:column;
+    gap:var(--gap);
+    flex:0 0 auto;
+  }
+  body.tab-role .roleHeader{ display:flex; }
 
   #titleText{
     display:none !important;
   }
 
-  /* ===== 上半部主區 ===== */
-.titleCard{
-  padding:18px;
-  display:grid;
-  grid-template-columns: 98px minmax(0,1fr);
-  gap:16px;
-  align-items:start;
-}
+  .titleCard{
+    padding:18px;
+    display:grid;
+    grid-template-columns:98px minmax(0,1fr);
+    gap:16px;
+    align-items:start;
+  }
 
   .profileCol{
     display:flex;
@@ -291,7 +305,7 @@ body.tab-role .roleHeader{
     border-radius:24px;
     overflow:hidden;
     border:1px solid rgba(15,23,42,.08);
-    background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
     box-shadow:
       0 12px 24px rgba(37,99,235,.10),
       inset 0 1px 0 rgba(255,255,255,.35);
@@ -365,12 +379,11 @@ body.tab-role .roleHeader{
 
   .roleSub{ display:none; }
 
-  /* ===== 五資源卡 ===== */
   .mid-stat-card{
     width:100%;
     border-radius:24px;
     padding:14px 10px;
-    background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(247,250,255,.96));
+    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(247,250,255,.96));
     border:1px solid rgba(15,23,42,.06);
     box-shadow:
       0 12px 28px rgba(15,23,42,.06),
@@ -379,7 +392,7 @@ body.tab-role .roleHeader{
 
   .mid-stat-grid{
     display:grid;
-    grid-template-columns: repeat(5, minmax(0,1fr));
+    grid-template-columns:repeat(5, minmax(0,1fr));
     gap:0;
     align-items:start;
   }
@@ -402,7 +415,7 @@ body.tab-role .roleHeader{
     top:16%;
     width:1px;
     height:68%;
-    background: linear-gradient(to bottom, transparent, rgba(15,23,42,.08), transparent);
+    background:linear-gradient(to bottom, transparent, rgba(15,23,42,.08), transparent);
   }
 
   .mid-stat-icon{
@@ -416,7 +429,7 @@ body.tab-role .roleHeader{
     font-size:24px;
     line-height:1;
     color:#fff;
-    background: linear-gradient(135deg, rgba(79,140,255,.98), rgba(255,176,32,.92));
+    background:linear-gradient(135deg, rgba(79,140,255,.98), rgba(255,176,32,.92));
     box-shadow:
       0 10px 20px rgba(79,140,255,.18),
       inset 0 1px 0 rgba(255,255,255,.35);
@@ -438,7 +451,6 @@ body.tab-role .roleHeader{
     white-space:nowrap;
   }
 
-  /* ===== 分數列 ===== */
   .scorePills{
     display:flex;
     flex-direction:row;
@@ -472,8 +484,8 @@ body.tab-role .roleHeader{
   }
 
   .scorePills .pill:first-child{
-    background: linear-gradient(135deg, #fff7c8, #ffd96b);
-    border-color: rgba(245,158,11,.20);
+    background:linear-gradient(135deg, #fff7c8, #ffd96b);
+    border-color:rgba(245,158,11,.20);
     color:#6b4f00;
   }
 
@@ -483,8 +495,8 @@ body.tab-role .roleHeader{
   }
 
   .scorePills .pill:last-child{
-    background: linear-gradient(135deg, #eef5ff, #dbeafe);
-    border-color: rgba(59,130,246,.18);
+    background:linear-gradient(135deg, #eef5ff, #dbeafe);
+    border-color:rgba(59,130,246,.18);
     color:#4b5563;
   }
 
@@ -493,80 +505,133 @@ body.tab-role .roleHeader{
     color:#1d4ed8;
   }
 
-  /* ===== 雷達圖 ===== */
-.radarBlock{
-  width:100%;
-  display:block;
-}
+  .radarCard{
+    padding:14px 14px 14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,255,.93));
+    border:1px solid rgba(15,23,42,.06);
+    box-shadow:
+      0 12px 28px rgba(15,23,42,.06),
+      inset 0 1px 0 rgba(255,255,255,.88);
+  }
 
-.radarCard{
-  width:100%;
-  padding:14px 14px 16px;
-  border-radius:20px;
-  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,255,.94));
-  border:1px solid rgba(15,23,42,.06);
-  box-shadow:
-    0 12px 28px rgba(15,23,42,.06),
-    inset 0 1px 0 rgba(255,255,255,.88);
-}
+  .secHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:0 2px 10px;
+  }
 
-.secHead{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-  padding:0 2px 10px;
-}
+  .secHead .h{
+    font-size:14px;
+    font-weight:1000;
+    color:#111827;
+    letter-spacing:.2px;
+  }
 
-.secHead .h{
-  font-size:14px;
-  font-weight:1000;
-  color:#111827;
-  letter-spacing:.2px;
-  line-height:1.2;
-}
+  .secHead .hint{
+    font-size:12px;
+    color:rgba(15,23,42,.50);
+    white-space:nowrap;
+  }
 
-.secHead .hint{
-  font-size:12px;
-  color:rgba(15,23,42,.50);
-  line-height:1.2;
-  white-space:nowrap;
-}
+  .radarWrap{
+    width:100%;
+    height:340px;
+    border-radius:22px;
+    border:1px solid rgba(15,23,42,.06);
+    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(251,252,255,.96));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.96),
+      0 8px 18px rgba(15,23,42,.04);
+    padding:16px;
+  }
 
-.radarWrap{
-  width:100%;
-  height:260px;
-  border-radius:18px;
-  border:1px solid rgba(15,23,42,.06);
-  background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,255,.96));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.96),
-    0 8px 18px rgba(15,23,42,.04);
-  padding:14px;
-}
+  #radarChart{
+    width:100% !important;
+    height:100% !important;
+    display:block;
+  }
 
-#radarChart{
-  width:100% !important;
-  height:100% !important;
-  display:block;
-}
-  /* ===== 下方主區 ===== */
-  .panelHost{
+  .radarActions{
+    margin-top:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:16px;
+    background:rgba(15,23,42,.04);
+    border:1px solid rgba(15,23,42,.08);
+  }
+
+  .radarHint{
+    min-width:0;
     flex:1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .radarHintIc{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    font-size:15px;
+    background:linear-gradient(135deg, rgba(59,130,246,.16), rgba(245,158,11,.12));
+    border:1px solid rgba(15,23,42,.06);
+  }
+
+  .radarHintText{
+    min-width:0;
+    flex:1;
+  }
+
+  .radarHintTitle{
+    font-size:12px;
+    font-weight:1000;
+    color:#0f172a;
+    line-height:1.1;
+  }
+
+  .radarHintDesc{
+    margin-top:2px;
+    font-size:11px;
+    line-height:1.35;
+    color:rgba(15,23,42,.60);
+  }
+
+  .radarActions .btn{
+    min-width:92px;
+    height:40px;
+    border-radius:14px;
+    padding:0 14px;
+    font-size:13px;
+    flex:0 0 auto;
+  }
+
+  .panelHost{
+    flex:1 1 auto;
     min-height:0;
-    padding:10px;
-    background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
-    overflow:auto;
+    overflow-y:auto;
+    overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
+    padding:10px;
+    padding-bottom:calc(120px + var(--sab));
+    background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
     border-radius:24px;
-    backdrop-filter: blur(18px);
+    backdrop-filter:blur(18px);
   }
 
   .panel{ display:none; }
 
   .panel.show{
     display:block;
-    animation: panelIn .22s ease;
+    animation:panelIn .22s ease;
   }
 
   @keyframes panelIn{
@@ -576,7 +641,7 @@ body.tab-role .roleHeader{
 
   .panelCard{
     border-radius:18px;
-    background: rgba(255,255,255,.94);
+    background:rgba(255,255,255,.94);
     border:1px solid rgba(2,6,23,.08);
     box-shadow:
       0 12px 30px rgba(2,6,23,.08),
@@ -615,7 +680,7 @@ body.tab-role .roleHeader{
   .chip{
     padding:7px 10px;
     border-radius:999px;
-    background: rgba(2,6,23,.04);
+    background:rgba(2,6,23,.04);
     border:1px solid rgba(2,6,23,.08);
     font-size:12px;
     font-weight:900;
@@ -624,7 +689,7 @@ body.tab-role .roleHeader{
 
   .row{
     border-radius:16px;
-    background: rgba(255,255,255,.94);
+    background:rgba(255,255,255,.94);
     border:1px solid rgba(2,6,23,.08);
     padding:10px;
     display:flex;
@@ -642,7 +707,7 @@ body.tab-role .roleHeader{
     display:flex;
     align-items:center;
     justify-content:center;
-    background: linear-gradient(135deg, rgba(59,130,246,.18), rgba(245,158,11,.14));
+    background:linear-gradient(135deg, rgba(59,130,246,.18), rgba(245,158,11,.14));
     border:1px solid rgba(2,6,23,.08);
     font-size:18px;
     flex:0 0 auto;
@@ -679,7 +744,7 @@ body.tab-role .roleHeader{
     padding:10px 12px;
     font-weight:1000;
     cursor:pointer;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color:transparent;
     box-shadow:0 10px 20px rgba(2,6,23,.12);
     transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
@@ -697,7 +762,6 @@ body.tab-role .roleHeader{
   .btn.bad{ background:rgba(220,38,38,.95); color:#fff; }
   .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-  /* ===== 跑馬燈 ===== */
   #notice-bar{
     display:none;
     width:100%;
@@ -706,7 +770,7 @@ body.tab-role .roleHeader{
     overflow:hidden;
     border:1px solid rgba(255,255,255,.22);
     box-shadow:0 10px 24px rgba(2,6,23,.14);
-    background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
     position:relative;
     white-space:nowrap;
   }
@@ -724,22 +788,22 @@ body.tab-role .roleHeader{
     will-change:transform;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    animation: marquee-left var(--mq-sec) linear infinite;
+    animation:marquee-left var(--mq-sec) linear infinite;
   }
 
   @keyframes marquee-left{
-    from{ transform:translate(0, -50%); }
-    to{ transform:translate(calc(-100% - 100vw), -50%); }
+    from{ transform:translate(0,-50%); }
+    to{ transform:translate(calc(-100% - 100vw),-50%); }
   }
 
   @keyframes marquee-right{
-    from{ transform:translate(0, -50%); }
-    to{ transform:translate(100vw, -50%); }
+    from{ transform:translate(0,-50%); }
+    to{ transform:translate(100vw,-50%); }
   }
 
   .timerStrip{
     margin-top:10px;
-    background: rgba(2,6,23,.04);
+    background:rgba(2,6,23,.04);
     border:1px solid rgba(2,6,23,.10);
     border-radius:14px;
     padding:10px 12px;
@@ -758,7 +822,10 @@ body.tab-role .roleHeader{
     flex-wrap:wrap;
   }
 
-  #eventBanner{ margin-top:10px; display:none; }
+  #eventBanner{
+    margin-top:10px;
+    display:none;
+  }
 
   .bannerCard{
     border-radius:16px;
@@ -798,14 +865,13 @@ body.tab-role .roleHeader{
     flex-wrap:wrap;
   }
 
-  /* ===== 商店 ===== */
   #panel-shop{
     position:relative;
     min-height:180px;
   }
 
   #panel-shop.shopDisabled .panelCard{
-    filter: grayscale(.05) brightness(.99);
+    filter:grayscale(.05) brightness(.99);
     opacity:.85;
     pointer-events:none;
   }
@@ -819,7 +885,7 @@ body.tab-role .roleHeader{
     justify-content:flex-end;
     flex-direction:column;
     gap:8px;
-    background: rgba(255,255,255,.04);
+    background:rgba(255,255,255,.04);
     border:1px dashed rgba(2,6,23,.12);
     z-index:3;
     pointer-events:none;
@@ -860,7 +926,7 @@ body.tab-role .roleHeader{
     gap:10px;
     align-items:center;
     border:1px solid rgba(2,6,23,.10);
-    background: rgba(2,6,23,.03);
+    background:rgba(2,6,23,.03);
     border-radius:14px;
     padding:10px;
   }
@@ -869,7 +935,7 @@ body.tab-role .roleHeader{
     width:56px;
     height:56px;
     border-radius:14px;
-    background: rgba(2,6,23,.06);
+    background:rgba(2,6,23,.06);
     border:1px solid rgba(2,6,23,.08);
     display:flex;
     align-items:center;
@@ -904,7 +970,7 @@ body.tab-role .roleHeader{
   }
 
   .shopBuyBtn{
-    background: rgba(59,130,246,.95);
+    background:rgba(59,130,246,.95);
     color:#fff;
   }
 
@@ -916,21 +982,20 @@ body.tab-role .roleHeader{
   .shopItem.owned{ opacity:.92; }
 
   .shopBuyBtn.ownedBtn{
-    background: rgba(2,6,23,.10);
-    color: rgba(15,23,42,.58);
+    background:rgba(2,6,23,.10);
+    color:rgba(15,23,42,.58);
     border:1px solid rgba(2,6,23,.10);
   }
 
-  /* ===== 成就 ===== */
   .achGrid{
     display:grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
+    grid-template-columns:repeat(3, minmax(0,1fr));
     gap:10px;
   }
 
   .ach{
     border:1px solid rgba(2,6,23,.10);
-    background: rgba(2,6,23,.03);
+    background:rgba(2,6,23,.03);
     border-radius:14px;
     padding:10px 8px;
     text-align:center;
@@ -956,7 +1021,6 @@ body.tab-role .roleHeader{
     padding:6px 2px;
   }
 
-  /* ===== 上傳 ===== */
   .tuBarWrap{
     height:10px;
     border-radius:999px;
@@ -971,13 +1035,12 @@ body.tab-role .roleHeader{
     background:linear-gradient(90deg, rgba(34,197,94,.95), rgba(59,130,246,.95));
   }
 
-  /* ===== Modal ===== */
   #eventModal{
     position:fixed;
     inset:0;
     z-index:9999;
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(8px);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
     display:none;
     align-items:center;
     justify-content:center;
@@ -989,7 +1052,7 @@ body.tab-role .roleHeader{
     border-radius:22px;
     background:#fff;
     border:1px solid rgba(2,6,23,.10);
-    box-shadow: 0 30px 80px rgba(2,6,23,.18);
+    box-shadow:0 30px 80px rgba(2,6,23,.18);
     padding:16px;
     text-align:left;
   }
@@ -1009,7 +1072,7 @@ body.tab-role .roleHeader{
   }
 
   .kv{
-    background: rgba(2,6,23,.03);
+    background:rgba(2,6,23,.03);
     border:1px solid rgba(2,6,23,.08);
     border-radius:16px;
     padding:12px;
@@ -1034,9 +1097,9 @@ body.tab-role .roleHeader{
   }
 
   .modalBtns .btn{ flex:1; }
+
   body.lockScroll{ overflow:hidden; }
 
-  /* ===== 底部 Nav ===== */
   .nav{
     position:fixed;
     left:10px;
@@ -1044,7 +1107,7 @@ body.tab-role .roleHeader{
     bottom:calc(10px + var(--sab));
     height:var(--navH);
     border-radius:24px;
-    background: rgba(255,255,255,.88);
+    background:rgba(255,255,255,.88);
     border:1px solid rgba(255,255,255,.42);
     box-shadow:
       0 18px 40px rgba(2,6,23,.18),
@@ -1052,7 +1115,7 @@ body.tab-role .roleHeader{
     display:flex;
     align-items:center;
     justify-content:space-around;
-    backdrop-filter: blur(24px);
+    backdrop-filter:blur(24px);
     max-width:560px;
     margin:0 auto;
     z-index:9999;
@@ -1086,7 +1149,7 @@ body.tab-role .roleHeader{
     display:flex;
     align-items:center;
     justify-content:center;
-    background: rgba(2,6,23,.04);
+    background:rgba(2,6,23,.04);
     border:1px solid rgba(2,6,23,.08);
     box-shadow:0 10px 22px rgba(2,6,23,.08);
     font-size:16px;
@@ -1101,13 +1164,13 @@ body.tab-role .roleHeader{
   }
 
   .navBtn.active{
-    background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(245,158,11,.10));
+    background:linear-gradient(180deg, rgba(59,130,246,.16), rgba(245,158,11,.10));
     color:rgba(15,23,42,.86);
     border:1px solid rgba(59,130,246,.22);
   }
 
   .navBtn.active .ic{
-    background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
     border:none;
     color:#fff;
   }
@@ -1131,8 +1194,8 @@ body.tab-role .roleHeader{
   .btn,
   .shopBuyBtn,
   .mini-btn{
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
   }
 
   input,
@@ -1141,10 +1204,13 @@ body.tab-role .roleHeader{
     font-size:16px;
   }
 
-  /* ===== 手機版 ===== */
   @media (max-width:520px){
+    .app{
+      padding-bottom:calc(var(--navH) + 20px + var(--sab));
+    }
+
     .titleCard{
-      grid-template-columns: 86px minmax(0,1fr);
+      grid-template-columns:86px minmax(0,1fr);
       gap:14px;
       padding:16px;
     }
@@ -1205,22 +1271,13 @@ body.tab-role .roleHeader{
       font-size:32px;
     }
 
-.titleActions{
-  display:flex;
-  justify-content:flex-end;
-  margin-top:2px;
-}
-
-.titleActions .btn{
-  min-width:88px;
-}
-
     .radarCard{
-      padding:12px 12px 14px;
+      padding:12px 12px 12px;
     }
 
     .secHead{
       padding-bottom:8px;
+      align-items:flex-start;
     }
 
     .secHead .h{
@@ -1229,12 +1286,55 @@ body.tab-role .roleHeader{
 
     .secHead .hint{
       font-size:11px;
+      white-space:normal;
+      text-align:right;
     }
 
     .radarWrap{
-      height:220px;
+      height:300px;
       padding:12px;
       border-radius:20px;
+    }
+
+    .radarActions{
+      margin-top:10px;
+      padding:10px;
+      gap:8px;
+      align-items:flex-start;
+      flex-direction:column;
+    }
+
+    .radarHint{
+      width:100%;
+      align-items:flex-start;
+    }
+
+    .radarHintIc{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      font-size:15px;
+    }
+
+    .radarHintTitle{
+      font-size:11px;
+    }
+
+    .radarHintDesc{
+      font-size:11px;
+      line-height:1.35;
+    }
+
+    .radarActions .btn{
+      width:100%;
+      min-width:0;
+      height:40px;
+      padding:0 14px;
+      font-size:13px;
+    }
+
+    .panelHost{
+      padding-bottom:calc(124px + var(--sab));
     }
 
     .navBtn .ic{
@@ -1247,11 +1347,21 @@ body.tab-role .roleHeader{
     }
 
     .achGrid{
-      grid-template-columns: repeat(2, minmax(0,1fr));
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+  }
+
+  @supports (-webkit-touch-callout: none){
+    #game{
+      min-height:0;
+    }
+
+    .panelHost{
+      min-height:0;
+      padding-bottom:calc(128px + var(--sab));
     }
   }
 </style>
-
 
 
 </head>
@@ -1362,36 +1472,28 @@ body.tab-role .roleHeader{
   </div>
 
   <!-- 雷達圖卡：一定要獨立在 titleCard 外面 -->
-<div class="radarBlock">
-  <div class="card radarCard">
-    <div class="secHead">
-      <div class="h">能力雷達圖</div>
-      <div class="hint">（金錢/健康/知識/人際/時間）</div>
+<div class="card radarCard">
+  <div class="secHead">
+    <div class="h">能力雷達圖</div>
+    <div class="hint">（金錢/健康/知識/人際/時間）</div>
+  </div>
+
+  <div class="radarWrap">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <div class="radarActions">
+    <div class="radarHint">
+      <div class="radarHintIc">🧩</div>
+      <div class="radarHintText">
+        <div class="radarHintTitle">提示</div>
+        <div class="radarHintDesc">雙擊頭像可清除照片；底部可切換任務、商店、背包與上傳。</div>
+      </div>
     </div>
 
-    <div class="radarWrap">
-      <canvas id="radarChart"></canvas>
-    </div>
+    <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
   </div>
 </div>
-
-
-
-      <div class="card panelHost">
-
-        <!-- ROLE -->
-        <div id="panel-role" class="panel show">
-          <div class="panelCard">
-            <div class="panelTitle"><b>😃 角色</b><span>只有角色顯示上方資訊</span></div>
-            <div class="row">
-              <div class="badge">🧩</div>
-              <div class="col">
-                <div class="t">提示</div>
-                <div class="d">雙擊頭像可清除照片；稱號由系統自動或管理員自訂。</div>
-              </div>
-              <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
-            </div>
-          </div>
         </div>
 
         <!-- TASK -->
