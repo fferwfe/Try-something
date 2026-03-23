@@ -101,7 +101,6 @@
   padding-bottom:10px;
   padding-left:10px;
   padding-right:10px;
-  padding-bottom:calc(var(--navH) + 24px + var(--sab));
   display:flex;
   flex-direction:column;
   gap:var(--gap);
@@ -617,7 +616,7 @@
 .panelHost{
   flex:1 1 auto;
   min-height:0;
-  height:0;
+  height:auto;
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
@@ -1206,153 +1205,152 @@
     font-size:16px;
   }
 
-  @media (max-width:520px){
-    .app{
-   .panelHost{
-  padding-bottom:10px ;
-}
-
-    .titleCard{
-      grid-template-columns:86px minmax(0,1fr);
-      gap:14px;
-      padding:16px;
-    }
-
-    .avatar{
-      width:76px;
-      height:76px;
-      border-radius:22px;
-    }
-
-    #me,
-    .roleTitle{
-      font-size:15px;
-      margin-top:8px;
-    }
-
-    .mid-stat-card{
-      padding:12px 8px;
-      border-radius:22px;
-    }
-
-    .mid-stat-item{
-      padding:2px 2px 0;
-    }
-
-    .mid-stat-icon{
-      width:42px;
-      height:42px;
-      font-size:22px;
-      margin-bottom:6px;
-    }
-
-    .mid-stat-value{
-      font-size:24px;
-    }
-
-    .mid-stat-label{
-      margin-top:6px;
-      font-size:11px;
-    }
-
-    .scorePills{
-      gap:10px;
-    }
-
-    .pill{
-      min-height:64px;
-      padding:12px 14px;
-      border-radius:22px;
-      font-size:14px;
-    }
-
-    .scorePills .pill:first-child b{
-      font-size:36px;
-    }
-
-    .scorePills .pill:last-child b{
-      font-size:32px;
-    }
-
-    .radarCard{
-      padding:12px 12px 12px;
-    }
-
-    .secHead{
-      padding-bottom:8px;
-      align-items:flex-start;
-    }
-
-    .secHead .h{
-      font-size:13px;
-    }
-
-    .secHead .hint{
-      font-size:11px;
-      white-space:normal;
-      text-align:right;
-    }
-
-    .radarWrap{
-      height:300px;
-      padding:12px;
-      border-radius:20px;
-    }
-
-    .radarActions{
-      margin-top:10px;
-      padding:10px;
-      gap:8px;
-      align-items:flex-start;
-      flex-direction:column;
-    }
-
-    .radarHint{
-      width:100%;
-      align-items:flex-start;
-    }
-
-    .radarHintIc{
-      width:34px;
-      height:34px;
-      border-radius:11px;
-      font-size:15px;
-    }
-
-    .radarHintTitle{
-      font-size:11px;
-    }
-
-    .radarHintDesc{
-      font-size:11px;
-      line-height:1.35;
-    }
-
-    .radarActions .btn{
-      width:100%;
-      min-width:0;
-      height:40px;
-      padding:0 14px;
-      font-size:13px;
-    }
-
- .panelHost{
-  padding-bottom:calc(150px + var(--sab));
-}
-
-    .navBtn .ic{
-      width:32px;
-      height:32px;
-    }
-
-    .navBtn{
-      padding:9px 6px;
-    }
-
-    .achGrid{
-      grid-template-columns:repeat(2, minmax(0,1fr));
-    }
+@media (max-width:520px){
+  .app{
+    padding-bottom:10px;
   }
+
+  .titleCard{
+    grid-template-columns:86px minmax(0,1fr);
+    gap:14px;
+    padding:16px;
+  }
+
+  .avatar{
+    width:76px;
+    height:76px;
+    border-radius:22px;
+  }
+
+  #me,
+  .roleTitle{
+    font-size:15px;
+    margin-top:8px;
+  }
+
+  .mid-stat-card{
+    padding:12px 8px;
+    border-radius:22px;
+  }
+
+  .mid-stat-item{
+    padding:2px 2px 0;
+  }
+
+  .mid-stat-icon{
+    width:42px;
+    height:42px;
+    font-size:22px;
+    margin-bottom:6px;
+  }
+
+  .mid-stat-value{
+    font-size:24px;
+  }
+
+  .mid-stat-label{
+    margin-top:6px;
+    font-size:11px;
+  }
+
+  .scorePills{
+    gap:10px;
+  }
+
+  .pill{
+    min-height:64px;
+    padding:12px 14px;
+    border-radius:22px;
+    font-size:14px;
+  }
+
+  .scorePills .pill:first-child b{
+    font-size:36px;
+  }
+
+  .scorePills .pill:last-child b{
+    font-size:32px;
+  }
+
+  .radarCard{
+    padding:12px 12px 12px;
+  }
+
+  .secHead{
+    padding-bottom:8px;
+    align-items:flex-start;
+  }
+
+  .secHead .h{
+    font-size:13px;
+  }
+
+  .secHead .hint{
+    font-size:11px;
+    white-space:normal;
+    text-align:right;
+  }
+
+  .radarWrap{
+    height:300px;
+    padding:12px;
+    border-radius:20px;
+  }
+
+  .radarActions{
+    margin-top:10px;
+    padding:10px;
+    gap:8px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .radarHint{
+    width:100%;
+    align-items:flex-start;
+  }
+
+  .radarHintIc{
+    width:34px;
+    height:34px;
+    border-radius:11px;
+    font-size:15px;
+  }
+
+  .radarHintTitle{
+    font-size:11px;
+  }
+
+  .radarHintDesc{
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .radarActions .btn{
+    width:100%;
+    min-width:0;
+    height:40px;
+    padding:0 14px;
+    font-size:13px;
+  }
+
+  .panelHost{
+    padding-bottom:calc(150px + var(--sab));
+  }
+
+  .navBtn .ic{
+    width:32px;
+    height:32px;
+  }
+
+  .navBtn{
+    padding:9px 6px;
+  }
+
+  .achGrid{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+}
 
 @supports (-webkit-touch-callout: none){
   #game{
