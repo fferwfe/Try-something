@@ -267,12 +267,12 @@
     display:none !important;
   }
 
-  .titleCard{
+ .titleCard{
   padding:16px;
   display:grid;
-  grid-template-columns: 92px minmax(0,1fr) 132px;
+  grid-template-columns: 92px minmax(0,1fr);
   gap:16px;
-  align-items:center;
+  align-items:start;
 }
 
 .titleCard > .avatar,
@@ -439,75 +439,82 @@
     color:#1d4ed8;
   }
 
-  .iconResRow{
-    display:grid;
-    grid-template-columns: repeat(5, minmax(0,1fr));
-    gap:30px;
-    width:100%;
-    min-width:0;
-    padding:12px 6px 10px;
-    border-radius:20px;
-    border:1px solid rgba(15,23,42,.06);
-    background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(245,248,255,.96));
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.75),
-      0 8px 18px rgba(15,23,42,.04);
-  }
+.iconResRow{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap:8px;
+  width:100%;
+  min-width:0;
+  padding:10px;
+  border-radius:20px;
+  border:1px solid rgba(15,23,42,.08);
+  background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,250,255,.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.8),
+    0 8px 18px rgba(15,23,42,.05);
+  overflow:hidden;
+}
 
-  .iconRes{
-    min-width:0;
-    text-align:center;
-    padding:24px 24px;
-    position:relative;
-  }
+.iconRes{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:8px 4px;
+  border-radius:14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(245,247,255,.88));
+  border:1px solid rgba(15,23,42,.06);
+}
 
- 
-  .iconResIc{
-    width:34px;
-    height:34px;
-    border-radius:999px;
-    margin:0 auto 6px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:15px;
-    color:#fff;
-    background: linear-gradient(135deg,#4f8cff,#ffb020);
-    box-shadow:0 8px 16px rgba(79,140,255,.16);
-  }
+.iconResIc{
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  margin:0 auto 6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  color:#fff;
+  background: linear-gradient(135deg,#4f8cff,#ffb020);
+  box-shadow:0 8px 16px rgba(79,140,255,.16);
+  flex-shrink:0;
+}
 
-  .iconResVal{
-    font-size:20px;
-    font-weight:1000;
-    color:#111827;
-    line-height:1.1;
-  }
+.iconResVal{
+  font-size:18px;
+  font-weight:1000;
+  color:#111827;
+  line-height:1.1;
+  white-space:nowrap;
+}
 
-  .iconResLbl{
-    margin-top:2px;
-    font-size:11px;
-    font-weight:900;
-    color:rgba(17,24,39,.52);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
+.iconResLbl{
+  margin-top:3px;
+  font-size:10px;
+  font-weight:900;
+  color:rgba(17,24,39,.52);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 
-  .iconResBar{
-    width:100%;
-    height:5px;
-    margin-top:7px;
-    border-radius:999px;
-    background:rgba(59,130,246,.12);
-    overflow:hidden;
-  }
+.iconResBar{
+  width:100%;
+  height:4px;
+  margin-top:6px;
+  border-radius:999px;
+  background:rgba(59,130,246,.10);
+  overflow:hidden;
+}
 
-  .iconResFill{
-    height:100%;
-    width:0%;
-    border-radius:999px;
-    background: linear-gradient(90deg,#4f8cff,#ffb020);
-  }
+.iconResFill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  background: linear-gradient(90deg,#4f8cff,#ffb020);
+}
 
   .radarCard{
     padding: 10px 12px 12px;
@@ -1220,53 +1227,66 @@ textarea{
 }
 
   @media (max-width: 480px){
-
-  .iconResRow{
-    display:flex;
-    overflow-x:auto;
-    overflow-y:hidden;
-    gap:10px;
-    padding:10px 8px 8px;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+  .titleCard{
+    grid-template-columns: 84px minmax(0,1fr);
+    gap:12px;
+    align-items:start;
   }
 
-  .iconResRow::-webkit-scrollbar{
-    display:none;
+  .scorePills{
+    grid-column: 1 / -1;
+    width:100%;
+    min-width:0;
+    flex-direction:row;
+    gap:8px;
+  }
+
+  .scorePills .pill{
+    flex:1;
+    min-height:50px;
+    padding:8px 10px;
+  }
+
+  .scorePills .pill:first-child b{
+    font-size:24px;
+  }
+
+  .scorePills .pill:last-child b{
+    font-size:18px;
+  }
+
+  .iconResRow{
+    display:grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap:4px;
+    padding:8px 6px;
+    overflow:hidden;
   }
 
   .iconRes{
-    flex:0 0 78px;
-    min-width:78px;
-    padding:8px 4px;
-    border-radius:14px;
-    background: rgba(255,255,255,.72);
-    scroll-snap-align:start;
-  }
-
-  .iconRes:not(:last-child)::after{
-    display:none;
+    min-width:0;
+    padding:6px 2px;
+    border-radius:12px;
   }
 
   .iconResIc{
     width:34px;
     height:34px;
     font-size:15px;
-    margin:0 auto 6px;
+    margin-bottom:4px;
   }
 
   .iconResVal{
-    font-size:18px;
+    font-size:16px;
   }
 
   .iconResLbl{
-    font-size:10px;
+    font-size:9px;
   }
 
   .iconResBar{
-    height:4px;
-    margin-top:6px;
+    height:3px;
+    margin-top:5px;
   }
 }
 </style>
@@ -1334,45 +1354,39 @@ textarea{
 
     <div class="titleMeta">
       <div class="roleSub" id="titleText">稱號：冒險者</div>
+<div class="iconResRow">
+  <div class="iconRes">
+    <div class="iconResIc">💰</div>
+    <div class="iconResVal" id="money">0</div>
+    <div class="iconResLbl">金錢</div>
+    <div class="iconResBar"><div class="iconResFill" id="bar-money"></div></div>
+  </div>
+  <div class="iconRes">
+    <div class="iconResIc">❤️</div>
+    <div class="iconResVal" id="health">0</div>
+    <div class="iconResLbl">健康</div>
+    <div class="iconResBar"><div class="iconResFill" id="bar-health"></div></div>
+  </div>
+  <div class="iconRes">
+    <div class="iconResIc">📘</div>
+    <div class="iconResVal" id="knowledge">0</div>
+    <div class="iconResLbl">知識</div>
+    <div class="iconResBar"><div class="iconResFill" id="bar-knowledge"></div></div>
+  </div>
+  <div class="iconRes">
+    <div class="iconResIc">🤝</div>
+    <div class="iconResVal" id="social">0</div>
+    <div class="iconResLbl">人際</div>
+    <div class="iconResBar"><div class="iconResFill" id="bar-social"></div></div>
+  </div>
+  <div class="iconRes">
+    <div class="iconResIc">⏳</div>
+    <div class="iconResVal" id="time">0</div>
+    <div class="iconResLbl">時間</div>
+    <div class="iconResBar"><div class="iconResFill" id="bar-time"></div></div>
+  </div>
+</div>
 
-      <div class="iconResRow">
-        <div class="iconRes">
-          <div class="iconResIc">💰</div>
-          <div class="iconResVal" id="money">0</div>
-          <div class="iconResLbl">金錢</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-money"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">❤️</div>
-          <div class="iconResVal" id="health">0</div>
-          <div class="iconResLbl">健康</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-health"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">📘</div>
-          <div class="iconResVal" id="knowledge">0</div>
-          <div class="iconResLbl">知識</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-knowledge"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">🤝</div>
-          <div class="iconResVal" id="social">0</div>
-          <div class="iconResLbl">人際</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-social"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">⏳</div>
-          <div class="iconResVal" id="time">0</div>
-          <div class="iconResLbl">時間</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-time"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="scorePills">
-      <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
-      <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
-    </div>
   </div>
 
         <div class="card radarCard">
