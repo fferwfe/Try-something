@@ -2612,11 +2612,6 @@ function bindActiveEvent(){
     currentEvent = ev || null;
 
     const frStatus = ev?.finishRequest?.status || null;
-    if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
-      playSfx("reject");
-      showGameToast("未通過，請再確認任務內容");
-    }
-    _prevFinishReqStatus = frStatus;
 
     if(!ev){
       _prevEventStatus = null;
@@ -2625,6 +2620,7 @@ function bindActiveEvent(){
       _playedOneMinForKey = null;
       _eventModalSeenKey = null;
       _eventManualOpen = false;
+
       hideEventModal();
       hideBanner();
       hideTimer();
@@ -2634,19 +2630,28 @@ function bindActiveEvent(){
 
     const ek = getEventKey(ev);
 
-    // 新事件來時，重設「是否已看過」
-    if(!_eventInitDone){
-      _eventInitDone = true;
+    // ✅ 第一次同步：只記錄狀態，不播音效
+    if(!_eventInitialized){
+      _eventInitialized = true;
       _lastStartKeyPlayed = ek || null;
       _playedOneMinForKey = null;
       _eventModalSeenKey = null;
+      _prevFinishReqStatus = frStatus;
+      _prevEventStatus = ev.status || null;
     }else{
+      // ✅ 新事件進來才播 start
       if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
         _lastStartKeyPlayed = ek;
         _playedOneMinForKey = null;
         _eventModalSeenKey = null;
         _eventManualOpen = false;
         playSfx("start");
+      }
+
+      // ✅ 被駁回才播 reject
+      if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
+        playSfx("reject");
+        showGameToast("未通過，請再確認任務內容");
       }
     }
 
@@ -2656,18 +2661,21 @@ function bindActiveEvent(){
       showBanner(ev);
       setDoneBtnStateByEvent(ev);
 
-      // ✅ 只在「第一次看到新任務」時自動跳一次
+      // ✅ 只在新任務第一次看到時自動跳
       if(ek && _eventModalSeenKey !== ek){
         _eventModalSeenKey = ek;
         showEventModal(ev, false);
       }
 
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "pending";
       return;
     }
 
     if(ev.status === "success"){
-      if(_prevEventStatus !== "success") playSfx("done");
+      if(_prevEventStatus !== "success"){
+        playSfx("done");
+      }
 
       showGameToast("任務完成，管理員已通過");
       await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
@@ -2675,6 +2683,8 @@ function bindActiveEvent(){
       hideBanner();
       hideTimer();
       stopCountdown();
+
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "success";
       return;
     }
@@ -2694,10 +2704,13 @@ function bindActiveEvent(){
       hideBanner();
       hideTimer();
       stopCountdown();
+
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "fail";
       return;
     }
 
+    _prevFinishReqStatus = frStatus;
     _prevEventStatus = ev.status || null;
   });
 
@@ -2738,7 +2751,7 @@ function bindActiveEvent(){
     });
 
     playSfx("submit");
-    hideEventModal();          // ✅ 按完成後直接關掉
+    hideEventModal();
     showBanner({
       ...currentEvent,
       finishRequest:{
@@ -2773,25 +2786,33 @@ function showEventModal(ev, silent=false){
   document.getElementById("evtTask").innerText   = ev.taskHint || "完成指定任務";
   document.getElementById("evtReward").innerText = fmtReward(ev.reward);
 
-  document.getElementById("eventModal").style.display="flex";
+  document.getElementById("eventModal").style.display = "flex";
   document.body.classList.add("lockScroll");
 
-  // ✅ 提示框彈出音效（同一事件只播一次）
   const ek = getEventKey(ev);
-  if(!silent && ek && ek !== _playedPopupForKey){
+
+  // ✅ 只有不是初始同步、而且不是 silent、而且同事件沒播過，才播 popup
+  if(!silent && _eventInitialized && ek && ek !== _playedPopupForKey){
     _playedPopupForKey = ek;
-    playSfx('popup');
+    playSfx("popup");
   }
 
   document.getElementById("evtAckBtn").onclick = async ()=>{
-    await db.ref(`players/p${myId}/activeEvent`).update({ ack:true, ackAt:Date.now(), uiState:"pending" });
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      ack:true,
+      ackAt:Date.now(),
+      uiState:"pending"
+    });
     hideEventModal();
     showBanner(ev);
     showTab("task");
   };
 
   document.getElementById("evtCloseBtn").onclick = async ()=>{
-    await db.ref(`players/p${myId}/activeEvent`).update({ uiState:"pending", snoozeAt:Date.now() });
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      uiState:"pending",
+      snoozeAt:Date.now()
+    });
     hideEventModal();
     showBanner(ev);
     showTab("task");
