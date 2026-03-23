@@ -516,7 +516,7 @@
   background: linear-gradient(90deg,#4f8cff,#ffb020);
 }
 
- .radarCard{
+  .radarCard{
     padding: 10px 12px 12px;
     background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72));
   }
@@ -556,6 +556,7 @@
     height:100%!important;
     display:block;
   }
+
   .panelHost{
     flex:1;
     min-height:0;
@@ -1255,13 +1256,12 @@ textarea{
   }
 
   .iconResRow{
-  display:grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap:4px;
-
-  overflow:hidden;   /* ❗關鍵：禁止滑動 */
-  width:100%;
-}
+    display:grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap:4px;
+    padding:8px 6px;
+    overflow:hidden;
+  }
 
   .iconRes{
     min-width:0;
