@@ -530,6 +530,34 @@
       0 8px 18px rgba(15,23,42,.04);
     padding:16px;
   }
+.radarActions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+
+.radarActions .btn{
+  min-width:92px;
+  height:44px;
+  border-radius:14px;
+  padding:0 16px;
+  font-size:14px;
+  flex:0 0 auto;
+}
+
+@media (max-width:520px){
+  .radarActions{
+    margin-top:10px;
+  }
+
+  .radarActions .btn{
+    min-width:84px;
+    height:40px;
+    padding:0 14px;
+    font-size:13px;
+  }
+}
+
 
   #radarChart{
     width:100% !important;
@@ -1349,15 +1377,20 @@
   </div>
 
   <!-- 雷達圖卡：一定要獨立在 titleCard 外面 -->
-  <div class="card radarCard">
-    <div class="secHead">
-      <div class="h">能力雷達圖</div>
-      <div class="hint">（金錢/健康/知識/人際/時間）</div>
-    </div>
-    <div class="radarWrap">
-      <canvas id="radarChart"></canvas>
-    </div>
+<div class="card radarCard">
+  <div class="secHead">
+    <div class="h">能力雷達圖</div>
+    <div class="hint">（金錢/健康/知識/人際/時間）</div>
   </div>
+
+  <div class="radarWrap">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <div class="radarActions">
+    <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
+  </div>
+</div>
 
 </div>
 
