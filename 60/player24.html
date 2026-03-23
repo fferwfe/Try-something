@@ -2303,7 +2303,7 @@ document.getElementById("timeVal").innerText = myRes.time || 0;
       roleLabel: autoTitle
     }).catch(()=>{});
 
-    queueRenderShop();
+    refreshShopButtonStates();
   });
 }
 
@@ -2334,7 +2334,7 @@ function bindPurchases(){
 
   db.ref(`players/p${myId}/purchases`).on("value", s=>{
     myPurchases = s.val() || {};
-    renderShop();
+    refreshShopButtonStates();
   });
 }
 
@@ -2476,7 +2476,8 @@ function renderShop(){
     ].filter(Boolean).join("");
 
     return `
-      <div class="shopItem ${buyOnce && owned ? 'owned' : ''}">
+    return `
+  <div class="shopItem ${buyOnce && owned ? 'owned' : ''}" data-id="${escapeHtml(it.id)}">
         <div class="shopImg">
           ${
             imgSrc
@@ -2578,9 +2579,67 @@ window.buyItem = async (itemId)=>{
     await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur)||0) + bonus);
   }
 
-  renderShop();
+  refreshShopButtonStates();
   alert(`🎉 成功獲得「${name}」！${bonus>0?`並額外獲得 ${bonus} 分！`:""}`);
 };
+
+function getItemCost(item){
+  let cost = {};
+  if(item?.cost && typeof item.cost === "object"){
+    cost = item.cost;
+  }else if(Number.isFinite(Number(item?.price))){
+    cost = { money: Number(item.price) || 0 };
+  }
+  return cost;
+}
+
+function refreshShopButtonStates(){
+  const list = document.getElementById("shopList");
+  if(!list) return;
+
+  const cards = list.querySelectorAll(".shopItem[data-id]");
+  cards.forEach(card=>{
+    const itemId = card.dataset.id;
+    const item = _shopItemsCache[itemId];
+    if(!item) return;
+
+    const btn = card.querySelector(".shopBuyBtn");
+    if(!btn) return;
+
+    const buyOnce = item.buyOnce === true;
+    const owned = !!myPurchases[itemId];
+    const cost = getItemCost(item);
+
+    const affordable = Object.keys(cost).every(k =>
+      (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+    );
+
+    let btnText = "兌換";
+    let btnDisabled = !__shopEnabled;
+    let btnTitle = __shopEnabled ? "" : "商店由系統關閉";
+
+    if(buyOnce && owned){
+      btnText = "已擁有";
+      btnDisabled = true;
+      btnTitle = "此商品每位玩家只能兌換一次";
+      card.classList.add("owned");
+      btn.classList.add("ownedBtn");
+    }else{
+      card.classList.remove("owned");
+      btn.classList.remove("ownedBtn");
+
+      if(__shopEnabled && !affordable){
+        btnText = "資源不足";
+        btnDisabled = true;
+        btnTitle = "資源不足";
+      }
+    }
+
+    btn.textContent = btnText;
+    btn.disabled = btnDisabled;
+    btn.title = btnTitle;
+  });
+}
 
 /* ========= event deposit/refund ========= */
 function sanitizeKey(s){ return String(s||"").replace(/[.#$\[\]\/]/g, "_"); }
