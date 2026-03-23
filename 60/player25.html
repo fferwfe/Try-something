@@ -1,0 +1,3302 @@
+<!-- =========================
+人生履歷｜Player（UI 單頁 Nav 整合：超完整功能版）
+- ✅ 單頁 + 底部 Nav 切頁（role/task/shop/inv/up）
+- ✅ 角色頁才顯示「上方資訊」（玩家卡 + 五資源 + 雷達 + 總分/總資源）
+- SeatLock（防不同裝置同帳號）✅ 玩家不可自行解鎖（被佔用就拒絕登入）
+- ForceLogout（管理員踢人）
+- 雷達圖/資源/稱號（含管理員自訂稱號）
+- 成就(=inventory)
+- 商店（多資源 cost + bonus + purchaseFeed）
+- 隨機事件（✅先扣押金；✅時間到 fail 不返還；✅banner+modal+倒數）
+- 跑馬燈 marquee
+- ✅ Simple Upload：Storage 上傳 + RTDB 索引（不含最近20筆清單）
+========================= -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#2563eb" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="人生履歷" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
+
+<title>人生履歷</title>
+
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root{
+    --bg0:#f6f9ff;
+    --bg1:#edf5ff;
+    --bg2:#fff7e7;
+
+    --card:rgba(255,255,255,.90);
+    --card2:rgba(255,255,255,.96);
+    --stroke:rgba(15,23,42,.08);
+
+    --text:#0f172a;
+    --muted:rgba(15,23,42,.58);
+
+    --pri:#3b82f6;
+    --pri2:#22c55e;
+    --gold:#f59e0b;
+
+    --ok:#16a34a;
+    --bad:#dc2626;
+    --warn:#f59e0b;
+
+    --sat:env(safe-area-inset-top, 0px);
+    --sab:env(safe-area-inset-bottom, 0px);
+
+    --navH:88px;
+    --topH:56px;
+    --gap:10px;
+    --r:20px;
+
+    --mq-sec:10s;
+    --mq-anim:marquee-left;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+
+  html,body{
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+
+  body{
+    margin:0;
+    color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;
+    background:
+      radial-gradient(900px 520px at 16% 10%, rgba(59,130,246,.20), transparent 58%),
+      radial-gradient(860px 520px at 88% 18%, rgba(245,158,11,.18), transparent 58%),
+      radial-gradient(860px 620px at 48% 92%, rgba(34,197,94,.14), transparent 60%),
+      linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+    overflow:hidden;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  .hide{ display:none !important; }
+
+  .app{
+    min-height:100vh;
+    min-height:100dvh;
+    height:100dvh;
+    padding-top:calc(10px + var(--sat));
+    padding-left:10px;
+    padding-right:10px;
+    padding-bottom:calc(var(--navH) + 24px + var(--sab));
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+    max-width:560px;
+    margin:0 auto;
+    position:relative;
+    overflow:hidden;
+  }
+
+  @supports (-webkit-touch-callout: none){
+    html,body{
+      height:-webkit-fill-available;
+      min-height:-webkit-fill-available;
+    }
+    .app{
+      min-height:-webkit-fill-available;
+      height:-webkit-fill-available;
+    }
+  }
+
+  .app::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(to bottom, rgba(255,255,255,.10), transparent 80px),
+      radial-gradient(800px 240px at 50% -20px, rgba(255,255,255,.18), transparent 60%);
+    z-index:0;
+  }
+
+  .app > *{
+    position:relative;
+    z-index:1;
+  }
+
+  .topBar{
+    height:var(--topH);
+    border-radius:22px;
+    background:linear-gradient(90deg, rgba(59,130,246,.92), rgba(245,158,11,.78));
+    border:1px solid rgba(255,255,255,.55);
+    box-shadow:0 16px 34px rgba(2,6,23,.14);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0 14px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    overflow:hidden;
+    flex:0 0 auto;
+    backdrop-filter:blur(18px);
+  }
+  body.tab-role .topBar{ display:flex; }
+
+  .topBar::after{
+    content:"";
+    position:absolute;
+    inset:-1px;
+    background:radial-gradient(420px 120px at 30% 40%, rgba(255,255,255,.38), transparent 65%);
+    pointer-events:none;
+  }
+
+  .topName{
+    font-weight:1000;
+    letter-spacing:.3px;
+    font-size:18px;
+    color:#fff;
+    text-shadow:0 10px 18px rgba(0,0,0,.18);
+    max-width:92%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .card{
+    border-radius:var(--r);
+    background:linear-gradient(180deg,var(--card),rgba(255,255,255,.78));
+    border:1px solid var(--stroke);
+    box-shadow:
+      0 12px 30px rgba(2,6,23,.08),
+      0 2px 8px rgba(2,6,23,.04);
+    overflow:hidden;
+  }
+
+  #login.card{
+    padding:18px;
+    margin-top:auto;
+    margin-bottom:auto;
+  }
+
+  #login h2{
+    margin:6px 0 14px;
+    font-size:18px;
+  }
+
+  #login select,
+  #login input{
+    width:100%;
+    padding:12px 12px;
+    border-radius:14px;
+    border:1px solid rgba(2,6,23,.12);
+    background:#fff;
+    color:var(--text);
+    outline:none;
+    margin:8px 0;
+  }
+
+  #join-btn{
+    width:100%;
+    padding:12px 14px;
+    border:none;
+    border-radius:14px;
+    font-weight:1000;
+    cursor:pointer;
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.78));
+    color:#fff;
+    margin-top:10px;
+  }
+
+  .mini-actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+
+  .mini-btn{
+    flex:1;
+    min-width:160px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:none;
+    font-weight:1000;
+    cursor:pointer;
+    background:rgba(2,6,23,.06);
+    border:1px solid rgba(2,6,23,.10);
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 10px 20px rgba(2,6,23,.12);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+
+  .mini-btn:active{
+    transform:scale(.96);
+    box-shadow:0 6px 12px rgba(2,6,23,.10);
+  }
+
+  .mini-btn.danger{
+    background:rgba(220,38,38,.92);
+    color:#fff;
+    border:none;
+  }
+
+  .mini-btn.blue{
+    background:rgba(59,130,246,.92);
+    color:#fff;
+    border:none;
+  }
+
+  #game{
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+    min-height:0;
+    flex:1;
+    overflow:hidden;
+  }
+
+  .roleHeader{
+    display:none;
+    flex-direction:column;
+    gap:var(--gap);
+    flex:0 0 auto;
+  }
+  body.tab-role .roleHeader{ display:flex; }
+
+  #titleText{
+    display:none !important;
+  }
+
+  .titleCard{
+    padding:18px;
+    display:grid;
+    grid-template-columns:98px minmax(0,1fr);
+    gap:16px;
+    align-items:start;
+  }
+
+  .profileCol{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    min-width:0;
+  }
+
+  .avatar{
+    position:relative;
+    width:82px;
+    height:82px;
+    border-radius:24px;
+    overflow:hidden;
+    border:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
+    box-shadow:
+      0 12px 24px rgba(37,99,235,.10),
+      inset 0 1px 0 rgba(255,255,255,.35);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    flex:0 0 auto;
+  }
+
+  .avatar img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:none;
+    z-index:3;
+  }
+
+  #avatarEmoji{
+    position:absolute;
+    inset:0;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:32px;
+    color:#fff;
+  }
+
+  .avatar svg{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  .avatar.hasPhoto img{ display:block; }
+  .avatar.hasPhoto #avatarEmoji{ display:none; }
+  .avatar.hasPhoto svg{ display:none; }
+
+  #me,
+  .roleTitle{
+    margin-top:10px;
+    width:100%;
+    text-align:center;
+    font-size:17px;
+    font-weight:1000;
+    color:#0f172a;
+    line-height:1.2;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  #me.roleTitleUnder::before,
+  .roleTitle::before{
+    content:"名稱：";
+    font-weight:900;
+    color:rgba(15,23,42,.62);
+    margin-right:2px;
+  }
+
+  .titleMeta{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .roleSub{ display:none; }
+
+  .mid-stat-card{
+    width:100%;
+    border-radius:24px;
+    padding:14px 10px;
+    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(247,250,255,.96));
+    border:1px solid rgba(15,23,42,.06);
+    box-shadow:
+      0 12px 28px rgba(15,23,42,.06),
+      inset 0 1px 0 rgba(255,255,255,.92);
+  }
+
+  .mid-stat-grid{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:0;
+    align-items:start;
+  }
+
+  .mid-stat-item{
+    position:relative;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    text-align:center;
+    padding:4px 4px 2px;
+  }
+
+  .mid-stat-item:not(:last-child)::after{
+    content:"";
+    position:absolute;
+    right:0;
+    top:16%;
+    width:1px;
+    height:68%;
+    background:linear-gradient(to bottom, transparent, rgba(15,23,42,.08), transparent);
+  }
+
+  .mid-stat-icon{
+    width:48px;
+    height:48px;
+    border-radius:999px;
+    margin:0 auto 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    line-height:1;
+    color:#fff;
+    background:linear-gradient(135deg, rgba(79,140,255,.98), rgba(255,176,32,.92));
+    box-shadow:
+      0 10px 20px rgba(79,140,255,.18),
+      inset 0 1px 0 rgba(255,255,255,.35);
+  }
+
+  .mid-stat-value{
+    font-size:28px;
+    font-weight:1000;
+    line-height:1;
+    color:#0f172a;
+  }
+
+  .mid-stat-label{
+    margin-top:8px;
+    font-size:13px;
+    line-height:1.1;
+    font-weight:900;
+    color:rgba(15,23,42,.58);
+    white-space:nowrap;
+  }
+
+  .scorePills{
+    display:flex;
+    flex-direction:row;
+    gap:12px;
+    width:100%;
+  }
+
+  .pill{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex:1;
+    min-width:0;
+    min-height:72px;
+    padding:14px 18px;
+    border-radius:24px;
+    font-weight:1000;
+    font-size:15px;
+    border:1px solid rgba(15,23,42,.08);
+    box-shadow:
+      0 12px 24px rgba(15,23,42,.06),
+      inset 0 1px 0 rgba(255,255,255,.75);
+    background:#fff;
+    white-space:nowrap;
+  }
+
+  .pill b{
+    font-weight:1000;
+    line-height:1;
+  }
+
+  .scorePills .pill:first-child{
+    background:linear-gradient(135deg, #fff7c8, #ffd96b);
+    border-color:rgba(245,158,11,.20);
+    color:#6b4f00;
+  }
+
+  .scorePills .pill:first-child b{
+    font-size:44px;
+    color:#b45309;
+  }
+
+  .scorePills .pill:last-child{
+    background:linear-gradient(135deg, #eef5ff, #dbeafe);
+    border-color:rgba(59,130,246,.18);
+    color:#4b5563;
+  }
+
+  .scorePills .pill:last-child b{
+    font-size:40px;
+    color:#1d4ed8;
+  }
+
+  .radarCard{
+    padding:14px 14px 14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,255,.93));
+    border:1px solid rgba(15,23,42,.06);
+    box-shadow:
+      0 12px 28px rgba(15,23,42,.06),
+      inset 0 1px 0 rgba(255,255,255,.88);
+  }
+
+  .secHead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:0 2px 10px;
+  }
+
+  .secHead .h{
+    font-size:14px;
+    font-weight:1000;
+    color:#111827;
+    letter-spacing:.2px;
+  }
+
+  .secHead .hint{
+    font-size:12px;
+    color:rgba(15,23,42,.50);
+    white-space:nowrap;
+  }
+
+  .radarWrap{
+    width:100%;
+    height:340px;
+    border-radius:22px;
+    border:1px solid rgba(15,23,42,.06);
+    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(251,252,255,.96));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.96),
+      0 8px 18px rgba(15,23,42,.04);
+    padding:16px;
+  }
+
+  #radarChart{
+    width:100% !important;
+    height:100% !important;
+    display:block;
+  }
+
+  .radarActions{
+    margin-top:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:16px;
+    background:rgba(15,23,42,.04);
+    border:1px solid rgba(15,23,42,.08);
+  }
+
+  .radarHint{
+    min-width:0;
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .radarHintIc{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    font-size:15px;
+    background:linear-gradient(135deg, rgba(59,130,246,.16), rgba(245,158,11,.12));
+    border:1px solid rgba(15,23,42,.06);
+  }
+
+  .radarHintText{
+    min-width:0;
+    flex:1;
+  }
+
+  .radarHintTitle{
+    font-size:12px;
+    font-weight:1000;
+    color:#0f172a;
+    line-height:1.1;
+  }
+
+  .radarHintDesc{
+    margin-top:2px;
+    font-size:11px;
+    line-height:1.35;
+    color:rgba(15,23,42,.60);
+  }
+
+  .radarActions .btn{
+    min-width:92px;
+    height:40px;
+    border-radius:14px;
+    padding:0 14px;
+    font-size:13px;
+    flex:0 0 auto;
+  }
+
+  .panelHost{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:10px;
+    padding-bottom:calc(120px + var(--sab));
+    background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
+    border-radius:24px;
+    backdrop-filter:blur(18px);
+  }
+
+  .panel{ display:none; }
+
+  .panel.show{
+    display:block;
+    animation:panelIn .22s ease;
+  }
+
+  @keyframes panelIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .panelCard{
+    border-radius:18px;
+    background:rgba(255,255,255,.94);
+    border:1px solid rgba(2,6,23,.08);
+    box-shadow:
+      0 12px 30px rgba(2,6,23,.08),
+      0 2px 8px rgba(2,6,23,.05);
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .panelTitle{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:2px 2px 0;
+  }
+
+  .panelTitle b{
+    font-size:13px;
+    letter-spacing:.2px;
+  }
+
+  .panelTitle span{
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .chipRow{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .chip{
+    padding:7px 10px;
+    border-radius:999px;
+    background:rgba(2,6,23,.04);
+    border:1px solid rgba(2,6,23,.08);
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.72);
+  }
+
+  .row{
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    border:1px solid rgba(2,6,23,.08);
+    padding:10px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    box-shadow:
+      0 12px 30px rgba(2,6,23,.08),
+      0 2px 8px rgba(2,6,23,.05);
+  }
+
+  .row .badge{
+    width:44px;
+    height:44px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg, rgba(59,130,246,.18), rgba(245,158,11,.14));
+    border:1px solid rgba(2,6,23,.08);
+    font-size:18px;
+    flex:0 0 auto;
+    overflow:hidden;
+  }
+
+  .row .col{
+    min-width:0;
+    flex:1;
+  }
+
+  .row .col .t{
+    font-weight:1100;
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .row .col .d{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .btn,
+  .shopBuyBtn,
+  #join-btn{
+    border:none;
+    border-radius:12px;
+    padding:10px 12px;
+    font-weight:1000;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 10px 20px rgba(2,6,23,.12);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+
+  .btn:active,
+  .shopBuyBtn:active,
+  #join-btn:active{
+    transform:scale(.96);
+    box-shadow:0 6px 12px rgba(2,6,23,.10);
+  }
+
+  .btn.pri{ background:rgba(59,130,246,.95); color:#fff; }
+  .btn.sec{ background:rgba(2,6,23,.06); color:var(--text); border:1px solid rgba(2,6,23,.10); }
+  .btn.ok{ background:rgba(22,163,74,.95); color:#fff; }
+  .btn.bad{ background:rgba(220,38,38,.95); color:#fff; }
+  .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+  #notice-bar{
+    display:none;
+    width:100%;
+    height:44px;
+    border-radius:14px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 10px 24px rgba(2,6,23,.14);
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(34,197,94,.80));
+    position:relative;
+    white-space:nowrap;
+  }
+
+  #notice-text{
+    position:absolute;
+    top:50%;
+    left:100%;
+    display:inline-block;
+    transform:translateY(-50%);
+    white-space:nowrap;
+    word-break:keep-all;
+    line-height:1;
+    font-weight:1000;
+    will-change:transform;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    animation:marquee-left var(--mq-sec) linear infinite;
+  }
+
+  @keyframes marquee-left{
+    from{ transform:translate(0,-50%); }
+    to{ transform:translate(calc(-100% - 100vw),-50%); }
+  }
+
+  @keyframes marquee-right{
+    from{ transform:translate(0,-50%); }
+    to{ transform:translate(100vw,-50%); }
+  }
+
+  .timerStrip{
+    margin-top:10px;
+    background:rgba(2,6,23,.04);
+    border:1px solid rgba(2,6,23,.10);
+    border-radius:14px;
+    padding:10px 12px;
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .timerStrip b{ font-size:13px; }
+
+  .timerStrip .right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  #eventBanner{
+    margin-top:10px;
+    display:none;
+  }
+
+  .bannerCard{
+    border-radius:16px;
+    border:1px solid rgba(2,6,23,.10);
+    background:#fff;
+    box-shadow:
+      0 12px 30px rgba(2,6,23,.08),
+      0 2px 8px rgba(2,6,23,.05);
+    padding:10px 12px;
+    text-align:left;
+  }
+
+  .bannerTop{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+  }
+
+  .bannerTitle{
+    font-weight:1100;
+    font-size:14px;
+    letter-spacing:.2px;
+  }
+
+  .bannerMeta{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.25;
+  }
+
+  .bannerBtns{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+
+  #panel-shop{
+    position:relative;
+    min-height:180px;
+  }
+
+  #panel-shop.shopDisabled .panelCard{
+    filter:grayscale(.05) brightness(.99);
+    opacity:.85;
+    pointer-events:none;
+  }
+
+  #panel-shop .shopDisableOverlay{
+    position:absolute;
+    inset:12px;
+    border-radius:18px;
+    display:none;
+    align-items:flex-start;
+    justify-content:flex-end;
+    flex-direction:column;
+    gap:8px;
+    background:rgba(255,255,255,.04);
+    border:1px dashed rgba(2,6,23,.12);
+    z-index:3;
+    pointer-events:none;
+    text-align:left;
+    padding:14px;
+  }
+
+  #panel-shop.shopDisabled .shopDisableOverlay{ display:flex; }
+
+  .shopDisableOverlay b{
+    font-size:14px;
+    letter-spacing:.2px;
+    background:rgba(255,255,255,.9);
+    border:1px solid rgba(2,6,23,.1);
+    border-radius:12px;
+    padding:8px 12px;
+    box-shadow:0 8px 18px rgba(2,6,23,.08);
+  }
+
+  .shopDisableOverlay .hint{
+    font-size:12px;
+    color:var(--muted);
+    background:rgba(255,255,255,.85);
+    border:1px solid rgba(2,6,23,.08);
+    border-radius:12px;
+    padding:8px 12px;
+    max-width:90%;
+  }
+
+  .shopList{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .shopItem{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    border:1px solid rgba(2,6,23,.10);
+    background:rgba(2,6,23,.03);
+    border-radius:14px;
+    padding:10px;
+  }
+
+  .shopImg{
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    background:rgba(2,6,23,.06);
+    border:1px solid rgba(2,6,23,.08);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+
+  .shopImg img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+
+  .shopInfo{
+    flex:1;
+    min-width:0;
+  }
+
+  .shopName{
+    font-weight:1100;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .shopMeta{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .shopBuyBtn{
+    background:rgba(59,130,246,.95);
+    color:#fff;
+  }
+
+  .shopBuyBtn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+  }
+
+  .shopItem.owned{ opacity:.92; }
+
+  .shopBuyBtn.ownedBtn{
+    background:rgba(2,6,23,.10);
+    color:rgba(15,23,42,.58);
+    border:1px solid rgba(2,6,23,.10);
+  }
+
+  .achGrid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:10px;
+  }
+
+  .ach{
+    border:1px solid rgba(2,6,23,.10);
+    background:rgba(2,6,23,.03);
+    border-radius:14px;
+    padding:10px 8px;
+    text-align:center;
+  }
+
+  .ach .icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:60px;
+  }
+
+  .ach .name{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.2;
+  }
+
+  .empty{
+    color:var(--muted);
+    font-size:13px;
+    padding:6px 2px;
+  }
+
+  .tuBarWrap{
+    height:10px;
+    border-radius:999px;
+    background:rgba(2,6,23,.06);
+    overflow:hidden;
+    border:1px solid rgba(2,6,23,.08);
+  }
+
+  .tuBar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, rgba(34,197,94,.95), rgba(59,130,246,.95));
+  }
+
+  #eventModal{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:14px;
+  }
+
+  .modalCard{
+    width:min(560px,100%);
+    border-radius:22px;
+    background:#fff;
+    border:1px solid rgba(2,6,23,.10);
+    box-shadow:0 30px 80px rgba(2,6,23,.18);
+    padding:16px;
+    text-align:left;
+  }
+
+  .modalTitle{
+    font-size:18px;
+    font-weight:1200;
+    letter-spacing:.2px;
+    margin:0 0 8px;
+  }
+
+  .modalSub{
+    margin:0 0 12px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.35;
+  }
+
+  .kv{
+    background:rgba(2,6,23,.03);
+    border:1px solid rgba(2,6,23,.08);
+    border-radius:16px;
+    padding:12px;
+    margin:10px 0;
+  }
+
+  .kv b{
+    display:block;
+    font-size:12px;
+    color:rgba(15,23,42,.72);
+  }
+
+  .kv .v{
+    margin-top:6px;
+    font-weight:1000;
+  }
+
+  .modalBtns{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+  }
+
+  .modalBtns .btn{ flex:1; }
+
+  body.lockScroll{ overflow:hidden; }
+
+  .nav{
+    position:fixed;
+    left:10px;
+    right:10px;
+    bottom:calc(10px + var(--sab));
+    height:var(--navH);
+    border-radius:24px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(255,255,255,.42);
+    box-shadow:
+      0 18px 40px rgba(2,6,23,.18),
+      inset 0 1px 0 rgba(255,255,255,.40);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+    backdrop-filter:blur(24px);
+    max-width:560px;
+    margin:0 auto;
+    z-index:9999;
+  }
+
+  .navBtn{
+    width:20%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border-radius:18px;
+    padding:10px 8px;
+    color:rgba(15,23,42,.70);
+    font-weight:1000;
+    font-size:12px;
+    user-select:none;
+    cursor:pointer;
+    transition:transform .18s ease, opacity .18s ease, background .18s ease;
+  }
+
+  .navBtn:active{
+    transform:scale(.94);
+  }
+
+  .navBtn .ic{
+    width:34px;
+    height:34px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(2,6,23,.04);
+    border:1px solid rgba(2,6,23,.08);
+    box-shadow:0 10px 22px rgba(2,6,23,.08);
+    font-size:16px;
+  }
+
+  .navBtn small{
+    display:block;
+    font-weight:900;
+    color:rgba(15,23,42,.56);
+    margin-top:-2px;
+    font-size:10px;
+  }
+
+  .navBtn.active{
+    background:linear-gradient(180deg, rgba(59,130,246,.16), rgba(245,158,11,.10));
+    color:rgba(15,23,42,.86);
+    border:1px solid rgba(59,130,246,.22);
+  }
+
+  .navBtn.active .ic{
+    background:linear-gradient(135deg, rgba(59,130,246,.95), rgba(245,158,11,.85));
+    border:none;
+    color:#fff;
+  }
+
+  body::after{
+    content:"";
+    position:fixed;
+    left:50%;
+    bottom:calc(var(--sab) + 6px);
+    transform:translateX(-50%);
+    width:120px;
+    height:5px;
+    border-radius:999px;
+    background:rgba(15,23,42,.16);
+    z-index:10000;
+    pointer-events:none;
+  }
+
+  button,
+  .navBtn,
+  .btn,
+  .shopBuyBtn,
+  .mini-btn{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  input,
+  select,
+  textarea{
+    font-size:16px;
+  }
+
+  @media (max-width:520px){
+    .app{
+      padding-bottom:calc(var(--navH) + 20px + var(--sab));
+    }
+
+    .titleCard{
+      grid-template-columns:86px minmax(0,1fr);
+      gap:14px;
+      padding:16px;
+    }
+
+    .avatar{
+      width:76px;
+      height:76px;
+      border-radius:22px;
+    }
+
+    #me,
+    .roleTitle{
+      font-size:15px;
+      margin-top:8px;
+    }
+
+    .mid-stat-card{
+      padding:12px 8px;
+      border-radius:22px;
+    }
+
+    .mid-stat-item{
+      padding:2px 2px 0;
+    }
+
+    .mid-stat-icon{
+      width:42px;
+      height:42px;
+      font-size:22px;
+      margin-bottom:6px;
+    }
+
+    .mid-stat-value{
+      font-size:24px;
+    }
+
+    .mid-stat-label{
+      margin-top:6px;
+      font-size:11px;
+    }
+
+    .scorePills{
+      gap:10px;
+    }
+
+    .pill{
+      min-height:64px;
+      padding:12px 14px;
+      border-radius:22px;
+      font-size:14px;
+    }
+
+    .scorePills .pill:first-child b{
+      font-size:36px;
+    }
+
+    .scorePills .pill:last-child b{
+      font-size:32px;
+    }
+
+    .radarCard{
+      padding:12px 12px 12px;
+    }
+
+    .secHead{
+      padding-bottom:8px;
+      align-items:flex-start;
+    }
+
+    .secHead .h{
+      font-size:13px;
+    }
+
+    .secHead .hint{
+      font-size:11px;
+      white-space:normal;
+      text-align:right;
+    }
+
+    .radarWrap{
+      height:300px;
+      padding:12px;
+      border-radius:20px;
+    }
+
+    .radarActions{
+      margin-top:10px;
+      padding:10px;
+      gap:8px;
+      align-items:flex-start;
+      flex-direction:column;
+    }
+
+    .radarHint{
+      width:100%;
+      align-items:flex-start;
+    }
+
+    .radarHintIc{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      font-size:15px;
+    }
+
+    .radarHintTitle{
+      font-size:11px;
+    }
+
+    .radarHintDesc{
+      font-size:11px;
+      line-height:1.35;
+    }
+
+    .radarActions .btn{
+      width:100%;
+      min-width:0;
+      height:40px;
+      padding:0 14px;
+      font-size:13px;
+    }
+
+    .panelHost{
+      padding-bottom:calc(124px + var(--sab));
+    }
+
+    .navBtn .ic{
+      width:32px;
+      height:32px;
+    }
+
+    .navBtn{
+      padding:9px 6px;
+    }
+
+    .achGrid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+  }
+
+  @supports (-webkit-touch-callout: none){
+    #game{
+      min-height:0;
+    }
+
+    .panelHost{
+      min-height:0;
+      padding-bottom:calc(128px + var(--sab));
+    }
+  }
+</style>
+
+
+</head>
+
+<body class="tab-role">
+  <div class="app">
+
+    <!-- LOGIN -->
+    <div class="card" id="login">
+      <h2>角色登入</h2>
+      <select id="pid">
+        <option value="1">1號玩家</option><option value="2">2號玩家</option>
+        <option value="3">3號玩家</option><option value="4">4號玩家</option>
+        <option value="5">5號玩家</option><option value="6">6號玩家</option>
+        <option value="7">7號玩家</option><option value="8">8號玩家</option>
+        <option value="9">9號玩家</option><option value="10">10號玩家</option>
+        <option value="11">11號玩家</option><option value="12">12號玩家</option>
+        <option value="13">13號玩家</option><option value="14">14號玩家</option>
+        <option value="15">15號玩家</option>
+      </select>
+      <input id="pname" placeholder="輸入暱稱">
+      <input id="deviceLabel" placeholder="（選填）此裝置名稱：玩家手機1 / 平板2">
+      <button id="join-btn">開始遊戲</button>
+
+      <div class="mini-actions">
+        <button class="mini-btn blue" id="btnRelog" type="button">重新嘗試自動登入</button>
+        <button class="mini-btn danger" id="btnForget" type="button">清除記住的登入</button>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div class="hide" id="game">
+
+      <!-- ✅ role 才顯示的 topBar -->
+      <div class="topBar">
+        <div class="topName" id="topTitle">稱號：冒險者</div>
+      </div>
+
+      <!-- ✅ role 才顯示的上方資訊 -->
+      <div class="roleHeader">
+  <div class="card titleCard">
+
+    <div class="profileCol">
+      <div class="avatar" id="avatarBtn" title="點我換照片（同步回管理端）">
+        <img id="avatarImg" alt="" />
+        <span id="avatarEmoji">🧑</span>
+        <svg id="avatarSvg" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id="avG" x1="0" x2="1">
+              <stop offset="0" stop-color="#3b82f6" stop-opacity=".95"/>
+              <stop offset="1" stop-color="#f59e0b" stop-opacity=".85"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#avG)"/>
+        </svg>
+      </div>
+
+      <div class="roleTitle roleTitleUnder" id="me">---</div>
+    </div>
+
+    <input id="avatarInput" type="file" accept="image/*" class="hide">
+
+    <div class="titleMeta">
+      <div class="roleSub" id="titleText">稱號：冒險者</div>
+
+      <div class="iconResRow">
+        <div class="iconRes">
+          <div class="iconResIc">💰</div>
+          <div class="iconResVal" id="money">0</div>
+          <div class="iconResLbl">金錢</div>
+          <div class="iconResBar"><div class="iconResFill" id="bar-money"></div></div>
+        </div>
+        <div class="iconRes">
+          <div class="iconResIc">❤️</div>
+          <div class="iconResVal" id="health">0</div>
+          <div class="iconResLbl">健康</div>
+          <div class="iconResBar"><div class="iconResFill" id="bar-health"></div></div>
+        </div>
+        <div class="iconRes">
+          <div class="iconResIc">📘</div>
+          <div class="iconResVal" id="knowledge">0</div>
+          <div class="iconResLbl">知識</div>
+          <div class="iconResBar"><div class="iconResFill" id="bar-knowledge"></div></div>
+        </div>
+        <div class="iconRes">
+          <div class="iconResIc">🤝</div>
+          <div class="iconResVal" id="social">0</div>
+          <div class="iconResLbl">人際</div>
+          <div class="iconResBar"><div class="iconResFill" id="bar-social"></div></div>
+        </div>
+        <div class="iconRes">
+          <div class="iconResIc">⏳</div>
+          <div class="iconResVal" id="time">0</div>
+          <div class="iconResLbl">時間</div>
+          <div class="iconResBar"><div class="iconResFill" id="bar-time"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scorePills">
+      <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
+      <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
+    </div>
+  </div>
+
+        <div class="card radarCard">
+          <div class="secHead">
+            <div class="h">能力雷達圖</div>
+            <div class="hint">（金錢/健康/知識/人際/時間）</div>
+          </div>
+          <div class="radarWrap">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card panelHost">
+
+        <!-- ROLE -->
+        <div id="panel-role" class="panel show">
+          <div class="panelCard">
+            <div class="panelTitle"><b>😃 角色</b><span>只有角色顯示上方資訊</span></div>
+            <div class="row">
+              <div class="badge">🧩</div>
+              <div class="col">
+                <div class="t">提示</div>
+                <div class="d">雙擊頭像可清除照片；稱號由系統自動或管理員自訂。</div>
+              </div>
+              <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TASK -->
+        <div id="panel-task" class="panel">
+          <div class="panelCard">
+            <div class="panelTitle"><b>🎯 任務</b><span>事件 / 跑馬燈 / 倒數</span></div>
+
+            <div id="notice-bar"><span id="notice-text"></span></div>
+
+            <div class="timerStrip" id="timerStrip">
+              <div><b>⏱️ 任務倒數</b></div>
+              <div class="right">
+                <span class="pill warn">剩餘：<span id="evtLeft">--:--</span></span>
+                <span class="pill" id="evtPoolPill">時段：-</span>
+                <span class="pill" id="evtIdPill">事件：-</span>
+              </div>
+            </div>
+
+             <div class="row" onclick="checkQuizBeforeEnter()" style="cursor:pointer;">
+  <div class="badge">📘</div>
+
+  <div class="col">
+    <div class="t">知識大挑戰</div>
+    <div class="d">50 題｜300 秒｜闖關模式，每位玩家只能一次</div>
+  </div>
+
+  <button class="btn pri" type="button"
+    onclick="event.stopPropagation(); checkQuizBeforeEnter();">
+    開始
+  </button>
+</div>
+
+            <div id="eventBanner">
+              <div class="bannerCard">
+                <div class="bannerTop">
+                  <div>
+                    <div class="bannerTitle" id="bannerTitle">（目前任務）</div>
+                    <div class="bannerMeta" id="bannerMeta">---</div>
+                  </div>
+                  <span class="pill ok" id="bannerState">進行中</span>
+                </div>
+                <div class="bannerBtns">
+                  <button class="btn pri" id="bannerOpenBtn">查看任務</button>
+                  <button class="btn ok" id="bannerDoneBtn">我完成了</button>
+                  <button class="btn sec" id="bannerHideBtn">放棄任務</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="badge">✅</div>
+              <div class="col">
+                <div class="t">完成回報</div>
+                <div class="d">按「我完成了」會送出完成申請，等待管理員同意才返還押金。</div>
+              </div>
+              <button class="btn sec" type="button" onclick="showGameToast('知道了齁')">了解</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHOP -->
+        <div id="panel-shop" class="panel">
+          <div class="panelCard">
+            <div class="panelTitle"><b>🛒 商店</b><span id="shopSysHint">系統控制開關</span></div>
+            <div class="shopDisableOverlay" id="shopDisableOverlay">
+              <b>⛔ 商店目前由系統關閉</b>
+              <div class="hint">此狀態由 Super / Admin 在 shop.html 統一控制。關閉期間所有玩家不可兌換。</div>
+            </div>
+            <div class="shopList" id="shopList"></div>
+            <div class="empty" id="shopEmpty">尚無商品</div>
+          </div>
+        </div>
+
+        <!-- INV -->
+        <div id="panel-inv" class="panel">
+          <div class="panelCard">
+            <div class="panelTitle"><b>🎒 背包 / 成就</b><span>inventory</span></div>
+            <div id="achievements-list" class="achGrid"></div>
+            <div id="achievements-empty" class="empty hide">尚未獲得成就</div>
+          </div>
+        </div>
+
+        <!-- UPLOAD -->
+        <div id="panel-up" class="panel">
+          <div class="panelCard">
+            <div class="panelTitle"><b>☁️ 上傳</b><span>Storage + RTDB 索引（待審核）</span></div>
+
+            <div class="chipRow">
+              <span class="chip">照片/錄影/錄音/其他</span>
+              <span class="chip">只寫 uploadsIndex & players/p{pid}/uploads</span>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <input
+                id="suFile"
+                type="file"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                style="flex:1; min-width:240px;"
+              />
+              <button class="btn pri" id="btnSUupload" style="min-width:120px;">上傳</button>
+              <button class="btn sec" id="btnSUclear" style="min-width:120px;">清除</button>
+            </div>
+
+            <div class="chipRow" style="margin-top:6px;">
+              <span class="chip">類型：<b id="suTypeText">—</b></span>
+              <span class="chip">狀態：<b id="suStatusText">待上傳</b></span>
+              <span class="chip" id="suHint" style="border-style:dashed;">—</span>
+            </div>
+
+            <div style="margin-top:6px;">
+              <div class="tuBarWrap"><div class="tuBar" id="suBar"></div></div>
+            </div>
+
+            <div id="suPreview" style="margin-top:10px;"></div>
+          </div>
+        </div>
+
+      </div><!-- /panelHost -->
+    </div><!-- /game -->
+  </div><!-- /app -->
+
+  <!-- ✅ 底部 Nav -->
+  <div class="nav" role="navigation" aria-label="底部選單">
+    <div class="navBtn active" data-tab="role"><div class="ic">😃</div>角色<small>Role</small></div>
+    <div class="navBtn" data-tab="task"><div class="ic">🎯</div>任務<small>Task</small></div>
+    <div class="navBtn" data-tab="shop"><div class="ic">🛒</div>商店<small>Shop</small></div>
+    <div class="navBtn" data-tab="inv"><div class="ic">🎒</div>背包<small>Inventory</small></div>
+    <div class="navBtn" data-tab="up"><div class="ic">☁️</div>上傳<small>Uploads</small></div>
+  </div>
+
+  <!-- Fullscreen Event Modal -->
+  <div id="eventModal">
+    <div class="modalCard">
+      <h2 class="modalTitle" id="evtTitle">隨機事件</h2>
+      <p class="modalSub" id="evtDesc">---</p>
+
+      <div class="kv">
+        <b>事件影響（押金：派發立即扣除；時間到未完成不返還）</b>
+        <div class="v" id="evtImpact">---</div>
+      </div>
+
+      <div class="kv">
+        <b>事件任務</b>
+        <div class="v" id="evtTask">---</div>
+      </div>
+
+      <div class="kv">
+        <b>事件回饋（同意完成後才發放/返還）</b>
+        <div class="v" id="evtReward">---</div>
+      </div>
+
+      <div class="modalBtns">
+        <button class="btn pri" id="evtAckBtn">我已收到</button>
+        <button class="btn sec" id="evtCloseBtn">稍後再看</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ✅ Tabs */
+/* ✅ Shop disable (SYSTEM controlled): dim + block clicks */
+window.__shopClosedBySystem = false;
+function setShopDisabled(on){
+  const p = document.getElementById("panel-shop");
+  if(p) p.classList.toggle("shopDisabled", !!on);
+}
+const tabs = ["role","task","shop","inv","up"];
+function showTab(key){
+  document.body.classList.remove(...tabs.map(t=>"tab-"+t));
+  document.body.classList.add("tab-"+key);
+
+  tabs.forEach(t=>{
+    const el = document.getElementById("panel-"+t);
+    if(el) el.classList.toggle("show", t===key);
+  });
+  document.querySelectorAll(".navBtn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.tab===key);
+  });
+
+  const host = document.querySelector(".panelHost");
+  if(host) host.scrollTop = 0;
+    if(key === "shop") queueRenderShop();
+
+}
+
+document.querySelectorAll(".navBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=> showTab(btn.dataset.tab));
+});
+
+
+/* ========= Firebase 初始化 ========= */
+const firebaseConfig = {
+  apiKey: "AIzaSyB0Gvpk5Y6ZermG67lFm-ecaXYGL5pl7mk",
+  authDomain: "try-something-ddd1e.firebaseapp.com",
+  databaseURL: "https://try-something-ddd1e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "try-something-ddd1e",
+  storageBucket: "try-something-ddd1e.firebasestorage.app",
+  messagingSenderId: "245905464126",
+  appId: "1:245905464126:web:4aea37e1b2bb0bdd1a2a6f",
+  measurementId: "G-CG44LW3L84"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.database();
+const st = firebase.storage();
+
+/* ========= constants ========= */
+const PLAYER_COUNT = 15;
+const resNames={time:"時間",money:"金錢",health:"健康",knowledge:"知識",social:"人際",score:"分數"};
+const RES_KEYS=["time","money","health","knowledge","social","score"];
+
+/** ✅ 匿名登入：避免 Storage 403 */
+let __anonReady = false;
+async function ensureAnonAuth(){
+  if(__anonReady && auth.currentUser) return true;
+  try{
+    if(auth.currentUser){ __anonReady=true; return true; }
+    await auth.signInAnonymously();
+    __anonReady = true;
+    return true;
+  }catch(err){
+    console.error("Anonymous auth failed:", err);
+    alert("❌ 無法啟用匿名登入（請到 Firebase Console > Authentication > Sign-in method 開啟 Anonymous）\n" + (err?.message || err));
+    return false;
+  }
+}
+
+function showGameToast(msg){
+  const old = document.getElementById("gameToast");
+  if(old) old.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "gameToast";
+  toast.textContent = msg;
+  toast.style.position = "fixed";
+  toast.style.left = "50%";
+  toast.style.bottom = "110px";
+  toast.style.transform = "translateX(-50%)";
+  toast.style.padding = "10px 16px";
+  toast.style.borderRadius = "999px";
+  toast.style.background = "rgba(15,23,42,.90)";
+  toast.style.color = "#fff";
+  toast.style.fontWeight = "1000";
+  toast.style.fontSize = "13px";
+  toast.style.boxShadow = "0 12px 30px rgba(2,6,23,.22)";
+  toast.style.zIndex = "10000";
+  toast.style.opacity = "0";
+  toast.style.transition = "all .22s ease";
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(()=>{
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(-50%) translateY(-4px)";
+  });
+
+  if(_lastToastTimer) clearTimeout(_lastToastTimer);
+  _lastToastTimer = setTimeout(()=>{
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(-50%) translateY(8px)";
+    setTimeout(()=>toast.remove(), 220);
+  }, 1500);
+}
+
+function setDoneBtnStateByEvent(ev){
+  const btn = document.getElementById("bannerDoneBtn");
+  if(!btn) return;
+
+  if(!ev || ev.status !== "pending"){
+    btn.disabled = true;
+    btn.textContent = "我完成了";
+    return;
+  }
+
+  const fr = ev.finishRequest || null;
+
+  if(fr && fr.status === "pending"){
+    btn.disabled = true;
+    btn.textContent = "審核中…";
+    return;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "我完成了";
+}
+
+/* ========= state ========= */
+let myId=null,myName="";
+let radar=null;
+let currentEvent=null;
+let countdownTimer=null;
+
+let _eventModalSeenKey = null;      // 這個事件是否已看過
+let _eventManualOpen = false;       // 是否玩家手動點開
+let _lastToastTimer = null;
+
+let myPurchases = {};
+let _shopBound = false;
+let _shopItemsCache = {};
+let _purchasesBound = false;
+
+let _shopRenderQueued = false;
+
+function queueRenderShop(){
+  if(_shopRenderQueued) return;
+  _shopRenderQueued = true;
+
+  requestAnimationFrame(()=>{
+    _shopRenderQueued = false;
+    renderShop();
+  });
+}
+
+/* ========= SFX（事件音效） =========
+   你要換音效：直接替換檔案即可（不用改程式）
+   - 事件開始：assets/sfx/event_start.wav
+   - 提示框彈出：assets/sfx/event_popup.wav
+   - 玩家按「我完成了」送出申請：assets/sfx/event_submit.wav
+   - 剩 1 分鐘提醒：assets/sfx/event_1min.wav
+   - 案完成（管理員同意）：assets/sfx/event_done.wav
+   - 被駁回：music/da-nice-youtuber常用素材-無版權-國外流行梗篇.mp3
+
+   注意：手機瀏覽器通常要先有一次點擊互動才允許播放音效
+*/
+const SFX = {
+  start:  new Audio("music/start.mp3"),
+  popup:  new Audio("music/popup.mp3"),
+  submit: new Audio("music/submit.mp3"),
+  oneMin: new Audio("music/1min.mp3"),
+  done:   new Audio("music/done.mp3"),
+  reject: new Audio("music/reject.mp3"),
+};
+
+Object.values(SFX).forEach(a=>{
+  a.preload = "auto";
+  a.volume = 0.9;
+  a.playsInline = true;
+  if(a.setAttribute){
+    a.setAttribute("playsinline", "true");
+    a.setAttribute("webkit-playsinline", "true");
+  }
+});
+
+let _sfxUnlocked = false;
+let _sfxEnabled = true;
+
+function unlockSfxOnce(){
+  if(_sfxUnlocked) return Promise.resolve(true);
+
+  const jobs = Object.values(SFX).map(a=>{
+    try{
+      const oldVol = a.volume;
+      a.volume = 0;
+      a.currentTime = 0;
+      const p = a.play();
+      if(p && typeof p.then === "function"){
+        return p.then(()=>{
+          a.pause();
+          a.currentTime = 0;
+          a.volume = oldVol;
+          return true;
+        }).catch(()=>{
+          a.pause();
+          a.currentTime = 0;
+          a.volume = oldVol;
+          return false;
+        });
+      }else{
+        a.pause();
+        a.currentTime = 0;
+        a.volume = oldVol;
+        return Promise.resolve(true);
+      }
+    }catch(e){
+      return Promise.resolve(false);
+    }
+  });
+
+  return Promise.all(jobs).then(results=>{
+    _sfxUnlocked = results.some(Boolean);
+    return _sfxUnlocked;
+  });
+}
+
+function playSfx(key){
+  if(!_sfxEnabled) return;
+  const a = SFX[key];
+  if(!a) return;
+
+  const doPlay = ()=>{
+    try{
+      if(a.readyState === 0) a.load();
+      a.pause();
+      a.currentTime = 0;
+      const p = a.play();
+      if(p && typeof p.catch === "function"){
+        p.catch(()=>{});
+      }
+    }catch(e){}
+  };
+
+  if(_sfxUnlocked){
+    doPlay();
+    return;
+  }
+
+  unlockSfxOnce().then(ok=>{
+    if(ok) doPlay();
+  });
+}
+
+function bindSfxUnlock(){
+  const onceUnlock = ()=>{
+    unlockSfxOnce();
+  };
+
+  document.addEventListener("click", onceUnlock, { once:true, passive:true });
+  document.addEventListener("touchstart", onceUnlock, { once:true, passive:true });
+  document.addEventListener("pointerdown", onceUnlock, { once:true, passive:true });
+}
+
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible"){
+    unlockSfxOnce();
+  }
+});
+
+window.addEventListener("focus", ()=> unlockSfxOnce());
+window.addEventListener("pageshow", ()=> unlockSfxOnce());
+
+bindSfxUnlock();
+
+function getEventKey(ev){
+  return ev?.assignId || ev?.eid || null;
+}
+let _lastStartKeyPlayed=null;
+let _prevFinishReqStatus=null;
+let _playedPopupForKey=null;
+let _playedOneMinForKey=null;
+let _prevEventStatus=null; // 判斷狀態轉換避免重播
+let myRes={ time:0, money:0, health:0, knowledge:0, social:0, score:0 };
+
+/* ========= device + login (auto + lock + force logout) ========= */
+const LOGIN_KEY="player_login_v1";
+const LOGIN_AT_KEY="player_loginAtMs_v1";
+const DEVICE_ID_KEY="lifeResume_deviceId_v3";
+const DEVICE_LABEL_KEY="device_label";
+let _forceLogoutRef=null;
+
+function getDeviceId(){
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : ("dev_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36)));
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+function getDeviceLabel(){ return (localStorage.getItem(DEVICE_LABEL_KEY)||"").trim(); }
+function setDeviceLabel(v){
+  v = String(v||"").trim();
+  if(v) localStorage.setItem(DEVICE_LABEL_KEY, v);
+  else localStorage.removeItem(DEVICE_LABEL_KEY);
+}
+
+function saveLogin(pid, name){
+  localStorage.setItem(LOGIN_KEY, JSON.stringify({ pid:String(pid), name:String(name||""), ts:Date.now() }));
+}
+function loadLogin(){
+  try{
+    const raw = localStorage.getItem(LOGIN_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(!o || !o.pid || !o.name) return null;
+    return o;
+  }catch(e){ return null; }
+}
+function clearLogin(){ localStorage.removeItem(LOGIN_KEY); }
+function setLoginAtMs(ms){ localStorage.setItem(LOGIN_AT_KEY, String(ms||Date.now())); }
+function getLoginAtMs(){ return Number(localStorage.getItem(LOGIN_AT_KEY)||0)||0; }
+function clearLoginAtMs(){ localStorage.removeItem(LOGIN_AT_KEY); }
+
+function detachForceLogoutListener(){
+  try{ _forceLogoutRef?.off?.(); }catch(e){}
+  _forceLogoutRef=null;
+}
+function doLogoutToLogin(msg){
+  if(msg) alert(msg);
+  // best-effort: mark offline
+  try{
+    const saved = loadLogin();
+    if(saved?.pid) db.ref(`players/p${saved.pid}`).update({ online:false });
+  }catch(e){}
+  detachForceLogoutListener();
+  clearLoginAtMs();
+  clearLogin();
+  document.getElementById("game").classList.add("hide");
+  document.getElementById("login").classList.remove("hide");
+  showTab("role");
+}
+function attachForceLogoutListener(devId){
+  const loginAtMs = getLoginAtMs();
+  _forceLogoutRef = db.ref(`devices/${devId}/forceLogoutAt`);
+  _forceLogoutRef.on("value", (snap)=>{
+    const kickAt = snap.val();
+    if(!kickAt) return;
+    if(loginAtMs && Number(kickAt) <= Number(loginAtMs)) return;
+    doLogoutToLogin("你已被管理員強制登出。");
+  });
+}
+
+/* ========= seat lock ========= */
+async function enforceSeatLockStrict(pid, playerName){
+  const deviceId = getDeviceId();
+  const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+  const lockRef = db.ref(`seatLocks/p${pid}`);
+
+  let snap;
+  try{ snap = await lockRef.get(); }
+  catch(err){ doLogoutToLogin("系統無法確認位子鎖定狀態，已中止登入。"); return false; }
+
+  const lock = snap.val();
+  if(lock && lock.deviceId && lock.deviceId !== deviceId){
+    alert(
+      `❌ 此玩家位子（p${pid}）已被其他裝置使用：\n` +
+      `${lock.label || lock.deviceId}\n\n` +
+      `玩家端不可自行解鎖，請通知 Super 在管理端解除 seatLock 後再登入。`
+    );
+    return false;
+  }
+
+  if(!lock || !lock.deviceId){
+    try{ await lockRef.set({ deviceId, name: playerName || "", label, ts: Date.now() }); }
+    catch(err){ doLogoutToLogin("位子鎖定寫入失敗，已中止登入。"); return false; }
+  }else{
+    try{ await lockRef.update({ name: playerName || lock.name || "", label, ts: Date.now() }); }catch(e){}
+  }
+  return true;
+}
+
+/* ========= heartbeat ========= */
+async function heartbeat(){
+  try{
+    const deviceId = getDeviceId();
+    const label = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+
+    await db.ref("devicesSeen/" + deviceId).update({
+      label,
+      kind: "player",
+      page: "player.html",
+      lastSeen: Date.now()
+    });
+
+    const saved = loadLogin();
+    if(saved?.pid){
+      await db.ref(`players/p${saved.pid}`).update({
+        seat: Number(saved.pid),
+        name: saved.name || "",
+        deviceId,
+        deviceLabel: label,
+        page: "player.html",
+        lastSeen: Date.now(),
+        online: true,
+        lastActive: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+  }catch(e){}
+}
+setInterval(heartbeat, 30000);
+
+/* ========= login UI ========= */
+document.getElementById("btnForget").addEventListener("click", ()=>{
+  clearLogin(); clearLoginAtMs(); detachForceLogoutListener();
+  alert("已清除記住的登入。");
+});
+document.getElementById("btnRelog").addEventListener("click", async ()=>{
+  const saved = loadLogin();
+  if(!saved) return alert("沒有找到自動登入資料。");
+  document.getElementById("pid").value = saved.pid;
+  document.getElementById("pname").value = saved.name;
+  await join();
+});
+document.getElementById("join-btn").onclick=join;
+document.getElementById("btnLogoutLocal").addEventListener("click", ()=> doLogoutToLogin());
+
+/* ========= join ========= */
+async function join(){
+  myId=document.getElementById("pid").value;
+  myName=document.getElementById("pname").value.trim();
+  if(!myName) return alert("請輸入暱稱");
+
+  setDeviceLabel(document.getElementById("deviceLabel").value || "");
+
+  const ok = await enforceSeatLockStrict(myId, myName);
+  if(!ok) return;
+
+  const authed = await ensureAnonAuth();
+  if(!authed) return;
+
+  // ===== Online presence (30s heartbeat uses this too) =====
+  try{
+    db.ref(`players/p${myId}/online`).onDisconnect().set(false);
+  }catch(e){}
+
+
+  saveLogin(myId, myName);
+
+  const loginAtMs = Date.now();
+  setLoginAtMs(loginAtMs);
+
+  const deviceId = getDeviceId();
+  const deviceLabel = getDeviceLabel() || ("玩家設備-" + deviceId.slice(0,6));
+
+  await db.ref(`players/p${myId}`).update({
+    seat: Number(myId),
+    name: myName,
+    deviceId,
+    deviceLabel,
+    page: "player.html",
+    lastLogin: loginAtMs,
+    lastSeen: Date.now(),
+    online: true,
+    lastActive: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  await heartbeat();
+
+  detachForceLogoutListener();
+  attachForceLogoutListener(deviceId);
+
+  document.getElementById("login").classList.add("hide");
+  document.getElementById("game").classList.remove("hide");
+
+  document.getElementById("me").innerText = myName;
+
+  loadAvatarFromLocal();
+  bindAvatarPicker();
+
+  initRadar();
+  bindCustomTitle();
+  bindRes();
+  bindAchievements();
+  bindPurchases();
+  bindShop();
+  bindGlobalShopSwitch();
+  initSimpleUpload();
+
+  bindMarquee();
+  bindActiveEvent();
+
+  showTab("role");
+}
+
+/* ========= marquee ========= */
+let _marqueeBound = false;
+let _lastMarqueeSig = "";
+
+function bindMarquee(){
+  if(_marqueeBound) return;
+  _marqueeBound = true;
+
+  const bar = document.getElementById("notice-bar");
+  const text = document.getElementById("notice-text");
+
+  db.ref("marquee").on("value", (snap)=>{
+    const v = snap.val() || {};
+    const enabled = (v.enabled !== false);
+    const msg = String(v.text || "").trim();
+    const speedSec = Math.max(3, Number(v.speedSec ?? 10));
+    const dir = (v.direction === "right") ? "right" : "left";
+    const fontSize = Math.max(12, Number(v.fontSize ?? 22));
+    const bgColor = v.bgColor || "";
+    const textColor = v.textColor || "";
+
+    if(!enabled || !msg){
+      bar.style.display = "none";
+      _lastMarqueeSig = "";
+      return;
+    }
+
+    const sig = [msg, speedSec, dir, fontSize, bgColor, textColor].join("|");
+    if(sig === _lastMarqueeSig) return;
+    _lastMarqueeSig = sig;
+
+    bar.style.display = "block";
+    text.textContent = msg + "　　　";
+    text.style.fontSize = fontSize + "px";
+
+    document.documentElement.style.setProperty("--mq-sec", `${speedSec}s`);
+    document.documentElement.style.setProperty("--mq-anim", `marquee-${dir}`);
+
+    if(bgColor) bar.style.background = bgColor;
+    if(textColor) bar.style.color = textColor;
+
+    text.style.animation = "none";
+void text.offsetWidth;
+
+if(dir === "right"){
+  text.style.animation = `marquee-right ${speedSec}s linear infinite`;
+}else{
+  text.style.animation = `marquee-left ${speedSec}s linear infinite`;
+}
+  });
+}
+
+
+
+/* ========= radar ========= */
+function initRadar(){
+  const canvas = document.getElementById("radarChart");
+  const ctx = canvas.getContext("2d");
+
+  function makeGradient(){
+    const h = canvas.height || 320;
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "rgba(37,99,235,.35)");
+    g.addColorStop(1, "rgba(6,182,212,.10)");
+    return g;
+  }
+
+  radar = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels: ["金錢","健康","知識","人際","時間"],
+      datasets: [{
+        data: [0,0,0,0,0],
+        borderWidth: 2.6,
+        borderColor: "rgba(37,99,235,.95)",
+        backgroundColor: makeGradient(),
+        pointRadius: 3.6,
+        pointHoverRadius: 5.2,
+        pointBackgroundColor: "#fff",
+        pointBorderWidth: 2.2,
+        pointBorderColor: "rgba(6,182,212,.95)"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      elements: { line: { tension: 0.25 } },
+      scales: {
+        r: {
+          beginAtZero: true,
+          suggestedMin: 0,
+          suggestedMax: 10,
+          angleLines: { color:"rgba(2,6,23,.10)" },
+          grid: { color:"rgba(2,6,23,.08)" },
+          pointLabels: {
+            color: "rgba(15,23,42,.75)",
+            font: { size: 12, weight: "700" }
+          },
+          ticks: { display: false }
+        }
+      }
+    }
+  });
+}
+
+/* ========= resources ========= */
+  
+
+function bindRes(){
+  db.ref(`players/p${myId}/res`).on("value", s=>{
+    const data = s.val() || {};
+
+    RES_KEYS.forEach(k=>{
+      myRes[k] = Number(data[k] || 0);
+    });
+
+    document.getElementById("scoreTop").innerText = myRes.score || 0;
+
+    ["money","health","knowledge","social","time"].forEach(k=>{
+      const el = document.getElementById(k);
+      if(el) el.innerText = myRes[k] || 0;
+      setBar(k, myRes[k] || 0);
+    });
+
+    const r = {
+      money: myRes.money || 0,
+      health: myRes.health || 0,
+      knowledge: myRes.knowledge || 0,
+      social: myRes.social || 0,
+      time: myRes.time || 0
+    };
+
+    if(radar){
+      radar.data.datasets[0].data = [r.money, r.health, r.knowledge, r.social, r.time];
+      radar.update();
+    }
+
+    document.getElementById("totalResTop").innerText =
+      r.money + r.health + r.knowledge + r.social + r.time;
+
+    const autoTitle = genTitle(r);
+    const shownTitle =
+      (window.__customTitle && String(window.__customTitle).trim())
+        ? String(window.__customTitle).trim()
+        : autoTitle;
+
+    document.getElementById("titleText").innerText = "稱號：" + shownTitle;
+    document.getElementById("topTitle").innerText = "稱號：" + shownTitle;
+
+    db.ref(`players/p${myId}`).update({
+      roleLabelAuto: autoTitle,
+      roleLabel: autoTitle
+    }).catch(()=>{});
+
+    queueRenderShop();
+  });
+}
+
+function setBar(k, v){
+  const cap = 10;
+  const pct = Math.max(0, Math.min(100, (v/cap)*100));
+  const el = document.getElementById(`bar-${k}`);
+  if(el) el.style.width = pct + "%";
+}
+function genTitle(r){
+  const arr = Object.entries(r).sort((a,b)=>b[1]-a[1]);
+  const top = arr[0]?.[0] || "time";
+  const map = {time:"時間掌控者",money:"理財高手",health:"鋼鐵之心",knowledge:"知識旅人",social:"人脈王"};
+  return map[top] || "冒險者";
+}
+
+/* ========= custom title ========= */
+window.__customTitle = "";
+function bindCustomTitle(){
+  db.ref(`players/p${myId}/titleCustom`).on("value", s=>{
+    window.__customTitle = s.val() || "";
+  });
+}
+
+function bindPurchases(){
+  if(_purchasesBound) return;
+  _purchasesBound = true;
+
+  db.ref(`players/p${myId}/purchases`).on("value", s=>{
+    myPurchases = s.val() || {};
+    renderShop();
+  });
+}
+
+/* ========= achievements ========= */
+function bindAchievements(){
+  const listEl = document.getElementById("achievements-list");
+  const emptyEl = document.getElementById("achievements-empty");
+
+  db.ref(`players/p${myId}/inventory`).on("value", s=>{
+
+    const data = s.val() || {};
+    const items = Object.values(data);
+
+    if(!items.length){
+      listEl.innerHTML="";
+      emptyEl.classList.remove("hide");
+      return;
+    }
+
+    emptyEl.classList.add("hide");
+
+    listEl.innerHTML = items.map(it=>{
+
+      const name = it.name || "未命名";
+      const qty = Number(it.qty || 1);
+      const img = it.imageUrl || "";
+
+      return `
+      <div class="ach">
+
+        <div class="icon">
+          ${
+            img
+            ? `<img src="${img}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;">`
+            : "🏅"
+          }
+        </div>
+
+        <div class="name">${escapeHtml(name)}</div>
+
+        <div class="chip">x${qty}</div>
+
+      </div>
+      `;
+
+    }).join("");
+  });
+}
+
+/* ========= shop ========= */
+function normalizeImgSrc(raw){
+  const s = String(raw||"").trim();
+  if(!s) return "";
+  if(/^https?:\/\//i.test(s)) return s;
+  if(s.startsWith("./") || s.startsWith("/")) return s;
+  if(s.startsWith("images/")) return "./" + s;
+  return "./images/shop/" + s;
+}
+
+/* ========= global shop switch (system/shopEnabled) ========= */
+let __shopEnabled = true;
+
+function bindGlobalShopSwitch(){
+  db.ref("system/shopEnabled").off("value");
+  db.ref("system/shopEnabled").on("value", (snap)=>{
+    const enabled = (snap.val() !== false);
+    __shopEnabled = enabled;
+    window.__shopClosedBySystem = !enabled;
+    setShopDisabled(!enabled);
+
+    const hint = document.getElementById("shopSysHint");
+    if(hint){
+      hint.textContent = enabled ? "✅ 系統：商店開啟" : "⛔ 系統：商店關閉";
+    }
+
+    queueRenderShop();
+  });
+}
+  function bindShop(){
+  if(_shopBound) return;
+  _shopBound = true;
+
+  db.ref("shop/items").on("value", s=>{
+    _shopItemsCache = s.val() || {};
+    queueRenderShop();
+  });
+}
+function renderShop(){
+  const list = document.getElementById("shopList");
+  const empty = document.getElementById("shopEmpty");
+  if(!list || !empty) return;
+
+  const items = Object.entries(_shopItemsCache)
+    .map(([id,v])=>({id, ...(v||{})}))
+    .filter(it=>it && it.enabled !== false);
+
+  if(!items.length){
+    list.innerHTML = "";
+    empty.classList.remove("hide");
+    return;
+  }
+  empty.classList.add("hide");
+
+  list.innerHTML = items.map(it=>{
+    const name = it.name || it.id;
+    const imgSrc = normalizeImgSrc(it.imageUrl || it.image || it.imagePath || it.img || "");
+    const bonus = Number(it.bonus||0);
+    const buyOnce = it.buyOnce === true;
+    const owned = !!myPurchases[it.id];
+
+    let cost = {};
+    if(it.cost && typeof it.cost==="object") cost = it.cost;
+    else if(Number.isFinite(Number(it.price))) cost = { money: Number(it.price)||0 };
+
+    const costText = Object.keys(cost)
+      .map(k => (Number(cost[k])>0)?`${resNames[k]||k}:${Number(cost[k])}`:'')
+      .filter(Boolean).join(" ");
+
+    const affordable = Object.keys(cost).every(k => (Number(cost[k])<=0) || ((myRes[k]||0) >= Number(cost[k]||0)));
+
+    let btnText = "兌換";
+    let btnDisabled = !__shopEnabled;
+    let btnTitle = __shopEnabled ? "" : "商店由系統關閉";
+
+    if(buyOnce && owned){
+      btnText = "已擁有";
+      btnDisabled = true;
+      btnTitle = "此商品每位玩家只能兌換一次";
+    }else if(__shopEnabled && !affordable){
+      btnText = "資源不足";
+      btnDisabled = true;
+      btnTitle = "資源不足";
+    }
+
+    const extraTags = [
+      buyOnce ? `<span class="chip">限購一次</span>` : "",
+      (buyOnce && owned) ? `<span class="chip" style="background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.18);color:#166534;">已擁有</span>` : "",
+      (!owned && !affordable) ? `<span class="chip" style="background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.18);color:#991b1b;">資源不足</span>` : ""
+    ].filter(Boolean).join("");
+
+    return `
+      <div class="shopItem ${buyOnce && owned ? 'owned' : ''}">
+        <div class="shopImg">
+          ${
+            imgSrc
+              ? `<img src="${escapeHtml(imgSrc)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.parentElement.textContent='🛍️';">`
+              : "🛍️"
+          }
+        </div>
+        <div class="shopInfo">
+          <div class="shopName">${escapeHtml(name)}</div>
+          <div class="shopMeta">代價：${escapeHtml(costText||"免費")} ${bonus>0?`｜🏆 +${bonus}`:""}</div>
+          ${extraTags ? `<div class="chipRow" style="margin-top:6px;">${extraTags}</div>` : ""}
+        </div>
+        <button
+          class="shopBuyBtn ${buyOnce && owned ? 'ownedBtn' : ''}"
+          ${btnDisabled ? "disabled" : ""}
+          title="${escapeHtml(btnTitle)}"
+          onclick="buyItem('${escapeHtml(it.id)}')"
+        >
+          ${btnText}
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+window.buyItem = async (itemId)=>{
+  if(window.__shopClosedBySystem){
+    alert("⛔ 商店目前由系統關閉");
+    return;
+  }
+
+  if(!myId) return alert("請先登入玩家。");
+
+  const item = _shopItemsCache[itemId];
+  if(!item || item.enabled === false) return alert("商品不存在或已下架");
+
+  const name = item.name || itemId;
+  const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || item.img || "");
+  const bonus = Number(item.bonus||0);
+  const buyOnce = item.buyOnce === true;
+
+  if(buyOnce && myPurchases[itemId]){
+    return alert(`❌「${name}」每位玩家只能兌換一次`);
+  }
+
+  let cost = {};
+  if(item.cost && typeof item.cost==="object") cost = item.cost;
+  else if(Number.isFinite(Number(item.price))) cost = { money: Number(item.price)||0 };
+
+  for(const k of Object.keys(cost)){
+    const need = Number(cost[k]||0);
+    if(need<=0) continue;
+    if((myRes[k]||0) < need) return alert(`❌ 你的「${resNames[k]||k}」不足！`);
+  }
+
+  if(!confirm(`準備好兌換「${name}」了嗎？`)) return;
+
+  for(const k of Object.keys(cost)){
+    const need = Number(cost[k]||0);
+    if(need<=0) continue;
+    await db.ref(`players/p${myId}/res/${k}`).transaction(cur=>{
+      const now = Number(cur)||0;
+      const next = now - need;
+      if(next<0) return;
+      return next;
+    });
+  }
+
+  const invKey = sanitizeKey(itemId || name);
+  await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
+    const old = cur || {};
+    return {
+      itemId,
+      name,
+      imageUrl: imgSrc || "",
+      qty: Number(old.qty || 0) + 1,
+      updatedAt: Date.now()
+    };
+  });
+
+  if(buyOnce){
+    await db.ref(`players/p${myId}/purchases/${itemId}`).set({
+      bought: true,
+      boughtAt: Date.now(),
+      itemName: name
+    });
+  }
+
+  await db.ref("purchaseFeed").push({
+    playerId: myId,
+    playerName: myName || `玩家${myId}`,
+    itemId,
+    itemName: name,
+    imageUrl: imgSrc,
+    ts: Date.now()
+  });
+
+  if(bonus>0){
+    await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur)||0) + bonus);
+  }
+
+  renderShop();
+  alert(`🎉 成功獲得「${name}」！${bonus>0?`並額外獲得 ${bonus} 分！`:""}`);
+};
+
+/* ========= event deposit/refund ========= */
+function sanitizeKey(s){ return String(s||"").replace(/[.#$\[\]\/]/g, "_"); }
+function getLockIdFromEvent(ev){
+  const base = (ev && (ev.lockId || ev.assignId || ev.eid || ev.id || ev.createdAt || ev.deadlineTs || ev.title)) || "ev";
+  return sanitizeKey(base);
+}
+
+async function applyEventDepositIfNeeded(ev){
+  return;
+}
+
+async function refundEventDepositIfNeeded(ev){
+  return;
+}
+
+/* ========= activeEvent ========= */
+/* ========= activeEvent ========= */
+let _eventBound=false;
+let _eventInitDone=false;
+
+
+function bindActiveEvent(){
+  if(_eventBound) return;
+  _eventBound = true;
+
+  db.ref(`players/p${myId}/activeEvent`).on("value", async s=>{
+    const ev = s.val();
+    currentEvent = ev || null;
+
+    const frStatus = ev?.finishRequest?.status || null;
+    if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
+      playSfx("reject");
+      showGameToast("未通過，請再確認任務內容");
+    }
+    _prevFinishReqStatus = frStatus;
+
+    if(!ev){
+      _prevEventStatus = null;
+      _prevFinishReqStatus = null;
+      _playedPopupForKey = null;
+      _playedOneMinForKey = null;
+      _eventModalSeenKey = null;
+      _eventManualOpen = false;
+      hideEventModal();
+      hideBanner();
+      hideTimer();
+      stopCountdown();
+      return;
+    }
+
+    const ek = getEventKey(ev);
+
+    // 新事件來時，重設「是否已看過」
+    if(!_eventInitDone){
+      _eventInitDone = true;
+      _lastStartKeyPlayed = ek || null;
+      _playedOneMinForKey = null;
+      _eventModalSeenKey = null;
+    }else{
+      if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
+        _lastStartKeyPlayed = ek;
+        _playedOneMinForKey = null;
+        _eventModalSeenKey = null;
+        _eventManualOpen = false;
+        playSfx("start");
+      }
+    }
+
+    updateTimerFromEvent(ev);
+
+    if(ev.status === "pending"){
+      showBanner(ev);
+      setDoneBtnStateByEvent(ev);
+
+      // ✅ 只在「第一次看到新任務」時自動跳一次
+      if(ek && _eventModalSeenKey !== ek){
+        _eventModalSeenKey = ek;
+        showEventModal(ev, false);
+      }
+
+      _prevEventStatus = "pending";
+      return;
+    }
+
+    if(ev.status === "success"){
+      if(_prevEventStatus !== "success") playSfx("done");
+
+      showGameToast("任務完成，管理員已通過");
+      await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
+      hideEventModal();
+      hideBanner();
+      hideTimer();
+      stopCountdown();
+      _prevEventStatus = "success";
+      return;
+    }
+
+    if(ev.status === "fail"){
+      const isAbandon = ev.failReason === "abandon";
+
+      if(isAbandon){
+        playSfx("reject");
+        showGameToast("本輪任務已放棄");
+      }else{
+        showGameToast("任務失敗或逾時");
+      }
+
+      await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
+      hideEventModal();
+      hideBanner();
+      hideTimer();
+      stopCountdown();
+      _prevEventStatus = "fail";
+      return;
+    }
+
+    _prevEventStatus = ev.status || null;
+  });
+
+  document.getElementById("bannerHideBtn").onclick = async ()=>{
+    if(!currentEvent) return;
+
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      status: "fail",
+      failReason: "abandon",
+      abandonedAt: Date.now(),
+      abandonedBy: "player"
+    });
+
+    hideEventModal();
+    showGameToast("已放棄本輪任務");
+  };
+
+  document.getElementById("bannerDoneBtn").onclick = async ()=>{
+    if(!currentEvent || currentEvent.status !== "pending"){
+      showGameToast("目前沒有可回報的任務");
+      return;
+    }
+
+    const fr = currentEvent.finishRequest || null;
+    if(fr && fr.status === "pending"){
+      showGameToast("已送出完成申請");
+      return;
+    }
+
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      playerDone:true,
+      playerDoneAt:Date.now(),
+      uiState:"pending",
+      finishRequest:{
+        status:"pending",
+        requestedAt:Date.now()
+      }
+    });
+
+    playSfx("submit");
+    hideEventModal();          // ✅ 按完成後直接關掉
+    showBanner({
+      ...currentEvent,
+      finishRequest:{
+        status:"pending",
+        requestedAt:Date.now()
+      }
+    });
+    setDoneBtnStateByEvent({
+      ...currentEvent,
+      finishRequest:{ status:"pending" }
+    });
+    showGameToast("已送出完成申請");
+  };
+
+  document.getElementById("bannerOpenBtn").onclick = ()=>{
+    if(!currentEvent){
+      showGameToast("目前沒有任務可查看");
+      return;
+    }
+    _eventManualOpen = true;
+    showEventModal(currentEvent, true);
+    showTab("task");
+  };
+}
+
+
+function showEventModal(ev, silent=false){
+  document.getElementById("evtTitle").innerText = ev.title || "隨機事件";
+  document.getElementById("evtDesc").innerText  = ev.desc || "";
+
+  document.getElementById("evtImpact").innerText = fmtImpact(ev.cost, ev.impactText);
+  document.getElementById("evtTask").innerText   = ev.taskHint || "完成指定任務";
+  document.getElementById("evtReward").innerText = fmtReward(ev.reward);
+
+  document.getElementById("eventModal").style.display="flex";
+  document.body.classList.add("lockScroll");
+
+  // ✅ 提示框彈出音效（同一事件只播一次）
+  const ek = getEventKey(ev);
+  if(!silent && ek && ek !== _playedPopupForKey){
+    _playedPopupForKey = ek;
+    playSfx('popup');
+  }
+
+  document.getElementById("evtAckBtn").onclick = async ()=>{
+    await db.ref(`players/p${myId}/activeEvent`).update({ ack:true, ackAt:Date.now(), uiState:"pending" });
+    hideEventModal();
+    showBanner(ev);
+    showTab("task");
+  };
+
+  document.getElementById("evtCloseBtn").onclick = async ()=>{
+    await db.ref(`players/p${myId}/activeEvent`).update({ uiState:"pending", snoozeAt:Date.now() });
+    hideEventModal();
+    showBanner(ev);
+    showTab("task");
+  };
+
+  db.ref(`players/p${myId}/activeEvent`).update({ uiState:"active" }).catch(()=>{});
+}
+function hideEventModal(){
+  document.getElementById("eventModal").style.display="none";
+  document.body.classList.remove("lockScroll");
+}
+
+function showBanner(ev){
+  const fr = ev.finishRequest || null;
+
+  let stateText = "進行中";
+  let stateClass = "pill ok";
+  let metaExtra = "押金已扣除｜時間到未完成將不返還｜完成後回報等待管理員同意才返還";
+
+  if(ev.depositError){
+    metaExtra = "⚠️ 押金扣除失敗（資源不足）｜請通知管理員調整";
+    stateText = "押金失敗";
+    stateClass = "pill bad";
+  }
+
+  if(fr && fr.status==="pending"){
+    stateText = "待管理員同意";
+    stateClass = "pill warn";
+    metaExtra = "你已送出完成申請，等待管理員確認（同意後才返還押金）";
+  }
+  if(fr && fr.status==="approved"){
+    stateText = "已同意";
+    stateClass = "pill ok";
+    metaExtra = "管理員已同意完成（押金已返還/並可能發放獎勵）";
+  }
+  if(fr && fr.status==="rejected"){
+    stateText = "被駁回";
+    stateClass = "pill bad";
+    metaExtra = "管理員駁回完成申請（可再次回報）";
+  }
+
+  document.getElementById("bannerTitle").innerText = `📌 ${ev.title || "目前任務"}`;
+  document.getElementById("bannerMeta").innerText = [
+    ev.pool ? `時段：${ev.pool}` : null,
+    ev.eid ? `事件：${ev.eid}` : null,
+    metaExtra
+  ].filter(Boolean).join("｜");
+
+  const bannerState = document.getElementById("bannerState");
+  bannerState.className = stateClass;
+  bannerState.innerText = stateText;
+
+  const disabled = !!(fr && (fr.status==="pending" || fr.status==="approved"));
+  document.getElementById("bannerDoneBtn").disabled = disabled;
+
+  document.getElementById("eventBanner").style.display="block";
+}
+function hideBanner(){ document.getElementById("eventBanner").style.display="none"; }
+
+function updateTimerFromEvent(ev){
+  if(!ev || !ev.deadlineTs){
+    hideTimer();
+    stopCountdown();
+    return;
+  }
+
+  if(ev.status==="pending"){
+    document.getElementById("timerStrip").style.display = "flex";
+    document.getElementById("evtPoolPill").innerText = "時段：" + (ev.pool || "-");
+    document.getElementById("evtIdPill").innerText   = "事件：" + (ev.eid || "-");
+    startCountdown(ev.deadlineTs);
+  }else{
+    hideTimer();
+    stopCountdown();
+  }
+}
+
+
+
+function hideTimer(){ document.getElementById("timerStrip").style.display="none"; }
+
+function startCountdown(deadlineTs){
+  stopCountdown();
+  countdownTimer = setInterval(async ()=>{
+    const left = Math.max(0, Number(deadlineTs||0) - Date.now());
+
+    // ✅ 剩 1 分鐘提醒（同一事件只播一次）
+    const ek = getEventKey(currentEvent);
+    if(left <= 60000 && left > 0 && ek && _playedOneMinForKey !== ek){
+      _playedOneMinForKey = ek;
+      playSfx('oneMin');
+    }
+
+    const m = Math.floor(left/60000);
+    const s = Math.floor(left/1000)%60;
+    document.getElementById("evtLeft").innerText = `${m}:${String(s).padStart(2,"0")}`;
+
+    if(left<=0){
+      stopCountdown();
+      document.getElementById("evtLeft").innerText = "0:00";
+
+      if(myId){
+        try{
+          await db.ref(`players/p${myId}/activeEvent`).transaction(ev=>{
+            if(!ev) return ev;
+            if(ev.status !== "pending") return ev;
+            return { ...ev, status:"fail", failReason:"timeout", failAt:Date.now(), uiState:"pending" };
+          });
+        }catch(e){
+          console.error("timeout -> fail tx error:", e);
+        }
+      }
+    }
+  }, 1000);
+}
+function stopCountdown(){
+  if(countdownTimer){
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  _playedOneMinForKey = null;
+}
+
+function fmtImpact(cost, impactText){
+  if(impactText && String(impactText).trim()) return String(impactText).trim();
+  if(!cost || typeof cost!=="object" || !Object.keys(cost).length) return "（無押金）";
+  return Object.keys(cost).map(k=>`${resNames[k]||k} -${cost[k]}`).join("、") + "（派發即扣，逾時不返還）";
+}
+function fmtReward(reward){
+  if(!reward || typeof reward!=="object" || !Object.keys(reward).length) return "（完成後由管理員發放）";
+  return Object.keys(reward).map(k=>`${resNames[k]||k} +${reward[k]}`).join("、") + "（同意後發放）";
+}
+
+/* ===== Avatar (local + sync) ===== */
+function avatarKey(){ return `lr_avatar_p${myId}`; }
+function setAvatar(dataUrl){
+  const btn = document.getElementById("avatarBtn");
+  const img = document.getElementById("avatarImg");
+  if(img){
+    img.src = dataUrl;
+    img.style.display = "block";
+  }
+  btn.classList.add("hasPhoto");
+}
+function clearAvatar(){
+  const btn = document.getElementById("avatarBtn");
+  const img = document.getElementById("avatarImg");
+  if(img){
+    img.src = "";
+    img.style.display = "none";
+  }
+  btn.classList.remove("hasPhoto");
+}
+function loadAvatarFromLocal(){
+  try{
+    const v = localStorage.getItem(avatarKey());
+    if(v) setAvatar(v);
+  }catch(e){}
+}
+function saveAvatarToLocal(dataUrl){
+  try{ localStorage.setItem(avatarKey(), dataUrl); }
+  catch(e){ alert("照片太大導致無法儲存（可改小或改用 Firebase Storage 同步）"); }
+}
+function bindAvatarPicker(){
+  const btn = document.getElementById("avatarBtn");
+  const input = document.getElementById("avatarInput");
+
+  btn.onclick = ()=> input.click();
+
+  input.onchange = async ()=>{
+    const file = input.files && input.files[0];
+    if(!file) return;
+    if(!file.type.startsWith("image/")) return alert("請選擇圖片檔");
+
+    const dataUrl = await fileToDataUrl(file);
+    const compressed = await compressImage(dataUrl, 360, 0.84);
+
+    setAvatar(compressed);
+    saveAvatarToLocal(compressed);
+
+    db.ref(`players/p${myId}`).update({ avatar: compressed, avatarUpdatedAt: Date.now() }).catch(()=>{});
+    input.value = "";
+  };
+
+  btn.ondblclick = ()=>{
+    if(confirm("要清除照片，回到預設頭像嗎？")){
+      clearAvatar();
+      localStorage.removeItem(avatarKey());
+      db.ref(`players/p${myId}`).update({ avatar:null, avatarUpdatedAt: Date.now() }).catch(()=>{});
+    }
+  };
+}
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+function compressImage(dataUrl, maxSize=360, quality=0.84){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.width, h = img.height;
+      const scale = Math.min(1, maxSize / Math.max(w,h));
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      const out = c.toDataURL("image/jpeg", quality);
+      resolve(out);
+    };
+    img.src = dataUrl;
+  });
+}
+
+/* ===== util ===== */
+function escapeHtml(str){
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+/* =========================
+   Simple Upload (Player -> Storage + RTDB)
+   ========================= */
+function inferFileType(file){
+  const t = String(file?.type||"").toLowerCase();
+  if(t.startsWith("image/")) return "照片";
+  if(t.startsWith("video/")) return "錄影";
+  if(t.startsWith("audio/")) return "錄音";
+  return "其他";
+}
+function safeFileName(name){
+  return String(name || "file").replace(/[^\w.\-() ]+/g, "_");
+}
+let _suBound = false;
+
+function initSimpleUpload(){
+  if(_suBound) return;
+  _suBound = true;
+
+  const el = (id)=>document.getElementById(id);
+  const setStatus = (txt)=>{ const x=el("suStatusText"); if(x) x.textContent = txt || ""; };
+  const setHint   = (txt)=>{ const x=el("suHint"); if(x) x.textContent = txt || "—"; };
+  const setType   = (txt)=>{ const x=el("suTypeText"); if(x) x.textContent = txt || "—"; };
+  const setBar    = (pct)=>{ const x=el("suBar"); if(x) x.style.width = `${Math.max(0, Math.min(100, pct))}%`; };
+
+  function clearForm(){
+    if(el("suFile")) el("suFile").value = "";
+    if(el("suPreview")) el("suPreview").innerHTML = "";
+    setType("—");
+    setBar(0);
+    setStatus("待上傳");
+    setHint("—");
+  }
+
+  el("suFile")?.addEventListener("change", ()=>{
+    const f = el("suFile").files?.[0];
+    if(!f){ clearForm(); return; }
+
+    setType(inferFileType(f));
+    setStatus("待上傳");
+    setHint(`檔名：${f.name}`);
+
+    const url = URL.createObjectURL(f);
+    const type = String(f.type||"").toLowerCase();
+
+    if(type.startsWith("image/")){
+      el("suPreview").innerHTML = `
+        <div style="font-weight:900;color:rgba(15,23,42,.72);font-size:12px;margin:0 0 6px;">預覽</div>
+        <img src="${url}" style="max-width:280px;border-radius:16px;border:1px solid rgba(2,6,23,.10);box-shadow:0 10px 24px rgba(2,6,23,.10);" />
+      `;
+    }else if(type.startsWith("video/")){
+      el("suPreview").innerHTML = `
+        <div style="font-weight:900;color:rgba(15,23,42,.72);font-size:12px;margin:0 0 6px;">預覽</div>
+        <video src="${url}" controls style="max-width:360px;border-radius:16px;border:1px solid rgba(2,6,23,.10);"></video>
+      `;
+    }else if(type.startsWith("audio/")){
+      el("suPreview").innerHTML = `
+        <div style="font-weight:900;color:rgba(15,23,42,.72);font-size:12px;margin:0 0 6px;">預覽</div>
+        <audio src="${url}" controls></audio>
+      `;
+    }else{
+      el("suPreview").innerHTML = `<div class="chip" style="display:inline-block;">已選擇：<b>${escapeHtml(f.name)}</b></div>`;
+    }
+  });
+
+  el("btnSUupload")?.addEventListener("click", async ()=>{
+    if(!myId) return alert("請先登入玩家。");
+
+    const authed = await ensureAnonAuth();
+    if(!authed) return;
+
+    const file = el("suFile")?.files?.[0];
+    if(!file){
+      setStatus("缺少檔案");
+      setHint("請先選擇要上傳的檔案");
+      return;
+    }
+
+    const uploadId = db.ref().push().key;
+    const safeName = safeFileName(file.name);
+    const storagePath = `uploads/p${myId}/${uploadId}_${safeName}`;
+    const kind = inferFileType(file);
+
+    setStatus("上傳中…");
+    setHint("請不要關閉頁面");
+    setBar(0);
+
+    const base = {
+      playerId: String(myId),
+      playerName: String(myName || `玩家${myId}`),
+      kind,
+      fileName: file.name || safeName,
+      contentType: file.type || "",
+      size: file.size || 0,
+      status: "uploading",
+      createdAt: Date.now(),
+      storagePath
+    };
+
+    try{
+      if(!st || !st.ref) throw new Error("Storage 未初始化：請確認已載入 firebase-storage-compat.js，且 st = firebase.storage()");
+
+      const sref = st.ref(storagePath);
+      const task = sref.put(file, file.type ? { contentType: file.type } : undefined);
+
+      task.on("state_changed",
+        (snap)=>{
+          const pct = snap.totalBytes ? (snap.bytesTransferred / snap.totalBytes) * 100 : 0;
+          setBar(pct);
+          setStatus("上傳中…");
+          setHint(`進度：${pct.toFixed(0)}%`);
+        },
+        (err)=>{
+          console.error("Upload error:", err);
+          setStatus("上傳失敗");
+          setHint(err?.message || String(err));
+        },
+        async ()=>{
+          let url = "";
+          try{
+            url = await task.snapshot.ref.getDownloadURL();
+          }catch(e){
+            console.error("getDownloadURL error:", e);
+            setBar(100);
+            setStatus("上傳完成，但取 URL 失敗");
+            setHint(`錯誤：${e?.code || ""} ${e?.message || e}`);
+            const doneNoUrl = { ...base, url:"", doneAt:Date.now(), status:"pending", urlError:{code:e?.code||"", message:e?.message||String(e)} };
+            try{
+              const up = {};
+              up[`uploadsIndex/${uploadId}`] = doneNoUrl;
+              up[`players/p${myId}/uploads/${uploadId}`] = doneNoUrl;
+              up[`players/p${myId}/lastUpload`] = doneNoUrl;
+              await db.ref().update(up);
+              setHint("已上傳（無 URL），等待 Super 審核（可用 storagePath 補取 URL）");
+            }catch(dbErr){
+              console.error("RTDB write error:", dbErr);
+            }
+            return;
+          }
+
+          setBar(100);
+          setStatus("上傳成功 ✅");
+          setHint("已上傳，寫入審核資料中…");
+
+          const done = { ...base, url, doneAt: Date.now(), status:"pending" };
+
+          try{
+            const up = {};
+            up[`uploadsIndex/${uploadId}`] = done;
+            up[`players/p${myId}/uploads/${uploadId}`] = done;
+            up[`players/p${myId}/lastUpload`] = done;
+            await db.ref().update(up);
+
+            setStatus("上傳成功 ✅");
+            setHint("已上傳，等待 Super 審核");
+          }catch(dbErr){
+            console.error("RTDB write error:", dbErr);
+            setStatus("上傳成功 ✅（但資料庫寫入失敗）");
+            setHint("檔案已上傳，但審核索引寫入被擋（看 Console / Rules）");
+          }
+        }
+      );
+
+    }catch(err){
+      console.error(err);
+      setStatus("上傳失敗");
+      setHint(err?.message || String(err));
+    }
+  });
+
+  el("btnSUclear")?.addEventListener("click", clearForm);
+}
+
+/* ========= autoJoin ========= */
+function goKnowledgeQuiz(){
+  if(!myId){
+    alert("請先登入玩家");
+    return;
+  }
+
+  const pid = String(myId);
+  const playerName = String(myName || document.getElementById("pname")?.value || `玩家${pid}`);
+
+  localStorage.setItem("pid", pid);
+  localStorage.setItem("playerName", playerName);
+
+  location.href = "knowledge-quiz.html";
+}
+
+function checkQuizBeforeEnter(){
+
+  if(!myId){
+    alert("請先登入玩家");
+    return;
+  }
+
+  const pid = String(myId);
+
+  // ① 檢查是否開放
+  firebase.database()
+  .ref('systemSettings/quizAccess/knowledgeChallenge')
+  .once('value')
+  .then(snap=>{
+
+    if(!snap.val()?.enabled){
+      alert("❌ 測驗尚未開放");
+      return;
+    }
+
+    // ② 檢查是否已玩過
+    return firebase.database()
+      .ref(`players/p${pid}/quiz/knowledgeChallenge`)
+      .once('value');
+  })
+  .then(snap=>{
+
+    if(!snap) return;
+
+    if(snap.val()?.started){
+      alert("❌ 你已經作答過了");
+      return;
+    }
+
+    // ③ 可以進 → 跳轉
+    goKnowledgeQuiz();
+
+  });
+
+}
+
+(async function autoJoinIfPossible(){
+  const saved = loadLogin();
+  if(!saved) return;
+  document.getElementById("pid").value = saved.pid;
+  document.getElementById("pname").value = saved.name;
+
+  try{
+    await join();
+  }catch(e){
+    detachForceLogoutListener();
+    clearLoginAtMs();
+    clearLogin();
+    document.getElementById("game").classList.add("hide");
+    document.getElementById("login").classList.remove("hide");
+  }
+})();
+
+function resyncActiveEvent(){
+  if(!myId) return;
+
+  db.ref(`players/p${myId}/activeEvent`).get().then(s=>{
+    const ev = s.val();
+    if(!ev) return;
+
+    currentEvent = ev;
+
+    if(ev.status==="pending"){
+      showBanner(ev);
+      setDoneBtnStateByEvent(ev);
+
+      const ek = getEventKey(ev);
+      if(ek && _eventModalSeenKey !== ek){
+        _eventModalSeenKey = ek;
+        showEventModal(ev,false);
+      }
+    }
+  });
+}
+
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="visible"){
+    resyncActiveEvent();
+  }
+});
+
+window.addEventListener("focus", resyncActiveEvent);
+window.addEventListener("pageshow", resyncActiveEvent);
+
+</script>
+</body>
+</html>>
