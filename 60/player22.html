@@ -1218,6 +1218,57 @@ textarea{
   font-size: 14px;
   margin-top: 2px;
 }
+
+  @media (max-width: 480px){
+
+  .iconResRow{
+    display:flex;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:10px;
+    padding:10px 8px 8px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .iconResRow::-webkit-scrollbar{
+    display:none;
+  }
+
+  .iconRes{
+    flex:0 0 78px;
+    min-width:78px;
+    padding:8px 4px;
+    border-radius:14px;
+    background: rgba(255,255,255,.72);
+    scroll-snap-align:start;
+  }
+
+  .iconRes:not(:last-child)::after{
+    display:none;
+  }
+
+  .iconResIc{
+    width:34px;
+    height:34px;
+    font-size:15px;
+    margin:0 auto 6px;
+  }
+
+  .iconResVal{
+    font-size:18px;
+  }
+
+  .iconResLbl{
+    font-size:10px;
+  }
+
+  .iconResBar{
+    height:4px;
+    margin-top:6px;
+  }
+}
 </style>
 
 
