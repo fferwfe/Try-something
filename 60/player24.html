@@ -531,9 +531,55 @@
     padding:16px;
   }
 .radarActions{
-  display:flex;
-  justify-content:flex-end;
   margin-top:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:16px;
+  background:rgba(15,23,42,.04);
+  border:1px solid rgba(15,23,42,.08);
+}
+
+.radarHint{
+  min-width:0;
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.radarHintIc{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  font-size:16px;
+  background: linear-gradient(135deg, rgba(59,130,246,.16), rgba(245,158,11,.12));
+  border:1px solid rgba(15,23,42,.06);
+}
+
+.radarHintText{
+  min-width:0;
+  flex:1;
+}
+
+.radarHintTitle{
+  font-size:12px;
+  font-weight:1000;
+  color:#111827;
+  line-height:1.1;
+}
+
+.radarHintDesc{
+  margin-top:3px;
+  font-size:12px;
+  color:rgba(15,23,42,.58);
+  line-height:1.35;
 }
 
 .radarActions .btn{
@@ -548,16 +594,40 @@
 @media (max-width:520px){
   .radarActions{
     margin-top:10px;
+    padding:10px;
+    gap:8px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .radarHint{
+    width:100%;
+  }
+
+  .radarHintIc{
+    width:34px;
+    height:34px;
+    border-radius:11px;
+    font-size:15px;
+  }
+
+  .radarHintTitle{
+    font-size:11px;
+  }
+
+  .radarHintDesc{
+    font-size:11px;
+    line-height:1.3;
   }
 
   .radarActions .btn{
-    min-width:84px;
+    width:100%;
+    min-width:0;
     height:40px;
     padding:0 14px;
     font-size:13px;
   }
 }
-
 
   #radarChart{
     width:100% !important;
@@ -1387,9 +1457,17 @@
     <canvas id="radarChart"></canvas>
   </div>
 
-  <div class="radarActions">
-    <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
+<div class="radarActions">
+  <div class="radarHint">
+    <div class="radarHintIc">🧩</div>
+    <div class="radarHintText">
+      <div class="radarHintTitle">提示</div>
+      <div class="radarHintDesc">雙擊頭像可清除照片；底部可切換任務、商店、背包與上傳。</div>
+    </div>
   </div>
+
+  <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
+</div>
 </div>
 
 </div>
