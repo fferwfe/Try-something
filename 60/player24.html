@@ -111,16 +111,16 @@
     overflow:hidden;
   }
 
-  @supports (-webkit-touch-callout: none){
-    html,body{
-      height:-webkit-fill-available;
-      min-height:-webkit-fill-available;
-    }
-    .app{
-      min-height:-webkit-fill-available;
-      height:-webkit-fill-available;
-    }
+@supports (-webkit-touch-callout: none){
+  html,body{
+    height:-webkit-fill-available;
+    min-height:-webkit-fill-available;
   }
+  .app{
+    min-height:-webkit-fill-available;
+    height:auto;
+  }
+}
 
   .app::before{
     content:"";
@@ -1335,9 +1335,9 @@
       font-size:13px;
     }
 
-    .panelHost{
-      padding-bottom:calc(124px + var(--sab));
-    }
+ .panelHost{
+  padding-bottom:calc(150px + var(--sab));
+}
 
     .navBtn .ic{
       width:32px;
