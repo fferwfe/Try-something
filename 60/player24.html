@@ -1267,8 +1267,10 @@
         <div class="topName" id="topTitle">稱號：冒險者</div>
       </div>
 
-      <!-- ✅ role 才顯示的上方資訊 -->
-      <div class="roleHeader">
+<!-- ✅ role 才顯示的上方資訊 -->
+<div class="roleHeader">
+
+  <!-- 玩家主卡 -->
   <div class="card titleCard">
 
     <div class="profileCol">
@@ -1294,56 +1296,60 @@
     <div class="titleMeta">
       <div class="roleSub" id="titleText">稱號：冒險者</div>
 
-    <div class="mid-stat-card">
-  <div class="mid-stat-grid">
-    <div class="mid-stat-item">
-      <div class="mid-stat-icon">💰</div>
-      <div class="mid-stat-value" id="moneyVal">0</div>
-      <div class="mid-stat-label">金錢</div>
-    </div>
-
-    <div class="mid-stat-item">
-      <div class="mid-stat-icon">❤️</div>
-      <div class="mid-stat-value" id="healthVal">0</div>
-      <div class="mid-stat-label">健康</div>
-    </div>
-
-    <div class="mid-stat-item">
-      <div class="mid-stat-icon">📘</div>
-      <div class="mid-stat-value" id="knowledgeVal">0</div>
-      <div class="mid-stat-label">知識</div>
-    </div>
-
-    <div class="mid-stat-item">
-      <div class="mid-stat-icon">👥</div>
-      <div class="mid-stat-value" id="socialVal">0</div>
-      <div class="mid-stat-label">人際</div>
-    </div>
-
-    <div class="mid-stat-item">
-      <div class="mid-stat-icon">⏳</div>
-      <div class="mid-stat-value" id="timeVal">0</div>
-      <div class="mid-stat-label">時間</div>
-    </div>
-  </div>
-</div>
-
-    <div class="scorePills">
-      <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
-      <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
-    </div>
-  </div>
-
-        <div class="card radarCard">
-          <div class="secHead">
-            <div class="h">能力雷達圖</div>
-            <div class="hint">（金錢/健康/知識/人際/時間）</div>
+      <div class="mid-stat-card">
+        <div class="mid-stat-grid">
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">💰</div>
+            <div class="mid-stat-value" id="moneyVal">0</div>
+            <div class="mid-stat-label">金錢</div>
           </div>
-          <div class="radarWrap">
-            <canvas id="radarChart"></canvas>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">❤️</div>
+            <div class="mid-stat-value" id="healthVal">0</div>
+            <div class="mid-stat-label">健康</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">📘</div>
+            <div class="mid-stat-value" id="knowledgeVal">0</div>
+            <div class="mid-stat-label">知識</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">👥</div>
+            <div class="mid-stat-value" id="socialVal">0</div>
+            <div class="mid-stat-label">人際</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">⏳</div>
+            <div class="mid-stat-value" id="timeVal">0</div>
+            <div class="mid-stat-label">時間</div>
           </div>
         </div>
       </div>
+
+      <div class="scorePills">
+        <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
+        <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 雷達圖卡：一定要獨立在 titleCard 外面 -->
+  <div class="card radarCard">
+    <div class="secHead">
+      <div class="h">能力雷達圖</div>
+      <div class="hint">（金錢/健康/知識/人際/時間）</div>
+    </div>
+    <div class="radarWrap">
+      <canvas id="radarChart"></canvas>
+    </div>
+  </div>
+
+</div>
 
       <div class="card panelHost">
 
