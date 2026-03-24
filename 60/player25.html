@@ -614,15 +614,15 @@
   }
 
 .panelHost{
-  flex:1;
+  flex:1 1 auto;
   min-height:0;
-  height:100%;
+  height:0;
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
+  overscroll-behavior-y:contain;
   padding:10px;
-  padding-bottom:calc(160px + var(--sab));
+  padding-bottom:calc(150px + var(--sab));
   background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
   border-radius:24px;
   backdrop-filter:blur(18px);
@@ -1392,6 +1392,21 @@
     height:calc(100vh - 300px);
   }
 
+}
+
+/* ===== Android 商店滑動修正 ===== */
+#panel-shop{
+  min-height:100%;
+}
+
+#panel-shop .panelCard{
+  min-height:100%;
+}
+
+#panel-shop,
+#panel-shop .panelCard,
+#panel-shop .shopList{
+  touch-action:pan-y;
 }
 
 </style>
@@ -3413,6 +3428,35 @@ document.addEventListener("visibilitychange", ()=>{
 window.addEventListener("focus", resyncActiveEvent);
 window.addEventListener("pageshow", resyncActiveEvent);
 
+/* ===== Android 商店滑動強制修正 ===== */
+(function(){
+  const host = document.querySelector(".panelHost");
+  const shopPanel = document.getElementById("panel-shop");
+
+  if(!host || !shopPanel) return;
+
+  let startY = 0;
+  let startScrollTop = 0;
+  let touchingShop = false;
+
+  shopPanel.addEventListener("touchstart", (e)=>{
+    touchingShop = true;
+    startY = e.touches[0].clientY;
+    startScrollTop = host.scrollTop;
+  }, { passive:true });
+
+  shopPanel.addEventListener("touchmove", (e)=>{
+    if(!touchingShop) return;
+
+    const currentY = e.touches[0].clientY;
+    const dy = startY - currentY;
+    host.scrollTop = startScrollTop + dy;
+  }, { passive:true });
+
+  shopPanel.addEventListener("touchend", ()=>{
+    touchingShop = false;
+  }, { passive:true });
+})();
 </script>
 </body>
 </html>
