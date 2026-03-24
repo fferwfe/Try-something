@@ -2413,7 +2413,7 @@ function bindGlobalShopSwitch(){
     queueRenderShop();
   });
 }
-  function bindShop(){
+function bindShop(){
   if(_shopBound) return;
   _shopBound = true;
 
@@ -2422,6 +2422,17 @@ function bindGlobalShopSwitch(){
     queueRenderShop();
   });
 }
+
+function getItemCost(item){
+  let cost = {};
+  if(item?.cost && typeof item.cost === "object"){
+    cost = item.cost;
+  }else if(Number.isFinite(Number(item?.price))){
+    cost = { money: Number(item.price) || 0 };
+  }
+  return cost;
+}
+
 function renderShop(){
   const list = document.getElementById("shopList");
   const empty = document.getElementById("shopEmpty");
@@ -2441,19 +2452,19 @@ function renderShop(){
   list.innerHTML = items.map(it=>{
     const name = it.name || it.id;
     const imgSrc = normalizeImgSrc(it.imageUrl || it.image || it.imagePath || it.img || "");
-    const bonus = Number(it.bonus||0);
+    const bonus = Number(it.bonus || 0);
     const buyOnce = it.buyOnce === true;
     const owned = !!myPurchases[it.id];
-
-    let cost = {};
-    if(it.cost && typeof it.cost==="object") cost = it.cost;
-    else if(Number.isFinite(Number(it.price))) cost = { money: Number(it.price)||0 };
+    const cost = getItemCost(it);
 
     const costText = Object.keys(cost)
-      .map(k => (Number(cost[k])>0)?`${resNames[k]||k}:${Number(cost[k])}`:'')
-      .filter(Boolean).join(" ");
+      .map(k => (Number(cost[k]) > 0) ? `${resNames[k] || k}:${Number(cost[k])}` : "")
+      .filter(Boolean)
+      .join(" ");
 
-    const affordable = Object.keys(cost).every(k => (Number(cost[k])<=0) || ((myRes[k]||0) >= Number(cost[k]||0)));
+    const affordable = Object.keys(cost).every(k =>
+      (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+    );
 
     let btnText = "兌換";
     let btnDisabled = !__shopEnabled;
@@ -2476,8 +2487,7 @@ function renderShop(){
     ].filter(Boolean).join("");
 
     return `
-    return `
-  <div class="shopItem ${buyOnce && owned ? 'owned' : ''}" data-id="${escapeHtml(it.id)}">
+      <div class="shopItem ${buyOnce && owned ? 'owned' : ''}" data-id="${escapeHtml(it.id)}">
         <div class="shopImg">
           ${
             imgSrc
@@ -2487,7 +2497,7 @@ function renderShop(){
         </div>
         <div class="shopInfo">
           <div class="shopName">${escapeHtml(name)}</div>
-          <div class="shopMeta">代價：${escapeHtml(costText||"免費")} ${bonus>0?`｜🏆 +${bonus}`:""}</div>
+          <div class="shopMeta">代價：${escapeHtml(costText || "免費")}${bonus > 0 ? ` ｜ 🏆 +${bonus}` : ""}</div>
           ${extraTags ? `<div class="chipRow" style="margin-top:6px;">${extraTags}</div>` : ""}
         </div>
         <button
@@ -2504,94 +2514,84 @@ function renderShop(){
 }
 
 window.buyItem = async (itemId)=>{
-  if(window.__shopClosedBySystem){
-    alert("⛔ 商店目前由系統關閉");
-    return;
-  }
-
-  if(!myId) return alert("請先登入玩家。");
+  if(window.__shopClosedBySystem) return;
+  if(!myId) return;
 
   const item = _shopItemsCache[itemId];
-  if(!item || item.enabled === false) return alert("商品不存在或已下架");
+  if(!item || item.enabled === false) return;
 
   const name = item.name || itemId;
   const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || item.img || "");
-  const bonus = Number(item.bonus||0);
+  const bonus = Number(item.bonus || 0);
   const buyOnce = item.buyOnce === true;
+  const owned = !!myPurchases[itemId];
+  const cost = getItemCost(item);
 
-  if(buyOnce && myPurchases[itemId]){
-    return alert(`❌「${name}」每位玩家只能兌換一次`);
+  if(buyOnce && owned) return;
+
+  const affordable = Object.keys(cost).every(k =>
+    (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+  );
+  if(!affordable) return;
+
+  const btn = document.querySelector(`.shopItem[data-id="${CSS.escape(itemId)}"] .shopBuyBtn`);
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "處理中...";
   }
 
-  let cost = {};
-  if(item.cost && typeof item.cost==="object") cost = item.cost;
-  else if(Number.isFinite(Number(item.price))) cost = { money: Number(item.price)||0 };
+  try{
+    for(const k of Object.keys(cost)){
+      const need = Number(cost[k] || 0);
+      if(need <= 0) continue;
 
-  for(const k of Object.keys(cost)){
-    const need = Number(cost[k]||0);
-    if(need<=0) continue;
-    if((myRes[k]||0) < need) return alert(`❌ 你的「${resNames[k]||k}」不足！`);
-  }
+      await db.ref(`players/p${myId}/res/${k}`).transaction(cur=>{
+        const now = Number(cur) || 0;
+        const next = now - need;
+        if(next < 0) return;
+        return next;
+      });
+    }
 
-  if(!confirm(`準備好兌換「${name}」了嗎？`)) return;
-
-  for(const k of Object.keys(cost)){
-    const need = Number(cost[k]||0);
-    if(need<=0) continue;
-    await db.ref(`players/p${myId}/res/${k}`).transaction(cur=>{
-      const now = Number(cur)||0;
-      const next = now - need;
-      if(next<0) return;
-      return next;
+    const invKey = sanitizeKey(itemId || name);
+    await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
+      const old = cur || {};
+      return {
+        itemId,
+        name,
+        imageUrl: imgSrc || "",
+        qty: Number(old.qty || 0) + 1,
+        updatedAt: Date.now()
+      };
     });
-  }
 
-  const invKey = sanitizeKey(itemId || name);
-  await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
-    const old = cur || {};
-    return {
+    if(buyOnce){
+      await db.ref(`players/p${myId}/purchases/${itemId}`).set({
+        bought: true,
+        boughtAt: Date.now(),
+        itemName: name
+      });
+    }
+
+    await db.ref("purchaseFeed").push({
+      playerId: myId,
+      playerName: myName || `玩家${myId}`,
       itemId,
-      name,
-      imageUrl: imgSrc || "",
-      qty: Number(old.qty || 0) + 1,
-      updatedAt: Date.now()
-    };
-  });
-
-  if(buyOnce){
-    await db.ref(`players/p${myId}/purchases/${itemId}`).set({
-      bought: true,
-      boughtAt: Date.now(),
-      itemName: name
+      itemName: name,
+      imageUrl: imgSrc,
+      ts: Date.now()
     });
+
+    if(bonus > 0){
+      await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur) || 0) + bonus);
+    }
+
+    refreshShopButtonStates();
+  }catch(err){
+    console.error("buyItem error:", err);
+    refreshShopButtonStates();
   }
-
-  await db.ref("purchaseFeed").push({
-    playerId: myId,
-    playerName: myName || `玩家${myId}`,
-    itemId,
-    itemName: name,
-    imageUrl: imgSrc,
-    ts: Date.now()
-  });
-
-  if(bonus>0){
-    await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur)||0) + bonus);
-  }
-
-  refreshShopButtonStates();
-  alert(`🎉 成功獲得「${name}」！${bonus>0?`並額外獲得 ${bonus} 分！`:""}`);
 };
-
-function getItemCost(item){
-  let cost = {};
-  if(item?.cost && typeof item.cost === "object"){
-    cost = item.cost;
-  }else if(Number.isFinite(Number(item?.price))){
-    cost = { money: Number(item.price) || 0 };
-  }
-  return cost;
-}
 
 function refreshShopButtonStates(){
   const list = document.getElementById("shopList");
@@ -2640,6 +2640,7 @@ function refreshShopButtonStates(){
     btn.title = btnTitle;
   });
 }
+
 
 /* ========= event deposit/refund ========= */
 function sanitizeKey(s){ return String(s||"").replace(/[.#$\[\]\/]/g, "_"); }
