@@ -86,7 +86,7 @@
       radial-gradient(860px 520px at 88% 18%, rgba(245,158,11,.18), transparent 58%),
       radial-gradient(860px 620px at 48% 92%, rgba(34,197,94,.14), transparent 60%),
       linear-gradient(135deg,var(--bg0),var(--bg1) 55%,var(--bg2));
-    overflow:hidden;
+    overflow:auto;
     user-select:none;
     -webkit-user-select:none;
     -webkit-touch-callout:none;
@@ -94,33 +94,32 @@
 
   .hide{ display:none !important; }
 
-  .app{
-    min-height:100vh;
-    min-height:100dvh;
-    height:100dvh;
-    padding-top:calc(10px + var(--sat));
-    padding-left:10px;
-    padding-right:10px;
-    padding-bottom:calc(var(--navH) + 24px + var(--sab));
-    display:flex;
-    flex-direction:column;
-    gap:var(--gap);
-    max-width:560px;
-    margin:0 auto;
-    position:relative;
-    overflow:hidden;
-  }
+ .app{
+  min-height:100vh;
+  min-height:100dvh;
+  height:auto;
+  padding-bottom:10px;
+  padding-left:10px;
+  padding-right:10px;
+  display:flex;
+  flex-direction:column;
+  gap:var(--gap);
+  max-width:560px;
+  margin:0 auto;
+  position:relative;
+  overflow:visible;
+}
 
-  @supports (-webkit-touch-callout: none){
-    html,body{
-      height:-webkit-fill-available;
-      min-height:-webkit-fill-available;
-    }
-    .app{
-      min-height:-webkit-fill-available;
-      height:-webkit-fill-available;
-    }
+@supports (-webkit-touch-callout: none){
+  html,body{
+    height:-webkit-fill-available;
+    min-height:-webkit-fill-available;
   }
+  .app{
+    min-height:-webkit-fill-available;
+    height:auto;
+  }
+}
 
   .app::before{
     content:"";
@@ -261,14 +260,14 @@
     border:none;
   }
 
-  #game{
-    display:flex;
-    flex-direction:column;
-    gap:var(--gap);
-    min-height:0;
-    flex:1;
-    overflow:hidden;
-  }
+     #game{
+  display:flex;
+  flex-direction:column;
+  gap:var(--gap);
+  min-height:0;
+  flex:1;
+  overflow:visible;
+}
 
   .roleHeader{
     display:none;
@@ -614,18 +613,20 @@
     flex:0 0 auto;
   }
 
-  .panelHost{
-    flex:1 1 auto;
-    min-height:0;
-    overflow-y:auto;
-    overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
-    padding:10px;
-    padding-bottom:calc(120px + var(--sab));
-    background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
-    border-radius:24px;
-    backdrop-filter:blur(18px);
-  }
+.panelHost{
+  flex:1;
+  min-height:0;
+  height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:10px;
+  padding-bottom:calc(160px + var(--sab));
+  background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.76));
+  border-radius:24px;
+  backdrop-filter:blur(18px);
+}
 
   .panel{ display:none; }
 
@@ -1204,163 +1205,195 @@
     font-size:16px;
   }
 
-  @media (max-width:520px){
-    .app{
-      padding-bottom:calc(var(--navH) + 20px + var(--sab));
-    }
-
-    .titleCard{
-      grid-template-columns:86px minmax(0,1fr);
-      gap:14px;
-      padding:16px;
-    }
-
-    .avatar{
-      width:76px;
-      height:76px;
-      border-radius:22px;
-    }
-
-    #me,
-    .roleTitle{
-      font-size:15px;
-      margin-top:8px;
-    }
-
-    .mid-stat-card{
-      padding:12px 8px;
-      border-radius:22px;
-    }
-
-    .mid-stat-item{
-      padding:2px 2px 0;
-    }
-
-    .mid-stat-icon{
-      width:42px;
-      height:42px;
-      font-size:22px;
-      margin-bottom:6px;
-    }
-
-    .mid-stat-value{
-      font-size:24px;
-    }
-
-    .mid-stat-label{
-      margin-top:6px;
-      font-size:11px;
-    }
-
-    .scorePills{
-      gap:10px;
-    }
-
-    .pill{
-      min-height:64px;
-      padding:12px 14px;
-      border-radius:22px;
-      font-size:14px;
-    }
-
-    .scorePills .pill:first-child b{
-      font-size:36px;
-    }
-
-    .scorePills .pill:last-child b{
-      font-size:32px;
-    }
-
-    .radarCard{
-      padding:12px 12px 12px;
-    }
-
-    .secHead{
-      padding-bottom:8px;
-      align-items:flex-start;
-    }
-
-    .secHead .h{
-      font-size:13px;
-    }
-
-    .secHead .hint{
-      font-size:11px;
-      white-space:normal;
-      text-align:right;
-    }
-
-    .radarWrap{
-      height:300px;
-      padding:12px;
-      border-radius:20px;
-    }
-
-    .radarActions{
-      margin-top:10px;
-      padding:10px;
-      gap:8px;
-      align-items:flex-start;
-      flex-direction:column;
-    }
-
-    .radarHint{
-      width:100%;
-      align-items:flex-start;
-    }
-
-    .radarHintIc{
-      width:34px;
-      height:34px;
-      border-radius:11px;
-      font-size:15px;
-    }
-
-    .radarHintTitle{
-      font-size:11px;
-    }
-
-    .radarHintDesc{
-      font-size:11px;
-      line-height:1.35;
-    }
-
-    .radarActions .btn{
-      width:100%;
-      min-width:0;
-      height:40px;
-      padding:0 14px;
-      font-size:13px;
-    }
-
-    .panelHost{
-      padding-bottom:calc(124px + var(--sab));
-    }
-
-    .navBtn .ic{
-      width:32px;
-      height:32px;
-    }
-
-    .navBtn{
-      padding:9px 6px;
-    }
-
-    .achGrid{
-      grid-template-columns:repeat(2, minmax(0,1fr));
-    }
+@media (max-width:520px){
+  .app{
+    padding-bottom:10px;
   }
 
-  @supports (-webkit-touch-callout: none){
-    #game{
-      min-height:0;
-    }
-
-    .panelHost{
-      min-height:0;
-      padding-bottom:calc(128px + var(--sab));
-    }
+  .titleCard{
+    grid-template-columns:86px minmax(0,1fr);
+    gap:14px;
+    padding:16px;
   }
+
+  .avatar{
+    width:76px;
+    height:76px;
+    border-radius:22px;
+  }
+
+  #me,
+  .roleTitle{
+    font-size:15px;
+    margin-top:8px;
+  }
+
+  .mid-stat-card{
+    padding:12px 8px;
+    border-radius:22px;
+  }
+
+  .mid-stat-item{
+    padding:2px 2px 0;
+  }
+
+  .mid-stat-icon{
+    width:42px;
+    height:42px;
+    font-size:22px;
+    margin-bottom:6px;
+  }
+
+  .mid-stat-value{
+    font-size:24px;
+  }
+
+  .mid-stat-label{
+    margin-top:6px;
+    font-size:11px;
+  }
+
+  .scorePills{
+    gap:10px;
+  }
+
+  .pill{
+    min-height:64px;
+    padding:12px 14px;
+    border-radius:22px;
+    font-size:14px;
+  }
+
+  .scorePills .pill:first-child b{
+    font-size:36px;
+  }
+
+  .scorePills .pill:last-child b{
+    font-size:32px;
+  }
+
+  .radarCard{
+    padding:12px 12px 12px;
+  }
+
+  .secHead{
+    padding-bottom:8px;
+    align-items:flex-start;
+  }
+
+  .secHead .h{
+    font-size:13px;
+  }
+
+  .secHead .hint{
+    font-size:11px;
+    white-space:normal;
+    text-align:right;
+  }
+
+  .radarWrap{
+    height:300px;
+    padding:12px;
+    border-radius:20px;
+  }
+
+  .radarActions{
+    margin-top:10px;
+    padding:10px;
+    gap:8px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .radarHint{
+    width:100%;
+    align-items:flex-start;
+  }
+
+  .radarHintIc{
+    width:34px;
+    height:34px;
+    border-radius:11px;
+    font-size:15px;
+  }
+
+  .radarHintTitle{
+    font-size:11px;
+  }
+
+  .radarHintDesc{
+    font-size:11px;
+    line-height:1.35;
+  }
+
+  .radarActions .btn{
+    width:100%;
+    min-width:0;
+    height:40px;
+    padding:0 14px;
+    font-size:13px;
+  }
+
+  .panelHost{
+    padding-bottom:calc(150px + var(--sab));
+  }
+
+  .navBtn .ic{
+    width:32px;
+    height:32px;
+  }
+
+  .navBtn{
+    padding:9px 6px;
+  }
+
+  .achGrid{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+}
+
+@supports (-webkit-touch-callout: none){
+  #game{
+    min-height:0;
+  }
+
+  .panelHost{
+    min-height:0;
+    padding-bottom:calc(150px + var(--sab));
+  }
+}
+/* ===== 手機滑動強制修正（Android + iOS） ===== */
+#panel-shop,
+#panel-shop *{
+  touch-action:pan-y;
+}
+
+.shopList{
+  min-height:1px;
+}
+
+@media screen and (max-width:520px){
+
+  body{
+    overflow:auto;
+  }
+
+  .app{
+    min-height:100vh;
+    height:auto;
+  }
+
+  #game{
+    min-height:0;
+    height:auto;
+  }
+
+  .panelHost{
+    height:calc(100vh - 300px);
+  }
+
+}
+
 </style>
 
 
@@ -1400,8 +1433,10 @@
         <div class="topName" id="topTitle">稱號：冒險者</div>
       </div>
 
-      <!-- ✅ role 才顯示的上方資訊 -->
-      <div class="roleHeader">
+<!-- ✅ role 才顯示的上方資訊 -->
+<div class="roleHeader">
+
+  <!-- 玩家主卡 -->
   <div class="card titleCard">
 
     <div class="profileCol">
@@ -1427,74 +1462,73 @@
     <div class="titleMeta">
       <div class="roleSub" id="titleText">稱號：冒險者</div>
 
-      <div class="iconResRow">
-        <div class="iconRes">
-          <div class="iconResIc">💰</div>
-          <div class="iconResVal" id="money">0</div>
-          <div class="iconResLbl">金錢</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-money"></div></div>
+      <div class="mid-stat-card">
+        <div class="mid-stat-grid">
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">💰</div>
+            <div class="mid-stat-value" id="moneyVal">0</div>
+            <div class="mid-stat-label">金錢</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">❤️</div>
+            <div class="mid-stat-value" id="healthVal">0</div>
+            <div class="mid-stat-label">健康</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">📘</div>
+            <div class="mid-stat-value" id="knowledgeVal">0</div>
+            <div class="mid-stat-label">知識</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">👥</div>
+            <div class="mid-stat-value" id="socialVal">0</div>
+            <div class="mid-stat-label">人際</div>
+          </div>
+
+          <div class="mid-stat-item">
+            <div class="mid-stat-icon">⏳</div>
+            <div class="mid-stat-value" id="timeVal">0</div>
+            <div class="mid-stat-label">時間</div>
+          </div>
         </div>
-        <div class="iconRes">
-          <div class="iconResIc">❤️</div>
-          <div class="iconResVal" id="health">0</div>
-          <div class="iconResLbl">健康</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-health"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">📘</div>
-          <div class="iconResVal" id="knowledge">0</div>
-          <div class="iconResLbl">知識</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-knowledge"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">🤝</div>
-          <div class="iconResVal" id="social">0</div>
-          <div class="iconResLbl">人際</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-social"></div></div>
-        </div>
-        <div class="iconRes">
-          <div class="iconResIc">⏳</div>
-          <div class="iconResVal" id="time">0</div>
-          <div class="iconResLbl">時間</div>
-          <div class="iconResBar"><div class="iconResFill" id="bar-time"></div></div>
-        </div>
+      </div>
+
+      <div class="scorePills">
+        <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
+        <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
       </div>
     </div>
 
-    <div class="scorePills">
-      <div class="pill">🏆 總分 <b id="scoreTop">0</b></div>
-      <div class="pill">📦 總資源 <b id="totalResTop">0</b></div>
-    </div>
   </div>
 
-        <div class="card radarCard">
-          <div class="secHead">
-            <div class="h">能力雷達圖</div>
-            <div class="hint">（金錢/健康/知識/人際/時間）</div>
-          </div>
-          <div class="radarWrap">
-            <canvas id="radarChart"></canvas>
-          </div>
-        </div>
+  <!-- 雷達圖卡：一定要獨立在 titleCard 外面 -->
+<div class="card radarCard">
+  <div class="secHead">
+    <div class="h">能力雷達圖</div>
+    <div class="hint">（金錢/健康/知識/人際/時間）</div>
+  </div>
+
+  <div class="radarWrap">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <div class="radarActions">
+    <div class="radarHint">
+      <div class="radarHintIc">🧩</div>
+      <div class="radarHintText">
+        <div class="radarHintTitle">提示</div>
+        <div class="radarHintDesc">雙擊頭像可清除照片；底部可切換任務、商店、背包與上傳。</div>
       </div>
+    </div>
 
-      <div class="card panelHost">
-
-        <!-- ROLE -->
-        <div id="panel-role" class="panel show">
-          <div class="panelCard">
-            <div class="panelTitle"><b>😃 角色</b><span>只有角色顯示上方資訊</span></div>
-            <div class="row">
-              <div class="badge">🧩</div>
-              <div class="col">
-                <div class="t">提示</div>
-                <div class="d">雙擊頭像可清除照片；稱號由系統自動或管理員自訂。</div>
-              </div>
-              <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
-            </div>
-          </div>
+    <button class="btn sec" type="button" id="btnLogoutLocal">登出</button>
+  </div>
+</div>
         </div>
-
+          <div class="panelHost">
         <!-- TASK -->
         <div id="panel-task" class="panel">
           <div class="panelCard">
@@ -1933,6 +1967,7 @@ let _prevFinishReqStatus=null;
 let _playedPopupForKey=null;
 let _playedOneMinForKey=null;
 let _prevEventStatus=null; // 判斷狀態轉換避免重播
+let _eventInitialized = false;
 let myRes={ time:0, money:0, health:0, knowledge:0, social:0, score:0 };
 
 /* ========= device + login (auto + lock + force logout) ========= */
@@ -2264,11 +2299,11 @@ function bindRes(){
 
     document.getElementById("scoreTop").innerText = myRes.score || 0;
 
-    ["money","health","knowledge","social","time"].forEach(k=>{
-      const el = document.getElementById(k);
-      if(el) el.innerText = myRes[k] || 0;
-      setBar(k, myRes[k] || 0);
-    });
+   document.getElementById("moneyVal").innerText = myRes.money || 0;
+document.getElementById("healthVal").innerText = myRes.health || 0;
+document.getElementById("knowledgeVal").innerText = myRes.knowledge || 0;
+document.getElementById("socialVal").innerText = myRes.social || 0;
+document.getElementById("timeVal").innerText = myRes.time || 0;
 
     const r = {
       money: myRes.money || 0,
@@ -2300,7 +2335,7 @@ function bindRes(){
       roleLabel: autoTitle
     }).catch(()=>{});
 
-    queueRenderShop();
+    refreshShopButtonStates();
   });
 }
 
@@ -2331,7 +2366,7 @@ function bindPurchases(){
 
   db.ref(`players/p${myId}/purchases`).on("value", s=>{
     myPurchases = s.val() || {};
-    renderShop();
+    refreshShopButtonStates();
   });
 }
 
@@ -2410,7 +2445,7 @@ function bindGlobalShopSwitch(){
     queueRenderShop();
   });
 }
-  function bindShop(){
+function bindShop(){
   if(_shopBound) return;
   _shopBound = true;
 
@@ -2419,6 +2454,17 @@ function bindGlobalShopSwitch(){
     queueRenderShop();
   });
 }
+
+function getItemCost(item){
+  let cost = {};
+  if(item?.cost && typeof item.cost === "object"){
+    cost = item.cost;
+  }else if(Number.isFinite(Number(item?.price))){
+    cost = { money: Number(item.price) || 0 };
+  }
+  return cost;
+}
+
 function renderShop(){
   const list = document.getElementById("shopList");
   const empty = document.getElementById("shopEmpty");
@@ -2438,19 +2484,19 @@ function renderShop(){
   list.innerHTML = items.map(it=>{
     const name = it.name || it.id;
     const imgSrc = normalizeImgSrc(it.imageUrl || it.image || it.imagePath || it.img || "");
-    const bonus = Number(it.bonus||0);
+    const bonus = Number(it.bonus || 0);
     const buyOnce = it.buyOnce === true;
     const owned = !!myPurchases[it.id];
-
-    let cost = {};
-    if(it.cost && typeof it.cost==="object") cost = it.cost;
-    else if(Number.isFinite(Number(it.price))) cost = { money: Number(it.price)||0 };
+    const cost = getItemCost(it);
 
     const costText = Object.keys(cost)
-      .map(k => (Number(cost[k])>0)?`${resNames[k]||k}:${Number(cost[k])}`:'')
-      .filter(Boolean).join(" ");
+      .map(k => (Number(cost[k]) > 0) ? `${resNames[k] || k}:${Number(cost[k])}` : "")
+      .filter(Boolean)
+      .join(" ");
 
-    const affordable = Object.keys(cost).every(k => (Number(cost[k])<=0) || ((myRes[k]||0) >= Number(cost[k]||0)));
+    const affordable = Object.keys(cost).every(k =>
+      (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+    );
 
     let btnText = "兌換";
     let btnDisabled = !__shopEnabled;
@@ -2473,7 +2519,7 @@ function renderShop(){
     ].filter(Boolean).join("");
 
     return `
-      <div class="shopItem ${buyOnce && owned ? 'owned' : ''}">
+      <div class="shopItem ${buyOnce && owned ? 'owned' : ''}" data-id="${escapeHtml(it.id)}">
         <div class="shopImg">
           ${
             imgSrc
@@ -2483,7 +2529,7 @@ function renderShop(){
         </div>
         <div class="shopInfo">
           <div class="shopName">${escapeHtml(name)}</div>
-          <div class="shopMeta">代價：${escapeHtml(costText||"免費")} ${bonus>0?`｜🏆 +${bonus}`:""}</div>
+          <div class="shopMeta">代價：${escapeHtml(costText || "免費")}${bonus > 0 ? ` ｜ 🏆 +${bonus}` : ""}</div>
           ${extraTags ? `<div class="chipRow" style="margin-top:6px;">${extraTags}</div>` : ""}
         </div>
         <button
@@ -2500,84 +2546,133 @@ function renderShop(){
 }
 
 window.buyItem = async (itemId)=>{
-  if(window.__shopClosedBySystem){
-    alert("⛔ 商店目前由系統關閉");
-    return;
-  }
-
-  if(!myId) return alert("請先登入玩家。");
+  if(window.__shopClosedBySystem) return;
+  if(!myId) return;
 
   const item = _shopItemsCache[itemId];
-  if(!item || item.enabled === false) return alert("商品不存在或已下架");
+  if(!item || item.enabled === false) return;
 
   const name = item.name || itemId;
   const imgSrc = normalizeImgSrc(item.imageUrl || item.image || item.imagePath || item.img || "");
-  const bonus = Number(item.bonus||0);
+  const bonus = Number(item.bonus || 0);
   const buyOnce = item.buyOnce === true;
+  const owned = !!myPurchases[itemId];
+  const cost = getItemCost(item);
 
-  if(buyOnce && myPurchases[itemId]){
-    return alert(`❌「${name}」每位玩家只能兌換一次`);
+  if(buyOnce && owned) return;
+
+  const affordable = Object.keys(cost).every(k =>
+    (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+  );
+  if(!affordable) return;
+
+  const btn = document.querySelector(`.shopItem[data-id="${CSS.escape(itemId)}"] .shopBuyBtn`);
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "處理中...";
   }
 
-  let cost = {};
-  if(item.cost && typeof item.cost==="object") cost = item.cost;
-  else if(Number.isFinite(Number(item.price))) cost = { money: Number(item.price)||0 };
+  try{
+    for(const k of Object.keys(cost)){
+      const need = Number(cost[k] || 0);
+      if(need <= 0) continue;
 
-  for(const k of Object.keys(cost)){
-    const need = Number(cost[k]||0);
-    if(need<=0) continue;
-    if((myRes[k]||0) < need) return alert(`❌ 你的「${resNames[k]||k}」不足！`);
-  }
+      await db.ref(`players/p${myId}/res/${k}`).transaction(cur=>{
+        const now = Number(cur) || 0;
+        const next = now - need;
+        if(next < 0) return;
+        return next;
+      });
+    }
 
-  if(!confirm(`準備好兌換「${name}」了嗎？`)) return;
-
-  for(const k of Object.keys(cost)){
-    const need = Number(cost[k]||0);
-    if(need<=0) continue;
-    await db.ref(`players/p${myId}/res/${k}`).transaction(cur=>{
-      const now = Number(cur)||0;
-      const next = now - need;
-      if(next<0) return;
-      return next;
+    const invKey = sanitizeKey(itemId || name);
+    await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
+      const old = cur || {};
+      return {
+        itemId,
+        name,
+        imageUrl: imgSrc || "",
+        qty: Number(old.qty || 0) + 1,
+        updatedAt: Date.now()
+      };
     });
-  }
 
-  const invKey = sanitizeKey(itemId || name);
-  await db.ref(`players/p${myId}/inventory/${invKey}`).transaction(cur=>{
-    const old = cur || {};
-    return {
+    if(buyOnce){
+      await db.ref(`players/p${myId}/purchases/${itemId}`).set({
+        bought: true,
+        boughtAt: Date.now(),
+        itemName: name
+      });
+    }
+
+    await db.ref("purchaseFeed").push({
+      playerId: myId,
+      playerName: myName || `玩家${myId}`,
       itemId,
-      name,
-      imageUrl: imgSrc || "",
-      qty: Number(old.qty || 0) + 1,
-      updatedAt: Date.now()
-    };
-  });
-
-  if(buyOnce){
-    await db.ref(`players/p${myId}/purchases/${itemId}`).set({
-      bought: true,
-      boughtAt: Date.now(),
-      itemName: name
+      itemName: name,
+      imageUrl: imgSrc,
+      ts: Date.now()
     });
+
+    if(bonus > 0){
+      await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur) || 0) + bonus);
+    }
+
+    refreshShopButtonStates();
+  }catch(err){
+    console.error("buyItem error:", err);
+    refreshShopButtonStates();
   }
-
-  await db.ref("purchaseFeed").push({
-    playerId: myId,
-    playerName: myName || `玩家${myId}`,
-    itemId,
-    itemName: name,
-    imageUrl: imgSrc,
-    ts: Date.now()
-  });
-
-  if(bonus>0){
-    await db.ref(`players/p${myId}/res/score`).transaction(cur => (Number(cur)||0) + bonus);
-  }
-
-  renderShop();
-  alert(`🎉 成功獲得「${name}」！${bonus>0?`並額外獲得 ${bonus} 分！`:""}`);
 };
+
+function refreshShopButtonStates(){
+  const list = document.getElementById("shopList");
+  if(!list) return;
+
+  const cards = list.querySelectorAll(".shopItem[data-id]");
+  cards.forEach(card=>{
+    const itemId = card.dataset.id;
+    const item = _shopItemsCache[itemId];
+    if(!item) return;
+
+    const btn = card.querySelector(".shopBuyBtn");
+    if(!btn) return;
+
+    const buyOnce = item.buyOnce === true;
+    const owned = !!myPurchases[itemId];
+    const cost = getItemCost(item);
+
+    const affordable = Object.keys(cost).every(k =>
+      (Number(cost[k]) <= 0) || ((myRes[k] || 0) >= Number(cost[k] || 0))
+    );
+
+    let btnText = "兌換";
+    let btnDisabled = !__shopEnabled;
+    let btnTitle = __shopEnabled ? "" : "商店由系統關閉";
+
+    if(buyOnce && owned){
+      btnText = "已擁有";
+      btnDisabled = true;
+      btnTitle = "此商品每位玩家只能兌換一次";
+      card.classList.add("owned");
+      btn.classList.add("ownedBtn");
+    }else{
+      card.classList.remove("owned");
+      btn.classList.remove("ownedBtn");
+
+      if(__shopEnabled && !affordable){
+        btnText = "資源不足";
+        btnDisabled = true;
+        btnTitle = "資源不足";
+      }
+    }
+
+    btn.textContent = btnText;
+    btn.disabled = btnDisabled;
+    btn.title = btnTitle;
+  });
+}
+
 
 /* ========= event deposit/refund ========= */
 function sanitizeKey(s){ return String(s||"").replace(/[.#$\[\]\/]/g, "_"); }
@@ -2609,11 +2704,6 @@ function bindActiveEvent(){
     currentEvent = ev || null;
 
     const frStatus = ev?.finishRequest?.status || null;
-    if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
-      playSfx("reject");
-      showGameToast("未通過，請再確認任務內容");
-    }
-    _prevFinishReqStatus = frStatus;
 
     if(!ev){
       _prevEventStatus = null;
@@ -2622,6 +2712,7 @@ function bindActiveEvent(){
       _playedOneMinForKey = null;
       _eventModalSeenKey = null;
       _eventManualOpen = false;
+
       hideEventModal();
       hideBanner();
       hideTimer();
@@ -2631,19 +2722,28 @@ function bindActiveEvent(){
 
     const ek = getEventKey(ev);
 
-    // 新事件來時，重設「是否已看過」
-    if(!_eventInitDone){
-      _eventInitDone = true;
+    // ✅ 第一次同步：只記錄狀態，不播音效
+    if(!_eventInitialized){
+      _eventInitialized = true;
       _lastStartKeyPlayed = ek || null;
       _playedOneMinForKey = null;
       _eventModalSeenKey = null;
+      _prevFinishReqStatus = frStatus;
+      _prevEventStatus = ev.status || null;
     }else{
+      // ✅ 新事件進來才播 start
       if(ev.status === "pending" && ek && ek !== _lastStartKeyPlayed){
         _lastStartKeyPlayed = ek;
         _playedOneMinForKey = null;
         _eventModalSeenKey = null;
         _eventManualOpen = false;
         playSfx("start");
+      }
+
+      // ✅ 被駁回才播 reject
+      if(_prevFinishReqStatus !== "rejected" && frStatus === "rejected"){
+        playSfx("reject");
+        showGameToast("未通過，請再確認任務內容");
       }
     }
 
@@ -2653,18 +2753,21 @@ function bindActiveEvent(){
       showBanner(ev);
       setDoneBtnStateByEvent(ev);
 
-      // ✅ 只在「第一次看到新任務」時自動跳一次
+      // ✅ 只在新任務第一次看到時自動跳
       if(ek && _eventModalSeenKey !== ek){
         _eventModalSeenKey = ek;
         showEventModal(ev, false);
       }
 
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "pending";
       return;
     }
 
     if(ev.status === "success"){
-      if(_prevEventStatus !== "success") playSfx("done");
+      if(_prevEventStatus !== "success"){
+        playSfx("done");
+      }
 
       showGameToast("任務完成，管理員已通過");
       await db.ref(`players/p${myId}/activeEvent`).remove().catch(()=>{});
@@ -2672,6 +2775,8 @@ function bindActiveEvent(){
       hideBanner();
       hideTimer();
       stopCountdown();
+
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "success";
       return;
     }
@@ -2691,10 +2796,13 @@ function bindActiveEvent(){
       hideBanner();
       hideTimer();
       stopCountdown();
+
+      _prevFinishReqStatus = frStatus;
       _prevEventStatus = "fail";
       return;
     }
 
+    _prevFinishReqStatus = frStatus;
     _prevEventStatus = ev.status || null;
   });
 
@@ -2735,7 +2843,7 @@ function bindActiveEvent(){
     });
 
     playSfx("submit");
-    hideEventModal();          // ✅ 按完成後直接關掉
+    hideEventModal();
     showBanner({
       ...currentEvent,
       finishRequest:{
@@ -2770,25 +2878,33 @@ function showEventModal(ev, silent=false){
   document.getElementById("evtTask").innerText   = ev.taskHint || "完成指定任務";
   document.getElementById("evtReward").innerText = fmtReward(ev.reward);
 
-  document.getElementById("eventModal").style.display="flex";
+  document.getElementById("eventModal").style.display = "flex";
   document.body.classList.add("lockScroll");
 
-  // ✅ 提示框彈出音效（同一事件只播一次）
   const ek = getEventKey(ev);
-  if(!silent && ek && ek !== _playedPopupForKey){
+
+  // ✅ 只有不是初始同步、而且不是 silent、而且同事件沒播過，才播 popup
+  if(!silent && _eventInitialized && ek && ek !== _playedPopupForKey){
     _playedPopupForKey = ek;
-    playSfx('popup');
+    playSfx("popup");
   }
 
   document.getElementById("evtAckBtn").onclick = async ()=>{
-    await db.ref(`players/p${myId}/activeEvent`).update({ ack:true, ackAt:Date.now(), uiState:"pending" });
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      ack:true,
+      ackAt:Date.now(),
+      uiState:"pending"
+    });
     hideEventModal();
     showBanner(ev);
     showTab("task");
   };
 
   document.getElementById("evtCloseBtn").onclick = async ()=>{
-    await db.ref(`players/p${myId}/activeEvent`).update({ uiState:"pending", snoozeAt:Date.now() });
+    await db.ref(`players/p${myId}/activeEvent`).update({
+      uiState:"pending",
+      snoozeAt:Date.now()
+    });
     hideEventModal();
     showBanner(ev);
     showTab("task");
@@ -3299,4 +3415,4 @@ window.addEventListener("pageshow", resyncActiveEvent);
 
 </script>
 </body>
-</html>>
+</html>
