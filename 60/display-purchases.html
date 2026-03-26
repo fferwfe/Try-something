@@ -321,7 +321,7 @@
         });
       }
 
-      arr.sort((a,b)=> (b.score!==a.score) ? (b.score-a.score) : (b.pts-b.pts));
+    
 
       // ✅ 修正：次排序應該是 pts
       arr.sort((a,b)=> (b.score!==a.score) ? (b.score-a.score) : (b.pts-a.pts));
