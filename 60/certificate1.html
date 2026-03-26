@@ -264,10 +264,17 @@ if(!pid) alert("缺少 pid");
 document.getElementById("date").innerText =
   new Date().toLocaleDateString("zh-TW");
 
-const FALLBACK_IMG = "https://via.placeholder.com/100x70?text=No+Image";
+const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="70" viewBox="0 0 100 70">
+  <rect width="100" height="70" rx="8" fill="#e5e7eb"/>
+  <text x="50" y="34" text-anchor="middle" font-size="12" fill="#64748b" font-family="Arial, sans-serif">No Image</text>
+  <text x="50" y="50" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="Arial, sans-serif">商品圖片</text>
+</svg>
+`);
 
 function safeNumber(v){
-  return Number(v || 0);
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function isValidImageUrl(v){
@@ -317,7 +324,7 @@ function renderInventory(list, shopImageMap){
 
     const img = document.createElement("img");
     img.src = pickImageForItem(it, shopImageMap);
-    img.alt = (it.name || it.title || "商品圖片");
+    img.alt = it.name || it.title || "商品圖片";
     img.onerror = () => {
       img.onerror = null;
       img.src = FALLBACK_IMG;
