@@ -14,7 +14,6 @@ html,body{
   padding:0;
   width:100%;
   height:100%;
-  overflow:hidden;
   font-family:'Microsoft JhengHei','Segoe UI',sans-serif;
   color:#2b2117;
 }
@@ -22,24 +21,23 @@ html,body{
 body{
   background:url("images/backgrounds/gold.jpg") center/cover no-repeat;
   position:relative;
+  overflow:hidden;
 }
 
-/* 整體置中區 */
 .container{
   position:absolute;
   inset:0;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   text-align:center;
-  padding:4vh 6vw;
+  padding:3vh 4vw 4vh;
   box-sizing:border-box;
 }
 
-/* 主標題 */
 .title{
-  font-size:clamp(34px, 3.2vw, 58px);
+  font-size:clamp(32px, 2.8vw, 52px);
   font-weight:900;
   letter-spacing:.18em;
   color:#8b5a18;
@@ -48,19 +46,17 @@ body{
     0 2px 8px rgba(255,255,255,.5);
 }
 
-/* 英文副標 */
 .subtitle{
-  margin-top:10px;
-  font-size:clamp(14px, 1.1vw, 22px);
+  margin-top:8px;
+  font-size:clamp(13px, 1vw, 20px);
   letter-spacing:.18em;
   color:#9a6f2c;
   opacity:.92;
 }
 
-/* 玩家名 */
 .name{
-  margin-top:9vh;
-  font-size:clamp(40px, 4.2vw, 78px);
+  margin-top:4.5vh;
+  font-size:clamp(38px, 4vw, 72px);
   font-weight:900;
   line-height:1.2;
   color:#3b2a16;
@@ -69,20 +65,18 @@ body{
     0 8px 20px rgba(255,255,255,.35);
 }
 
-/* 稱號 */
 .role{
-  margin-top:14px;
-  font-size:clamp(18px, 1.6vw, 30px);
+  margin-top:10px;
+  font-size:clamp(18px, 1.5vw, 28px);
   font-weight:700;
   color:#7a5a2b;
   letter-spacing:.08em;
 }
 
-/* 獎項 */
 .award{
-  margin-top:4.5vh;
+  margin-top:2.6vh;
   min-height:1.4em;
-  font-size:clamp(28px, 2.4vw, 46px);
+  font-size:clamp(26px, 2.1vw, 42px);
   font-weight:900;
   color:#a32020;
   text-shadow:
@@ -90,78 +84,186 @@ body{
     0 0 16px rgba(255,230,230,.55);
 }
 
-/* 總分 */
 .score{
-  margin-top:4vh;
-  font-size:clamp(22px, 1.8vw, 34px);
+  margin-top:2.2vh;
+  font-size:clamp(22px, 1.6vw, 32px);
   font-weight:800;
   color:#5b431f;
 }
 
-/* 頒發文字 */
-.desc{
-  margin-top:3vh;
-  max-width:900px;
-  font-size:clamp(16px, 1.2vw, 22px);
-  line-height:1.8;
-  color:#6f552a;
+.resources{
+  margin-top:2.6vh;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(120px, 1fr));
+  gap:12px;
+  width:min(1100px, 92vw);
 }
 
-/* 日期與單位 */
+.res{
+  background:rgba(255,248,235,.70);
+  border:1px solid rgba(180,131,35,.18);
+  border-radius:16px;
+  padding:12px 10px;
+  box-shadow:0 6px 18px rgba(125,94,34,.08);
+}
+
+.res-k{
+  font-size:clamp(14px, 1vw, 18px);
+  color:#7a6033;
+  font-weight:700;
+}
+
+.res-v{
+  margin-top:6px;
+  font-size:clamp(24px, 1.8vw, 34px);
+  font-weight:900;
+  color:#5b431f;
+}
+
+.ach{
+  margin-top:2.8vh;
+  width:min(1180px, 94vw);
+}
+
+.ach-title{
+  font-size:clamp(20px, 1.4vw, 28px);
+  font-weight:900;
+  color:#7a4d12;
+  margin-bottom:12px;
+}
+
+.ach-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(96px, 1fr));
+  gap:10px;
+  justify-content:center;
+}
+
+.item{
+  background:rgba(255,248,235,.64);
+  border:1px solid rgba(180,131,35,.16);
+  border-radius:14px;
+  padding:8px;
+  text-align:center;
+}
+
+.item img{
+  width:100%;
+  height:72px;
+  object-fit:cover;
+  border-radius:8px;
+  display:block;
+  background:#eadfcf;
+}
+
+.item-name{
+  margin-top:6px;
+  font-size:12px;
+  line-height:1.35;
+  font-weight:700;
+  color:#5f4520;
+  word-break:break-word;
+}
+
+.item-qty{
+  margin-top:2px;
+  font-size:11px;
+  color:#8a6a38;
+}
+
+.empty{
+  font-size:16px;
+  color:#7a6033;
+  padding:8px 0;
+}
+
 .footer{
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:5vh;
+  margin-top:auto;
+  width:100%;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
-  padding:0 7vw;
-  box-sizing:border-box;
-  font-size:clamp(14px, 1vw, 20px);
+  font-size:clamp(14px, 1vw, 18px);
   color:#7a6033;
+  padding-top:18px;
 }
 
 .footer-right{
   text-align:right;
 }
 
-@media (max-width:900px){
+@media (max-width:1000px){
+  .resources{
+    grid-template-columns:repeat(3, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width:700px){
+  body{
+    overflow:auto;
+  }
+  .container{
+    position:relative;
+    inset:auto;
+    min-height:100%;
+  }
+  .resources{
+    grid-template-columns:repeat(2, minmax(120px, 1fr));
+  }
   .footer{
     flex-direction:column;
     gap:10px;
     align-items:center;
-    text-align:center;
   }
   .footer-right{
     text-align:center;
+  }
+}
+
+@media (max-width:480px){
+  .resources{
+    grid-template-columns:1fr;
+  }
+}
+
+@media print{
+  html,body{
+    background:white !important;
+  }
+  body{
+    background-image:none !important;
   }
 }
 </style>
 </head>
 
 <body>
-
 <div class="container">
   <div class="title">人生履歷榮譽證書</div>
   <div class="subtitle">LIFE RESUME CERTIFICATE</div>
 
   <div class="name" id="playerName">玩家名稱</div>
   <div class="role" id="playerTitle">稱號</div>
-
   <div class="award" id="awardText"></div>
-
   <div class="score" id="score">總分：0</div>
 
-  <div class="desc" id="descText">
-    特頒此狀，以表彰於本次活動中展現之精神、行動與成長，
-    願持續在人生履歷中寫下屬於自己的精彩篇章。
+  <div class="resources">
+    <div class="res"><div class="res-k">⏳ 時間</div><div class="res-v" id="time">0</div></div>
+    <div class="res"><div class="res-k">💰 金錢</div><div class="res-v" id="money">0</div></div>
+    <div class="res"><div class="res-k">❤️ 健康</div><div class="res-v" id="health">0</div></div>
+    <div class="res"><div class="res-k">📘 知識</div><div class="res-v" id="knowledge">0</div></div>
+    <div class="res"><div class="res-k">🤝 人際</div><div class="res-v" id="social">0</div></div>
   </div>
-</div>
 
-<div class="footer">
-  <div>頒發日期：<span id="date"></span></div>
-  <div class="footer-right">人生履歷系統</div>
+  <div class="ach">
+    <div class="ach-title">🛍 已購買商品</div>
+    <div class="ach-list" id="achList"></div>
+  </div>
+
+  <div class="footer">
+    <div>頒發日期：<span id="date"></span></div>
+    <div class="footer-right">人生履歷系統</div>
+  </div>
 </div>
 
 <script>
@@ -179,9 +281,94 @@ const pid = String(rawPid || "").startsWith("p") ? rawPid : `p${rawPid}`;
 document.getElementById("date").innerText =
   new Date().toLocaleDateString("zh-TW");
 
-db.ref("players/" + pid).once("value").then(snap=>{
-  const p = snap.val() || {};
+const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="72" viewBox="0 0 100 72">
+  <rect width="100" height="72" rx="8" fill="#eadfcf"/>
+  <text x="50" y="33" text-anchor="middle" font-size="12" fill="#8a6a38" font-family="Arial, sans-serif">No Image</text>
+  <text x="50" y="49" text-anchor="middle" font-size="11" fill="#9f8151" font-family="Arial, sans-serif">商品圖片</text>
+</svg>
+`);
+
+function safeNumber(v){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isValidImageUrl(v){
+  if(typeof v !== "string") return false;
+  const s = v.trim();
+  return (
+    s.startsWith("http://") ||
+    s.startsWith("https://") ||
+    s.startsWith("./") ||
+    s.startsWith("../") ||
+    s.startsWith("/") ||
+    s.startsWith("data:image/")
+  );
+}
+
+function normalizeName(s){
+  return String(s || "").trim();
+}
+
+function pickImageForItem(item, shopImageMap){
+  const ownImageUrl = item && typeof item.imageUrl === "string" ? item.imageUrl.trim() : "";
+  const ownImg = item && typeof item.img === "string" ? item.img.trim() : "";
+  const itemName = normalizeName(item && (item.name || item.title || item.label));
+
+  if(isValidImageUrl(ownImageUrl)) return ownImageUrl;
+  if(isValidImageUrl(ownImg)) return ownImg;
+
+  if(itemName && shopImageMap[itemName] && isValidImageUrl(shopImageMap[itemName])){
+    return shopImageMap[itemName];
+  }
+
+  return FALLBACK_IMG;
+}
+
+function renderPurchasedItems(list, shopImageMap){
+  const achList = document.getElementById("achList");
+  achList.innerHTML = "";
+
+  if(!list.length){
+    achList.innerHTML = `<div class="empty">尚無已購買商品</div>`;
+    return;
+  }
+
+  list.forEach(it=>{
+    const div = document.createElement("div");
+    div.className = "item";
+
+    const img = document.createElement("img");
+    img.src = pickImageForItem(it, shopImageMap);
+    img.alt = it.name || it.title || "商品圖片";
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = FALLBACK_IMG;
+    };
+
+    const name = document.createElement("div");
+    name.className = "item-name";
+    name.innerText = it.name || it.title || it.label || "商品";
+
+    const qty = document.createElement("div");
+    qty.className = "item-qty";
+    qty.innerText = `x${safeNumber(it.qty || 1)}`;
+
+    div.appendChild(img);
+    div.appendChild(name);
+    div.appendChild(qty);
+    achList.appendChild(div);
+  });
+}
+
+Promise.all([
+  db.ref("players/" + pid).once("value"),
+  db.ref("shop/items").once("value")
+]).then(([playerSnap, shopSnap])=>{
+  const p = playerSnap.val() || {};
   const r = p.res || {};
+  const shopItems = shopSnap.val() || {};
 
   document.getElementById("playerName").innerText =
     p.name || `玩家 ${pid}`;
@@ -190,20 +377,36 @@ db.ref("players/" + pid).once("value").then(snap=>{
     p.titleCustom || p.roleLabel || p.roleLabelAuto || "冒險者";
 
   document.getElementById("score").innerText =
-    "總分：" + (Number(r.score) || 0);
+    "總分：" + safeNumber(r.score);
 
   document.getElementById("awardText").innerText =
     p.award ? `🏆 ${p.award}` : "";
 
-  // 如果之後你想自己改證書內文，可在 players/pX/certificateText 寫字
-  if(p.certificateText){
-    document.getElementById("descText").innerText = p.certificateText;
-  }
+  document.getElementById("time").innerText = safeNumber(r.time);
+  document.getElementById("money").innerText = safeNumber(r.money);
+  document.getElementById("health").innerText = safeNumber(r.health);
+  document.getElementById("knowledge").innerText = safeNumber(r.knowledge);
+  document.getElementById("social").innerText = safeNumber(r.social);
+
+  const shopImageMap = {};
+  Object.values(shopItems).forEach(item=>{
+    const name = normalizeName(item && item.name);
+    const imageUrl = item && (item.imageUrl || item.img);
+    if(name && isValidImageUrl(imageUrl)){
+      shopImageMap[name] = imageUrl;
+    }
+  });
+
+  // 你說的「成就」= 購買商品
+  // 目前仍從 players/{pid}/inventory 讀，但顯示成已購買商品
+  const inv = p.inventory || {};
+  const list = Object.values(inv);
+
+  renderPurchasedItems(list, shopImageMap);
 }).catch(err=>{
   console.error(err);
   alert("讀取資料失敗");
 });
 </script>
-
 </body>
 </html>
