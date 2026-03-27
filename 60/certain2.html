@@ -508,7 +508,7 @@ Promise.all([
   document.getElementById("social").innerText = safeNumber(r.social);
   document.getElementById("score").innerText = safeNumber(r.score);
 
-  // 獎項：優先抓玩家自己的 award，沒有就抓證書預設獎項
+  // 獎項：自己在 Firebase players/pX/award 輸入
   setAward(p.award || cert.defaultAward || "");
 
   // 背景：優先抓玩家自己的 certificateBg，再抓全域設定
