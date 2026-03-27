@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>人生履歷｜獎狀</title>
+<title>人生履歷｜獎狀（投影模式）</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
@@ -21,12 +21,12 @@ html,body{
 body{
   background:url("images/backgrounds/gold.jpg") center/cover no-repeat;
   position:relative;
-  overflow:hidden;
+  overflow:auto;
 }
 
+/* 整體舞台 */
 .container{
-  position:absolute;
-  inset:0;
+  min-height:100%;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -36,8 +36,9 @@ body{
   box-sizing:border-box;
 }
 
+/* 標題 */
 .title{
-  font-size:clamp(32px, 2.8vw, 52px);
+  font-size:clamp(32px, 2.6vw, 52px);
   font-weight:900;
   letter-spacing:.18em;
   color:#8b5a18;
@@ -54,29 +55,32 @@ body{
   opacity:.92;
 }
 
+/* 玩家名字：投影幕最大重點 */
 .name{
-  margin-top:4.5vh;
-  font-size:clamp(38px, 4vw, 72px);
+  margin-top:6vh;
+  font-size:clamp(60px, 6vw, 120px);
   font-weight:900;
-  line-height:1.2;
+  line-height:1.15;
   color:#3b2a16;
   text-shadow:
     0 2px 0 rgba(255,255,255,.92),
     0 8px 20px rgba(255,255,255,.35);
 }
 
+/* 稱號 */
 .role{
-  margin-top:10px;
-  font-size:clamp(18px, 1.5vw, 28px);
+  margin-top:12px;
+  font-size:clamp(20px, 1.8vw, 34px);
   font-weight:700;
   color:#7a5a2b;
   letter-spacing:.08em;
 }
 
+/* 獎項 */
 .award{
-  margin-top:2.6vh;
+  margin-top:3vh;
   min-height:1.4em;
-  font-size:clamp(26px, 2.1vw, 42px);
+  font-size:clamp(40px, 3.5vw, 70px);
   font-weight:900;
   color:#a32020;
   text-shadow:
@@ -84,72 +88,71 @@ body{
     0 0 16px rgba(255,230,230,.55);
 }
 
+/* 分數 */
 .score{
-  margin-top:2.2vh;
-  font-size:clamp(22px, 1.6vw, 32px);
-  font-weight:800;
+  margin-top:2vh;
+  font-size:clamp(28px, 2.2vw, 44px);
+  font-weight:900;
   color:#5b431f;
 }
 
+/* 五資源：投影一行版 */
 .resources{
-  margin-top:2.6vh;
-  display:grid;
-  grid-template-columns:repeat(5, minmax(120px, 1fr));
-  gap:12px;
-  width:min(1100px, 92vw);
+  margin-top:3vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:28px;
+  flex-wrap:wrap;
+  width:min(1500px, 94vw);
 }
 
 .res{
-  background:rgba(255,248,235,.70);
-  border:1px solid rgba(180,131,35,.18);
-  border-radius:16px;
-  padding:12px 10px;
-  box-shadow:0 6px 18px rgba(125,94,34,.08);
-}
-
-.res-k{
-  font-size:clamp(14px, 1vw, 18px);
-  color:#7a6033;
-  font-weight:700;
-}
-
-.res-v{
-  margin-top:6px;
-  font-size:clamp(24px, 1.8vw, 34px);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:clamp(22px, 1.8vw, 32px);
   font-weight:900;
-  color:#5b431f;
+  color:#5c431e;
+  text-shadow:0 1px 0 rgba(255,255,255,.75);
 }
 
+.res .label{
+  color:#7a6033;
+}
+
+/* 商品 / 成就 */
 .ach{
-  margin-top:2.8vh;
-  width:min(1180px, 94vw);
+  margin-top:2.5vh;
+  width:min(1500px, 96vw);
 }
 
 .ach-title{
-  font-size:clamp(20px, 1.4vw, 28px);
+  font-size:clamp(22px, 1.5vw, 30px);
   font-weight:900;
   color:#7a4d12;
-  margin-bottom:12px;
+  margin-bottom:14px;
 }
 
 .ach-list{
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(96px, 1fr));
-  gap:10px;
+  grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
+  gap:14px;
   justify-content:center;
 }
 
 .item{
-  background:rgba(255,248,235,.64);
+  background:rgba(255,248,235,.56);
   border:1px solid rgba(180,131,35,.16);
   border-radius:14px;
-  padding:8px;
+  padding:10px;
   text-align:center;
+  box-shadow:0 6px 18px rgba(125,94,34,.06);
 }
 
 .item img{
   width:100%;
-  height:72px;
+  height:88px;
   object-fit:cover;
   border-radius:8px;
   display:block;
@@ -157,33 +160,35 @@ body{
 }
 
 .item-name{
-  margin-top:6px;
-  font-size:12px;
-  line-height:1.35;
-  font-weight:700;
+  margin-top:8px;
+  font-size:14px;
+  line-height:1.3;
+  font-weight:800;
   color:#5f4520;
   word-break:break-word;
 }
 
 .item-qty{
-  margin-top:2px;
-  font-size:11px;
+  margin-top:4px;
+  font-size:12px;
   color:#8a6a38;
+  font-weight:700;
 }
 
 .empty{
-  font-size:16px;
+  font-size:18px;
   color:#7a6033;
-  padding:8px 0;
+  padding:10px 0;
 }
 
+/* 頁尾 */
 .footer{
   margin-top:auto;
   width:100%;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
-  font-size:clamp(14px, 1vw, 18px);
+  font-size:clamp(16px, 1vw, 20px);
   color:#7a6033;
   padding-top:18px;
 }
@@ -192,23 +197,9 @@ body{
   text-align:right;
 }
 
-@media (max-width:1000px){
-  .resources{
-    grid-template-columns:repeat(3, minmax(120px, 1fr));
-  }
-}
-
-@media (max-width:700px){
-  body{
-    overflow:auto;
-  }
-  .container{
-    position:relative;
-    inset:auto;
-    min-height:100%;
-  }
-  .resources{
-    grid-template-columns:repeat(2, minmax(120px, 1fr));
+@media (max-width:800px){
+  .ach-list{
+    grid-template-columns:repeat(auto-fill, minmax(100px, 1fr));
   }
   .footer{
     flex-direction:column;
@@ -217,12 +208,6 @@ body{
   }
   .footer-right{
     text-align:center;
-  }
-}
-
-@media (max-width:480px){
-  .resources{
-    grid-template-columns:1fr;
   }
 }
 
@@ -248,11 +233,11 @@ body{
   <div class="score" id="score">總分：0</div>
 
   <div class="resources">
-    <div class="res"><div class="res-k">⏳ 時間</div><div class="res-v" id="time">0</div></div>
-    <div class="res"><div class="res-k">💰 金錢</div><div class="res-v" id="money">0</div></div>
-    <div class="res"><div class="res-k">❤️ 健康</div><div class="res-v" id="health">0</div></div>
-    <div class="res"><div class="res-k">📘 知識</div><div class="res-v" id="knowledge">0</div></div>
-    <div class="res"><div class="res-k">🤝 人際</div><div class="res-v" id="social">0</div></div>
+    <div class="res"><span class="label">⏳ 時間</span><span id="time">0</span></div>
+    <div class="res"><span class="label">💰 金錢</span><span id="money">0</span></div>
+    <div class="res"><span class="label">❤️ 健康</span><span id="health">0</span></div>
+    <div class="res"><span class="label">📘 知識</span><span id="knowledge">0</span></div>
+    <div class="res"><span class="label">🤝 人際</span><span id="social">0</span></div>
   </div>
 
   <div class="ach">
@@ -282,10 +267,10 @@ document.getElementById("date").innerText =
   new Date().toLocaleDateString("zh-TW");
 
 const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" width="100" height="72" viewBox="0 0 100 72">
-  <rect width="100" height="72" rx="8" fill="#eadfcf"/>
-  <text x="50" y="33" text-anchor="middle" font-size="12" fill="#8a6a38" font-family="Arial, sans-serif">No Image</text>
-  <text x="50" y="49" text-anchor="middle" font-size="11" fill="#9f8151" font-family="Arial, sans-serif">商品圖片</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="88" viewBox="0 0 120 88">
+  <rect width="120" height="88" rx="8" fill="#eadfcf"/>
+  <text x="60" y="39" text-anchor="middle" font-size="12" fill="#8a6a38" font-family="Arial, sans-serif">No Image</text>
+  <text x="60" y="55" text-anchor="middle" font-size="11" fill="#9f8151" font-family="Arial, sans-serif">商品圖片</text>
 </svg>
 `);
 
@@ -397,8 +382,7 @@ Promise.all([
     }
   });
 
-  // 你說的「成就」= 購買商品
-  // 目前仍從 players/{pid}/inventory 讀，但顯示成已購買商品
+  // 顯示全部已購買商品
   const inv = p.inventory || {};
   const list = Object.values(inv);
 
